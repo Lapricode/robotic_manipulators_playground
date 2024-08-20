@@ -1,0 +1,14 @@
+Camera intrinsic matrix:
+1419.28381 0.00000 676.19911
+0.00000 1420.57186 328.53976
+0.00000 0.00000 1.00000
+
+Camera distortion coefficients:
+0.00855
+-0.17649
+-0.00049
+0.00040
+1.00955
+
+Reprojection error:
+0.16347
