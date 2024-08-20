@@ -1,0 +1,5 @@
+Plane x length (m): 0.21
+Plane y length (m): 0.148
+Plane normal vector: [-0.18, -0.178, -0.967]
+Plane translation (m): [-0.063, -0.009, 0.493]
+Plane orientation (degrees): 134.90677461325885
