@@ -1,0 +1,61 @@
+Name: Scara
+Joints number: 4
+Base position wrt world: 0.100 0.100 0.000
+Base orientation wrt world: 0.000 0.000 0.000
+Frame "0" position wrt base: 0.000 0.000 0.400
+Frame "0" orientation wrt base: 0.000 0.000 0.000
+End-effector position wrt frame "n": 0.000 0.000 0.100
+End-effector orientation wrt frame "n": 0.000 0.000 0.000
+Joint 1 type: revolute
+Joint 1 Denavit - Hartenberg parameters: 0.200 0.000 0.000 0.000
+Joint 1 variable limits: -180.000 180.000
+Joint 1 motors: A
+Joint 1 motors mult. factors: 1.0
+Joint 1 z-axis position: 0.000
+Joint 2 type: revolute
+Joint 2 Denavit - Hartenberg parameters: 0.200 180.000 0.000 0.000
+Joint 2 variable limits: -180.000 180.000
+Joint 2 motors: B, C
+Joint 2 motors mult. factors: 1.0, 1.0
+Joint 2 z-axis position: 0.000
+Joint 3 type: prismatic
+Joint 3 Denavit - Hartenberg parameters: 0.000 0.000 0.050 0.000
+Joint 3 variable limits: 0.000 0.200
+Joint 3 motors: D
+Joint 3 motors mult. factors: 1.0
+Joint 3 z-axis position: 0.000
+Joint 4 type: revolute
+Joint 4 Denavit - Hartenberg parameters: 0.000 0.000 0.000 0.000
+Joint 4 variable limits: -180.000 180.000
+Joint 4 motors: X
+Joint 4 motors mult. factors: 1.0
+Joint 4 z-axis position: 0.000
+Frame "base" origin color: #800000
+Frame "base" origin size: 7
+Frame "base" joint's link color: #800000
+Frame "base" joint's link size: 5
+Frame "base" initial joint's link length: 0.400
+Frame "0" origin color: #0000ff
+Frame "0" origin size: 7
+Frame "0" joint's link color: #0000ff
+Frame "0" joint's link size: 5
+Frame "0" initial joint's link length: 0.200
+Frame "1" origin color: #00ff00
+Frame "1" origin size: 7
+Frame "1" joint's link color: #00ff00
+Frame "1" joint's link size: 5
+Frame "1" initial joint's link length: 0.200
+Frame "2" origin color: #ff0000
+Frame "2" origin size: 7
+Frame "2" joint's link color: red
+Frame "2" joint's link size: 5
+Frame "2" initial joint's link length: 0.050
+Frame "3" origin color: #ff8040
+Frame "3" origin size: 7
+Frame "3" joint's link color: #ff8040
+Frame "3" joint's link size: 5
+Frame "3" initial joint's link length: 0.100
+Frame "4" origin color: black
+Frame "4" origin size: 7
+Frame "end-effector" origin color: #000000
+Frame "end-effector" origin size: 7
