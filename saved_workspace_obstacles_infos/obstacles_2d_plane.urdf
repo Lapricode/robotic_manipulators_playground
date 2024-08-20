@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<robot name="obstacles_2d_plane" xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <!-- Plane's link -->
+    <link name="plane_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="package://saved_workspace_obstacles/meshes/obstacles_2d_plane.stl" scale="0.010 0.010 0.001"/>
+            </geometry>
+            <material name="white">
+                <color rgba="1.0 1.0 1.0 1.0"/>
+            </material>
+        </visual>
+    </link>
+
+</robot>
