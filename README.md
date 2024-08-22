@@ -1,5 +1,7 @@
 # robotic_manipulators_playground
-A python tkinter GUI for designing, simulating and controlling robotic manipulators, that also gives a solution to the obstacles avoidance problem.
+This is a python tkinter GUI for designing, simulating and controlling robotic manipulators, that also gives a solution to the obstacles avoidance problem.
+
+The program can be run both in windows and linux.
 
 You may need to calibrate your own camera, if you want to play with the related program features.
 
