@@ -14,7 +14,7 @@ elif self.path.startswith("/retrieve/"):
 ```
 
 And for windows it must be like this:
-```
+```python
 elif self.path.startswith("/retrieve/"):
     # print(f"Retrieving file: {self.path[10:]}")
     self.path = urllib.parse.unquote(self.path[10:])
