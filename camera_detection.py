@@ -1,35 +1,46 @@
 import numpy as np
-from scipy.ndimage import map_coordinates
 from shapely.geometry import Polygon, Point
 import cv2, glob
-from PIL import Image
 import general_functions as gf
 
 
 # functions for camera operations
 
-ArUcos_dictionaries = {
-	"4X4_50/200mm": cv2.aruco.DICT_4X4_50,
-	"4X4_50/100mm": cv2.aruco.DICT_4X4_50,
-	"4X4_100/50mm": cv2.aruco.DICT_4X4_100,
-	"4X4_100/30mm": cv2.aruco.DICT_4X4_100,
-	"4X4_100/20mm": cv2.aruco.DICT_4X4_100,
- 	"5X5_50/200mm": cv2.aruco.DICT_5X5_50,
-	"5X5_50/100mm": cv2.aruco.DICT_5X5_50,
-	"5X5_100/50mm": cv2.aruco.DICT_5X5_100,
-	"5X5_100/30mm": cv2.aruco.DICT_5X5_100,
-	"5X5_100/20mm": cv2.aruco.DICT_5X5_100,
-	"6X6_50/200mm": cv2.aruco.DICT_6X6_50,
-	"6X6_50/100mm": cv2.aruco.DICT_6X6_50,
-	"6X6_100/50mm": cv2.aruco.DICT_6X6_100,
-	"6X6_100/30mm": cv2.aruco.DICT_6X6_100,
-	"6X6_100/20mm": cv2.aruco.DICT_6X6_100,
-	"7X7_50/200mm": cv2.aruco.DICT_7X7_50,
-	"7X7_50/100mm": cv2.aruco.DICT_7X7_50,
-	"7X7_100/50mm": cv2.aruco.DICT_7X7_100,
-	"7X7_100/30mm": cv2.aruco.DICT_7X7_100,
-	"7X7_100/20mm": cv2.aruco.DICT_7X7_100,
-	"ARUCO_ORIGINAL/100mm": cv2.aruco.DICT_ARUCO_ORIGINAL
+ArUco_dictionaries = {
+	"4X4_50/20mm": cv2.aruco.DICT_4X4_50, "4X4_50/30mm": cv2.aruco.DICT_4X4_50, "4X4_50/40mm": cv2.aruco.DICT_4X4_50, "4X4_50/50mm": cv2.aruco.DICT_4X4_50, "4X4_50/100mm": cv2.aruco.DICT_4X4_50,
+    "4X4_50/150mm": cv2.aruco.DICT_4X4_50, "4X4_50/200mm": cv2.aruco.DICT_4X4_50, "4X4_50/250mm": cv2.aruco.DICT_4X4_50, "4X4_50/300mm": cv2.aruco.DICT_4X4_50,
+	"4X4_100/20mm": cv2.aruco.DICT_4X4_100, "4X4_100/30mm": cv2.aruco.DICT_4X4_100, "4X4_100/40mm": cv2.aruco.DICT_4X4_100, "4X4_100/50mm": cv2.aruco.DICT_4X4_100, "4X4_100/100mm": cv2.aruco.DICT_4X4_100,
+    "4X4_100/150mm": cv2.aruco.DICT_4X4_100, "4X4_100/200mm": cv2.aruco.DICT_4X4_100, "4X4_100/250mm": cv2.aruco.DICT_4X4_100, "4X4_100/300mm": cv2.aruco.DICT_4X4_100,
+    "4X4_250/20mm": cv2.aruco.DICT_4X4_250, "4X4_250/30mm": cv2.aruco.DICT_4X4_250, "4X4_250/40mm": cv2.aruco.DICT_4X4_250, "4X4_250/50mm": cv2.aruco.DICT_4X4_250, "4X4_250/100mm": cv2.aruco.DICT_4X4_250,
+    "4X4_250/150mm": cv2.aruco.DICT_4X4_250, "4X4_250/200mm": cv2.aruco.DICT_4X4_250, "4X4_250/250mm": cv2.aruco.DICT_4X4_250, "4X4_250/300mm": cv2.aruco.DICT_4X4_250,
+    "4X4_1000/20mm": cv2.aruco.DICT_4X4_1000, "4X4_1000/30mm": cv2.aruco.DICT_4X4_1000, "4X4_1000/40mm": cv2.aruco.DICT_4X4_1000, "4X4_1000/50mm": cv2.aruco.DICT_4X4_1000, "4X4_1000/100mm": cv2.aruco.DICT_4X4_1000,
+    "4X4_1000/150mm": cv2.aruco.DICT_4X4_1000, "4X4_1000/200mm": cv2.aruco.DICT_4X4_1000, "4X4_1000/250mm": cv2.aruco.DICT_4X4_1000, "4X4_1000/300mm": cv2.aruco.DICT_4X4_1000,
+	"5X5_50/20mm": cv2.aruco.DICT_5X5_50, "5X5_50/30mm": cv2.aruco.DICT_5X5_50, "5X5_50/40mm": cv2.aruco.DICT_5X5_50, "5X5_50/50mm": cv2.aruco.DICT_5X5_50, "5X5_50/100mm": cv2.aruco.DICT_5X5_50,
+    "5X5_50/150mm": cv2.aruco.DICT_5X5_50, "5X5_50/200mm": cv2.aruco.DICT_5X5_50, "5X5_50/250mm": cv2.aruco.DICT_5X5_50, "5X5_50/300mm": cv2.aruco.DICT_5X5_50,
+    "5X5_100/20mm": cv2.aruco.DICT_5X5_100, "5X5_100/30mm": cv2.aruco.DICT_5X5_100, "5X5_100/40mm": cv2.aruco.DICT_5X5_100, "5X5_100/50mm": cv2.aruco.DICT_5X5_100, "5X5_100/100mm": cv2.aruco.DICT_5X5_100,
+    "5X5_100/150mm": cv2.aruco.DICT_5X5_100, "5X5_100/200mm": cv2.aruco.DICT_5X5_100, "5X5_100/250mm": cv2.aruco.DICT_5X5_100, "5X5_100/300mm": cv2.aruco.DICT_5X5_100,
+    "5X5_250/20mm": cv2.aruco.DICT_5X5_250, "5X5_250/30mm": cv2.aruco.DICT_5X5_250, "5X5_250/40mm": cv2.aruco.DICT_5X5_250, "5X5_250/50mm": cv2.aruco.DICT_5X5_250, "5X5_250/100mm": cv2.aruco.DICT_5X5_250,
+    "5X5_250/150mm": cv2.aruco.DICT_5X5_250, "5X5_250/200mm": cv2.aruco.DICT_5X5_250, "5X5_250/250mm": cv2.aruco.DICT_5X5_250, "5X5_250/300mm": cv2.aruco.DICT_5X5_250,
+    "5X5_1000/20mm": cv2.aruco.DICT_5X5_1000, "5X5_1000/30mm": cv2.aruco.DICT_5X5_1000, "5X5_1000/40mm": cv2.aruco.DICT_5X5_1000, "5X5_1000/50mm": cv2.aruco.DICT_5X5_1000, "5X5_1000/100mm": cv2.aruco.DICT_5X5_1000,
+    "5X5_1000/150mm": cv2.aruco.DICT_5X5_1000, "5X5_1000/200mm": cv2.aruco.DICT_5X5_1000, "5X5_1000/250mm": cv2.aruco.DICT_5X5_1000, "5X5_1000/300mm": cv2.aruco.DICT_5X5_1000,
+    "6X6_50/20mm": cv2.aruco.DICT_6X6_50, "6X6_50/30mm": cv2.aruco.DICT_6X6_50, "6X6_50/40mm": cv2.aruco.DICT_6X6_50, "6X6_50/50mm": cv2.aruco.DICT_6X6_50, "6X6_50/100mm": cv2.aruco.DICT_6X6_50,
+    "6X6_50/150mm": cv2.aruco.DICT_6X6_50, "6X6_50/200mm": cv2.aruco.DICT_6X6_50, "6X6_50/250mm": cv2.aruco.DICT_6X6_50, "6X6_50/300mm": cv2.aruco.DICT_6X6_50,
+    "6X6_100/20mm": cv2.aruco.DICT_6X6_100, "6X6_100/30mm": cv2.aruco.DICT_6X6_100, "6X6_100/40mm": cv2.aruco.DICT_6X6_100, "6X6_100/50mm": cv2.aruco.DICT_6X6_100, "6X6_100/100mm": cv2.aruco.DICT_6X6_100,
+    "6X6_100/150mm": cv2.aruco.DICT_6X6_100, "6X6_100/200mm": cv2.aruco.DICT_6X6_100, "6X6_100/250mm": cv2.aruco.DICT_6X6_100, "6X6_100/300mm": cv2.aruco.DICT_6X6_100,
+    "6X6_250/20mm": cv2.aruco.DICT_6X6_250, "6X6_250/30mm": cv2.aruco.DICT_6X6_250, "6X6_250/40mm": cv2.aruco.DICT_6X6_250, "6X6_250/50mm": cv2.aruco.DICT_6X6_250, "6X6_250/100mm": cv2.aruco.DICT_6X6_250,
+    "6X6_250/150mm": cv2.aruco.DICT_6X6_250, "6X6_250/200mm": cv2.aruco.DICT_6X6_250, "6X6_250/250mm": cv2.aruco.DICT_6X6_250, "6X6_250/300mm": cv2.aruco.DICT_6X6_250,
+    "6X6_1000/20mm": cv2.aruco.DICT_6X6_1000, "6X6_1000/30mm": cv2.aruco.DICT_6X6_1000, "6X6_1000/40mm": cv2.aruco.DICT_6X6_1000, "6X6_1000/50mm": cv2.aruco.DICT_6X6_1000, "6X6_1000/100mm": cv2.aruco.DICT_6X6_1000,
+    "6X6_1000/150mm": cv2.aruco.DICT_6X6_1000, "6X6_1000/200mm": cv2.aruco.DICT_6X6_1000, "6X6_1000/250mm": cv2.aruco.DICT_6X6_1000, "6X6_1000/300mm": cv2.aruco.DICT_6X6_1000,
+    "7X7_50/20mm": cv2.aruco.DICT_7X7_50, "7X7_50/30mm": cv2.aruco.DICT_7X7_50, "7X7_50/40mm": cv2.aruco.DICT_7X7_50, "7X7_50/50mm": cv2.aruco.DICT_7X7_50, "7X7_50/100mm": cv2.aruco.DICT_7X7_50,
+    "7X7_50/150mm": cv2.aruco.DICT_7X7_50, "7X7_50/200mm": cv2.aruco.DICT_7X7_50, "7X7_50/250mm": cv2.aruco.DICT_7X7_50, "7X7_50/300mm": cv2.aruco.DICT_7X7_50,
+    "7X7_100/20mm": cv2.aruco.DICT_7X7_100, "7X7_100/30mm": cv2.aruco.DICT_7X7_100, "7X7_100/40mm": cv2.aruco.DICT_7X7_100, "7X7_100/50mm": cv2.aruco.DICT_7X7_100, "7X7_100/100mm": cv2.aruco.DICT_7X7_100,
+    "7X7_100/150mm": cv2.aruco.DICT_7X7_100, "7X7_100/200mm": cv2.aruco.DICT_7X7_100, "7X7_100/250mm": cv2.aruco.DICT_7X7_100, "7X7_100/300mm": cv2.aruco.DICT_7X7_100,
+    "7X7_250/20mm": cv2.aruco.DICT_7X7_250, "7X7_250/30mm": cv2.aruco.DICT_7X7_250, "7X7_250/40mm": cv2.aruco.DICT_7X7_250, "7X7_250/50mm": cv2.aruco.DICT_7X7_250, "7X7_250/100mm": cv2.aruco.DICT_7X7_250,
+    "7X7_250/150mm": cv2.aruco.DICT_7X7_250, "7X7_250/200mm": cv2.aruco.DICT_7X7_250, "7X7_250/250mm": cv2.aruco.DICT_7X7_250, "7X7_250/300mm": cv2.aruco.DICT_7X7_250,
+    "7X7_1000/20mm": cv2.aruco.DICT_7X7_1000, "7X7_1000/30mm": cv2.aruco.DICT_7X7_1000, "7X7_1000/40mm": cv2.aruco.DICT_7X7_1000, "7X7_1000/50mm": cv2.aruco.DICT_7X7_1000, "7X7_1000/100mm": cv2.aruco.DICT_7X7_1000,
+    "7X7_1000/150mm": cv2.aruco.DICT_7X7_1000, "7X7_1000/200mm": cv2.aruco.DICT_7X7_1000, "7X7_1000/250mm": cv2.aruco.DICT_7X7_1000, "7X7_1000/300mm": cv2.aruco.DICT_7X7_1000,
+    "ORIGINAL/20mm": cv2.aruco.DICT_ARUCO_ORIGINAL,	"ORIGINAL/30mm": cv2.aruco.DICT_ARUCO_ORIGINAL,	"ORIGINAL/40mm": cv2.aruco.DICT_ARUCO_ORIGINAL,	"ORIGINAL/50mm": cv2.aruco.DICT_ARUCO_ORIGINAL,	"ORIGINAL/100mm": cv2.aruco.DICT_ARUCO_ORIGINAL,
+	"ORIGINAL/150mm": cv2.aruco.DICT_ARUCO_ORIGINAL, "ORIGINAL/200mm": cv2.aruco.DICT_ARUCO_ORIGINAL, "ORIGINAL/250mm": cv2.aruco.DICT_ARUCO_ORIGINAL, "ORIGINAL/300mm": cv2.aruco.DICT_ARUCO_ORIGINAL,
 }  # some typical ArUco markers dictionaries
 
 def save_intrinsic_parameters(intrinsic_mat, dist_coeffs, reprojection_error, file_path):  # save the camera's intrinsic parameters to a file
@@ -135,11 +146,11 @@ def undistort_whole_image(image, intrinsic_mat, dist_coeffs):  # undistort the w
 
 def estimate_ArUco_marker_pose(image, ArUco_marker, intrinsic_mat, dist_coeffs):  # estimate the ArUco markers poses with respect to the camera
     image = np.array(image)  # make sure the image is a numpy array
-    if ArUco_marker not in ArUcos_dictionaries.keys():  # if the ArUco marker is not in the available ArUco markers dictionaries
+    if ArUco_marker not in ArUco_dictionaries.keys():  # if the ArUco marker is not in the available ArUco markers dictionaries
         print(f"The ArUco marker {ArUco_marker} is not in the available ArUco markers dictionaries!")
         return np.eye(4), image  # return None for the ArUco marker transformation matrix and the image with the detected markers and their poses
     else:  # if the ArUco marker is in the available ArUco markers dictionaries
-        ArUco_dict = cv2.aruco.Dictionary_get(ArUcos_dictionaries[ArUco_marker])  # get the specific ArUco dictionary
+        ArUco_dict = cv2.aruco.Dictionary_get(ArUco_dictionaries[ArUco_marker])  # get the specific ArUco dictionary
         parameters = cv2.aruco.DetectorParameters_create()  # create the ArUco detector parameters
         corners, ids, _ = cv2.aruco.detectMarkers(image, ArUco_dict, parameters = parameters)  # detect the ArUco markers in the image
         ArUco_marker_side_length = float(ArUco_marker.split("/")[1].split("mm")[0]) / 1000.0  # get the ArUco marker side length in meters
@@ -245,6 +256,7 @@ def convert_boundaries_image_points_to_world_points(detected_image_boundaries_li
 
 
 # import os
+# from PIL import Image
 
 # intrinsic_mat, dist_coeffs, _ = load_intrinsic_parameters("camera_intrinsic_parameters.txt")
 # dist_coeffs[0] = 1
