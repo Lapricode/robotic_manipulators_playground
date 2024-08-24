@@ -1,4 +1,7 @@
 # robotic_manipulators_playground
+
+<div style="text-align: justify;">
+
 This is a python tkinter GUI for designing, simulating and controlling robotic manipulators, that also gives a solution to the obstacles avoidance problem.
 
 The program can be run both in windows and linux.
@@ -24,3 +27,5 @@ elif self.path.startswith("/retrieve/"):
     self.send_file_via_real_path()
     return
 ```
+
+<\div>
