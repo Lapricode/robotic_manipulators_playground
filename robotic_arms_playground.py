@@ -166,7 +166,7 @@ class robotic_manipulators_playground_window():
         self.back_side_2d_plane_color = "#333333"  # the color of the back side 2D plane of the workspace, where the workspace obstacles are located
         self.workspace_2d_plane_color = self.front_side_2d_plane_color  # the color of the 2D plane of the workspace, where the workspace obstacles are located
         self.workspace_2d_plane_size = 5  # the size of the 2D plane of the workspace, where the workspace obstacles are located
-        self.workspace_obstacles_color = "black"  # the color of the workspace obstacles
+        self.workspace_obstacles_color = "#111111"  # the color of the workspace obstacles
         self.workspace_obstacles_size = 2  # the size of the workspace obstacles
         self.chosen_frame_visualization = "frame 0"  # the chosen frame of the robotic manipulator for visualization
         self.chosen_link_visualization = "link 1"  # the chosen link of the robotic manipulator for visualization
@@ -395,16 +395,18 @@ class robotic_manipulators_playground_window():
         self.draw_next_workspace_canvas_frame()  # begin the loop for controlling the motion of the workspace visualization
         # self.load_robotic_manipulator_model("Default")  # load the default robotic manipulator model
         # create the necessary bindings for the GUI window
-        self.root.bind("<Control-f>", self.change_drawing_order); self.root.bind("<Control-F>", self.change_drawing_order)  # bind the change drawing order function to the Control + d and Control + D keys combinations
+        self.root.bind("<Control-r>", self.resize_root_window); self.root.bind("<Control-R>", self.resize_root_window)  # bind the resize window function to the Control + r and Control + R keys combinations
         self.root.bind("<Control-s>", self.save_robotic_manipulator_model_file); self.root.bind("<Control-S>", self.save_robotic_manipulator_model_file)  # bind the save robot model function to the Control + s and Control + S keys combinations
         self.root.bind("<Control-b>", self.build_robotic_manipulator_model); self.root.bind("<Control-B>", self.build_robotic_manipulator_model)  # bind the build robot model function to the Control + b and Control + B keys combinations
-        self.root.bind("<Control-r>", self.resize_root_window); self.root.bind("<Control-R>", self.resize_root_window)  # bind the resize window function to the Control + r and Control + R keys combinations
-        self.root.bind("<Control-c>", self.visualize_control_or_kinematics_variables); self.root.bind("<Control-C>", self.visualize_control_or_kinematics_variables)  # bind the visualize control or kinematics variables function to the Control + c and Control + C keys combinations
+        self.root.bind("<Control-v>", self.visualize_control_or_kinematics_variables); self.root.bind("<Control-V>", self.visualize_control_or_kinematics_variables)  # bind the visualize control or kinematics variables function to the Control + v and Control + V keys combinations
+        self.root.bind("<Control-a>", self.change_drawing_order); self.root.bind("<Control-A>", self.change_drawing_order)  # bind the change drawing order function to the Control + a and Control + A keys combinations
+        self.root.bind("<Control-z>", self.visualize_robotic_manipulator); self.root.bind("<Control-Z>", self.visualize_robotic_manipulator)  # bind the visualize robotic manipulator function to the Control + z and Control + Z keys combinations
+        self.root.bind("<Control-x>", self.visualize_obstacles); self.root.bind("<Control-X>", self.visualize_obstacles)  # bind the visualize obstacles function to the Control + x and Control + X keys combinations
+        self.root.bind("<Control-c>", self.visualize_camera); self.root.bind("<Control-C>", self.visualize_camera)  # bind the visualize camera function to the Control + c and Control + C keys combinations
         # self.root.bind("<FocusIn>", self.resize_root_window_2)  # bind the resize window function to the focus in event
         # self.root.bind("<Unmap>", self.root_not_in_focus)  # bind the resize window function to the focus out event
         for main_menu_num in range(len(self.main_menus_build_details)):
             self.root.bind(f"<Control-Key-{main_menu_num + 1}>", lambda event, num = main_menu_num: self.change_main_menu(num, event))
-        # self.root.bind("<Control-number
         self.root.bind("<Control-e>", lambda event: self.change_workspace_width_ratio(-1, event)); self.root.bind("<Control-E>", lambda event: self.change_workspace_width_ratio(-1, event))  # bind the change workspace width ratio function to the Control + e and Control + E keys combinations
         self.root.bind("<Control-d>", lambda event: self.change_workspace_width_ratio(+1, event)); self.root.bind("<Control-D>", lambda event: self.change_workspace_width_ratio(+1, event))  # bind the change workspace width ratio function to the Control + d and Control + D keys combinations
     def resize_root_window(self, event = None):  # resize the root window
@@ -560,6 +562,481 @@ class robotic_manipulators_playground_window():
         self.workspace_canvas.bind("<Button-1>", lambda event: self.rotate_workspace_start(event))
         self.workspace_canvas.bind("<B1-Motion>", lambda event: self.rotate_workspace(event))
         self.workspace_canvas.bind("<MouseWheel>", lambda event: self.scale_workspace(event))
+
+    # functions for the workspace options located at the borders of the workspace area
+    def change_workspace_width_ratio(self, change_type = +1, event = None):  # change the width ratio of the workspace area to the root window
+        if change_type == +1:  # if the width ratio of the workspace area is increased
+            self.workspace_width_ratio = self.alternate_matrix_elements(self.workspace_width_ratios_values, self.workspace_width_ratio)
+        elif change_type == -1:  # if the width ratio of the workspace area is decreased
+            self.workspace_width_ratio = self.alternate_matrix_elements(self.workspace_width_ratios_values[::-1], self.workspace_width_ratio)
+        self.change_workspace_width_ratio_button.configure(text = self.workspace_width_ratio)
+        self.resize_root_window()  # resize the root window
+    def change_workspace_control_sensitivity(self, event = None):  # change the workspace mouse control sensitivity
+        self.workspace_control_sensitivity = self.alternate_matrix_elements(self.workspace_sensitivity_values, self.workspace_control_sensitivity)
+        self.change_workspace_sensitivity_button.configure(text = self.workspace_sensitivity_degrees[self.workspace_sensitivity_values.index(self.workspace_control_sensitivity)])
+    def change_x_axis_range(self, event = None):  # change the x axis range
+        self.x_axis_range = self.alternate_matrix_elements(self.axis_range_values, self.x_axis_range)
+        self.change_x_axis_range_button.configure(text = self.x_axis_range)
+    def change_y_axis_range(self, event = None):  # change the y axis range
+        self.y_axis_range = self.alternate_matrix_elements(self.axis_range_values, self.y_axis_range)
+        self.change_y_axis_range_button.configure(text = self.y_axis_range)
+    def change_z_axis_range(self, event = None):  # change the z axis range
+        self.z_axis_range = self.alternate_matrix_elements(self.axis_range_values, self.z_axis_range)
+        self.change_z_axis_range_button.configure(text = self.z_axis_range)
+    def show_axis(self, event = None):  # show or hide the axis
+        self.axis_enable_visualization = self.alternate_matrix_elements(["shown", "hidden"], self.axis_enable_visualization)
+        self.show_axis_button.configure(text = self.axis_enable_visualization)
+    def show_terrain(self, event = None):  # show or hide the terrain
+        self.terrain_enable_visualization = self.alternate_matrix_elements(["shown", "hidden"], self.terrain_enable_visualization)
+        self.show_terrain_button.configure(text = self.terrain_enable_visualization)
+    def show_robotic_manipulator(self, event = None):  # show or hide the robotic manipulator
+        self.robotic_manipulator_enable_visualization = self.alternate_matrix_elements(["shown", "hidden"], self.robotic_manipulator_enable_visualization)
+        self.show_robotic_manipulator_button.configure(text = self.robotic_manipulator_enable_visualization)
+    def show_manipulator_joints(self, event = None):  # show or hide the joints of the robotic manipulator
+        self.robot_joints_enable_visualization = self.alternate_matrix_elements(["shown", "hidden"], self.robot_joints_enable_visualization)
+        self.show_manipulator_points_button.configure(text = self.robot_joints_enable_visualization)
+    def show_manipulator_links(self, event = None):  # show or hide the links of the robotic manipulator
+        self.robot_links_enable_visualization = self.alternate_matrix_elements(["shown", "hidden"], self.robot_links_enable_visualization)
+        self.show_manipulator_links_button.configure(text = self.robot_links_enable_visualization)
+    def show_end_effector_frame(self, event = None):  # show or hide the frame of the end-effector
+        self.end_effector_frame_enable_visualization = self.alternate_matrix_elements(["shown", "hidden"], self.end_effector_frame_enable_visualization)
+        self.show_end_effector_frame_button.configure(text = self.end_effector_frame_enable_visualization)
+    def show_obstacles_plane(self, event = None):  # show or hide the obstacles of the workspace
+        self.obstacles_plane_enable_visualization = self.alternate_matrix_elements(["shown", "hidden"], self.obstacles_plane_enable_visualization)
+        self.show_obstacles_plane_button.configure(text = self.obstacles_plane_enable_visualization)
+    def show_obstacles_plane_frame(self, event = None):  # show or hide the frame of the obstacles plane
+        self.plane_frame_enable_visualization = self.alternate_matrix_elements(["frame", "plain"], self.plane_frame_enable_visualization)
+        self.show_obstacles_plane_frame_button.configure(text = self.plane_frame_enable_visualization)
+    def show_obstacles_objects(self, event = None):  # show or hide the obstacles objects
+        self.obstacles_objects_enable_visualization = self.alternate_matrix_elements(["shown", "hidden"], self.obstacles_objects_enable_visualization)
+        self.show_obstacles_objects_button.configure(text = self.obstacles_objects_enable_visualization)
+    def show_camera(self, event = None):  # show or hide the camera object
+        self.camera_enable_visualization = self.alternate_matrix_elements(["shown", "hidden"], self.camera_enable_visualization)
+        self.show_camera_button.configure(text = self.camera_enable_visualization)
+    def show_camera_frame(self, event = None):  # show or hide the frame of the camera object
+        self.camera_frame_enable_visualization = self.alternate_matrix_elements(["frame", "plain"], self.camera_frame_enable_visualization)
+        self.show_camera_frame_button.configure(text = self.camera_frame_enable_visualization)
+    def change_drawing_order(self, event = None):  # change the drawing order of the robotic manipulator and the obstacles
+        self.drawing_order = self.alternate_matrix_elements(self.drawing_order_list, self.drawing_order)
+        self.choose_drawing_order_button.configure(text = self.drawing_order)
+    def change_x_axis_view(self, event = None):  # change the x axis view
+        self.x_axis_view = self.alternate_matrix_elements(["0", "-", "+"], self.x_axis_view)
+        self.change_x_axis_view_button.configure(text = self.x_axis_view)
+        self.set_canvas_view()
+    def change_y_axis_view(self, event = None):  # change the y axis view
+        self.y_axis_view = self.alternate_matrix_elements(["0", "-", "+"], self.y_axis_view)
+        self.change_y_axis_view_button.configure(text = self.y_axis_view)
+        self.set_canvas_view()
+    def change_z_axis_view(self, event = None):  # change the z axis view
+        self.z_axis_view = self.alternate_matrix_elements(["0", "-", "+"], self.z_axis_view)
+        self.change_z_axis_view_button.configure(text = self.z_axis_view)
+        self.set_canvas_view()
+    def visualize_control_or_kinematics_variables(self, event = None):  # choose the control or forward kinematics variables
+        self.control_or_kinematics_variables_visualization = self.alternate_matrix_elements(self.control_or_kinematics_variables_visualization_list, self.control_or_kinematics_variables_visualization)
+        if self.robotic_manipulator_is_built: # if a robotic manipulator is built
+            self.built_robotic_manipulator.q = self.get_robot_joints_variables(self.control_or_kinematics_variables_visualization)  # get the proper values for the joints variables (control or fkine)
+        self.update_model_visualization_indicators()  # update the indicators of the model visualization
+        self.update_differential_kinematics_indicators()  # update the indicators of the differential kinematics
+        self.update_inverse_differential_kinematics_indicators()  # update the indicators of the inverse differential kinematics
+    def visualize_robotic_manipulator(self, event = None):  # visualize or hide the robotic manipulator
+        if self.robotic_manipulator_enable_visualization == "shown":  # if the robotic manipulator is shown
+            self.robotic_manipulator_enable_visualization = "hidden"
+            self.robot_joints_enable_visualization = "hidden"
+            self.robot_links_enable_visualization = "hidden"
+            self.end_effector_frame_enable_visualization = "hidden"
+        else:  # if the robotic manipulator is hidden
+            self.robotic_manipulator_enable_visualization = "shown"
+            self.robot_joints_enable_visualization = "shown"
+            self.robot_links_enable_visualization = "shown"
+            self.end_effector_frame_enable_visualization = "shown"
+        self.show_robotic_manipulator_button.configure(text = self.robotic_manipulator_enable_visualization)
+        self.show_manipulator_points_button.configure(text = self.robot_joints_enable_visualization)
+        self.show_manipulator_links_button.configure(text = self.robot_links_enable_visualization)
+        self.show_end_effector_frame_button.configure(text = self.end_effector_frame_enable_visualization)
+    def visualize_obstacles(self, event = None):  # visualize or hide the obstacles
+        if self.obstacles_plane_enable_visualization == "shown" or self.plane_frame_enable_visualization == "frame" or self.obstacles_objects_enable_visualization == "shown":  # if the obstacles are shown in any form
+            self.obstacles_plane_enable_visualization = "hidden"
+            self.plane_frame_enable_visualization = "plain"
+            self.obstacles_objects_enable_visualization = "hidden"
+        else:  # if the obstacles are hidden
+            self.obstacles_plane_enable_visualization = "shown"
+            self.plane_frame_enable_visualization = "frame"
+            self.obstacles_objects_enable_visualization = "shown"
+        self.show_obstacles_plane_button.configure(text = self.obstacles_plane_enable_visualization)
+        self.show_obstacles_plane_frame_button.configure(text = self.plane_frame_enable_visualization)
+        self.show_obstacles_objects_button.configure(text = self.obstacles_objects_enable_visualization)
+    def visualize_camera(self, event = None):  # visualize or hide the camera
+        if self.camera_enable_visualization == "shown" or self.camera_frame_enable_visualization == "frame":  # if the camera is shown in any form
+            self.camera_enable_visualization = "hidden"
+            self.camera_frame_enable_visualization = "plain"
+        else:  # if the camera is hidden
+            self.camera_enable_visualization = "shown"
+            self.camera_frame_enable_visualization = "frame"
+        self.show_camera_button.configure(text = self.camera_enable_visualization)
+        self.show_camera_frame_button.configure(text = self.camera_frame_enable_visualization)
+
+    # functions for the control of the workspace
+    def apply_workspace_transformation(self, event = None):  # apply the transformation defined by the proper transfer, rotation and scale variables to all the points of the workspace
+        self.workspace_transfer_matrix = np.array([[1, 0, 0, 0], [0, 1, 0, self.y_cor_workspace_origin], [0, 0, 1, self.z_cor_workspace_origin], [0, 0, 0, 1]])
+        self.workspace_scale_matrix = np.array([[self.magnify_workspace_constant * self.scale_parameter, 0, 0, 0], [0, self.magnify_workspace_constant * self.scale_parameter, 0, 0], [0, 0, self.magnify_workspace_constant * self.scale_parameter, 0], [0, 0, 0, 1]])
+        self.workspace_y_rot_matrix = np.array([[np.cos(np.deg2rad(self.rot_y_workspace)), 0, np.sin(np.deg2rad(self.rot_y_workspace)), 0], [0, 1, 0, 0], [-np.sin(np.deg2rad(self.rot_y_workspace)), 0, np.cos(np.deg2rad(self.rot_y_workspace)), 0], [0, 0, 0, 1]])
+        self.workspace_z_rot_matrix = np.array([[np.cos(np.deg2rad(self.rot_z_workspace)), -np.sin(np.deg2rad(self.rot_z_workspace)), 0, 0], [np.sin(np.deg2rad(self.rot_z_workspace)), np.cos(np.deg2rad(self.rot_z_workspace)), 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+        self.workspace_rotation_matrix = self.workspace_y_rot_matrix @ self.workspace_z_rot_matrix
+        self.workspace_transformation_matrix = self.workspace_transfer_matrix @ self.workspace_rotation_matrix @ self.workspace_scale_matrix
+        transformed_axis_terrain_points = np.copy(self.axis_terrain_points)  # the transformed points of the axis and terrain
+        transformed_robotic_manipulator_points = self.apply_robotic_manipulator_transformation()  # the transformed points of the robotic manipulator
+        transformed_end_effector_points = self.apply_end_effector_transformation(self.end_effector_frame_points)  # the transformed points of the robotic manipulator end-effector
+        transformed_obstacles_plane_points = self.apply_obstacles_transformation(self.obstacles_plane_points)  # the transformed points of the obstacles plane
+        transformed_plane_frame_points = self.apply_obstacles_transformation(self.plane_frame_points)  # the transformed points of the obstacles frame
+        transformed_obstacles_objects_points = self.apply_obstacles_transformation(self.obstacles_objects_points)  # the transformed points of the obstacles objects
+        transformed_camera_device_points = self.apply_camera_transformation(self.camera_device_points)  # the transformed points of the camera device
+        transformed_camera_frame_points = self.apply_camera_transformation(self.camera_frame_points)  # the transformed points of the camera frame        
+        self.workspace_canvas_points = np.concatenate((transformed_axis_terrain_points, transformed_robotic_manipulator_points, transformed_end_effector_points, \
+                                                        transformed_obstacles_plane_points, transformed_plane_frame_points, transformed_obstacles_objects_points, transformed_camera_device_points, transformed_camera_frame_points), axis = 0)
+        self.canvas_moved_points = (self.switch_coor_system_matrix @ self.workspace_transformation_matrix @ self.workspace_canvas_points.T).T  # the moved points of the workspace, converted to canvas coordinates, after the workspace transformation is applied
+        # for the visualization, based on the orientation of the terrain plane
+        terrain_draw_side = np.dot(self.workspace_rotation_matrix[:3, :3] @ np.array([0, 0, 1]), np.array([1, 0, 0]))  # the draw side of the axis and terrain
+        if terrain_draw_side >= 0:  # if the up side of the terrain is visible
+            self.workspace_terrain_color = self.up_side_terrain_color  # the color of the up side of the terrain
+        else:  # if the down side of the terrain is visible
+            self.workspace_terrain_color = self.down_side_terrain_color  # the color of the down side of the terrain
+        # for the visualization, based on the orientation of the workspace plane
+        obstacles_2d_plane_draw_side = np.dot(self.workspace_rotation_matrix[:3, :3] @ self.obst_plane_wrt_world_transformation_matrix[:3, :3] @ np.array([0, 0, 1]), np.array([1, 0, 0]))  # the draw side of the 2D plane
+        if obstacles_2d_plane_draw_side >= 0:  # if the front side of the 2D plane is visible
+            self.workspace_2d_plane_color = self.front_side_2d_plane_color  # the color of the front side of the 2D plane
+        else:  # if the back side of the 2D plane is visible
+            self.workspace_2d_plane_color = self.back_side_2d_plane_color  # the color of the back side of the 2D plane
+    def apply_robotic_manipulator_transformation(self, event = None):  # apply the transformation defined by the proper transfer and rotation matrices to the points of the robotic manipulator
+        if self.robotic_manipulator_is_built:  # if a robotic manipulator is built
+            self.built_robotic_manipulator.q = self.get_robot_joints_variables(self.control_or_kinematics_variables_visualization)  # get the proper values for the joints variables (control or fkine)
+            frames_origins, frames_orientations = self.get_all_frames_positions_orientations(self.built_robotic_manipulator.q)  # get the positions and the orientations of the frames of the robotic manipulator
+            robotic_manipulator_points = [frames_origins[k].tolist() + [1.0] for k in range(len(frames_origins))]  # add the homogeneous coordinate to the points of the robotic manipulator
+            for k in range(self.joints_number):  # for all the joints of the robotic manipulator
+                robotic_manipulator_points.append((frames_origins[k + 1] + frames_orientations[k + 1][:, 2] * self.joints_z_axis_positions[k]).tolist() + [1.0])  # add the points of the joints of the robotic manipulator
+            robotic_manipulator_points.append(frames_origins[0].tolist() + [1.0])
+            for k in range(self.joints_number):  # for all the joints of the robotic manipulator
+                robotic_manipulator_points.append((frames_origins[k + 1] + frames_orientations[k + 1][:, 2] * self.joints_z_axis_positions[k]).tolist() + [1.0])  # add the points of the joints of the robotic manipulator
+            robotic_manipulator_points.append(frames_origins[-1].tolist() + [1.0])            
+            return robotic_manipulator_points  # return the transformed points of the robotic manipulator
+        else:  # if no robotic manipulator is built
+            return [[0.0, 0.0, 0.0, 1.0] for k in range(self.robotic_manipulator_points_num)]  # return the default points of the robotic manipulator
+    def apply_end_effector_transformation(self, end_effector_frame_points, event = None):  # apply the transformation defined by the proper transfer and rotation matrices to the points of the end-effector
+        if self.robotic_manipulator_is_built:  # if a robotic manipulator is built
+            self.built_robotic_manipulator.q = self.get_robot_joints_variables(self.control_or_kinematics_variables_visualization)  # get the proper values for the joints variables (control or fkine)
+            end_effector_frame_origin, end_effector_frame_orientation = self.get_fkine_frame_position_orientation(self.built_robotic_manipulator.q, "end-effector")  # get the position and the orientation of the end-effector frame
+            end_effector_T = np.eye(4)  # the transformation matrix of the end-effector frame
+            end_effector_T[:3, :3] = end_effector_frame_orientation  # update the rotation matrix of the end-effector frame
+            end_effector_T[:3, 3] = end_effector_frame_origin  # update the translation vector of the end-effector frame
+            return (end_effector_T @ end_effector_frame_points.T).T  # return the transformed points of the end-effector
+        else:  # if no robotic manipulator is built
+            return (np.eye(4) @ end_effector_frame_points.T).T  # return the points of the end-effector
+    def apply_obstacles_transformation(self, obstacles_points, event = None):  # apply the transformation defined by the proper transfer and rotation matrices to the points of the obstacles
+        Tobs_total = self.obst_plane_wrt_world_transformation_matrix  # the total transformation matrix of the obstacles points
+        return (Tobs_total @ obstacles_points.T).T  # return the transformed points of the obstacles that lie on the 2D plane
+    def apply_camera_transformation(self, camera_points, event = None):  # apply the transformation defined by the proper transfer and rotation matrices to the points of the camera
+        Tcam_total = self.camera_wrt_world_transformation_matrix  # the total transformation matrix of the camera points
+        return (Tcam_total @ camera_points.T).T  # return the transformed points of the camera
+    def reset_workspace_canvas(self, event = None):  # reset the workspace to its initial state
+        self.scale_parameter = 1.0  # initialize the scale parameter of the workspace
+        self.y_cor_workspace_origin = 0.0; self.z_cor_workspace_origin = 0.0  # initialize the coordinates of the origin of the workspace
+        self.rot_y_workspace = 0.0; self.rot_z_workspace = 0.0  # initialize the rotation angles of the workspace
+        self.last_transfer_y = 0.0; self.last_transfer_z = 0.0  # initialize the coordinates of the last mouse position when the user starts to transfer the workspace
+        self.last_rotation_y = 0.0; self.last_rotation_z = 0.0  # initialize the coordinates of the last mouse position when the user starts to rotate the workspace
+    def reset_workspace_canvas_2(self, event = None):  # reset the workspace to its initial state
+        self.y_cor_workspace_origin = 0; self.z_cor_workspace_origin = 0  # initialize the coordinates of the origin of the workspace
+    def transfer_workspace_start(self, event):  # initialize the coordinates of the last mouse position when the user starts to transfer the workspace
+        self.last_transfer_y = event.x
+        self.last_transfer_z = event.y
+    def transfer_workspace(self, event):  # transfer the workspace according to the mouse movement
+        self.y_cor_workspace_origin = self.y_cor_workspace_origin + 2 * self.workspace_control_sensitivity * (event.x - self.last_transfer_y)
+        self.z_cor_workspace_origin = self.z_cor_workspace_origin - 2 * self.workspace_control_sensitivity * (event.y - self.last_transfer_z)
+        self.last_transfer_y = event.x
+        self.last_transfer_z = event.y
+    def scale_workspace(self, event):  # scale the workspace according to the mouse wheel movement
+        if event.delta == -120 and self.scale_parameter >= 0.2:
+            self.scale_parameter -= self.workspace_control_sensitivity / 5
+        elif event.delta == 120 and self.scale_parameter <= 15:
+            self.scale_parameter += self.workspace_control_sensitivity / 5
+    def rotate_workspace_start(self, event):  # initialize the coordinates of the last mouse position when the user starts to rotate the workspace
+        self.last_rotation_y = event.y
+        self.last_rotation_z = event.x
+    def rotate_workspace(self, event):  # rotate the workspace according to the mouse movement
+        self.rot_y_workspace = self.rot_y_workspace + self.workspace_control_sensitivity / 2 * (event.y - self.last_rotation_y)
+        self.rot_z_workspace = self.rot_z_workspace + self.workspace_control_sensitivity / 2 * (event.x - self.last_rotation_z)
+        self.last_rotation_y = event.y
+        self.last_rotation_z = event.x
+    def set_canvas_view(self, event = None):  # set the canvas view based on the x, y and z axis defined views
+        x_axis_view = [0, -1, 1][["0", "-", "+"].index(self.x_axis_view)]
+        y_axis_view = [0, -1, 1][["0", "-", "+"].index(self.y_axis_view)]
+        z_axis_view = [0, -1, 1][["0", "-", "+"].index(self.z_axis_view)]
+        self.rot_y_workspace = z_axis_view * [45, 90][[False, True].index(x_axis_view == 0 and y_axis_view == 0)]
+        if y_axis_view == 0: self.rot_z_workspace = [4, 0, 0][[-1, 0, 1].index(x_axis_view)] * 45
+        else: self.rot_z_workspace = (x_axis_view - 2) * (y_axis_view) * 45
+    
+    # functions for the visualization of the workspace
+    def create_initial_workspace_canvas_points_connections(self, event = None):  # create the points and edges of the workspace (axis and the robotic manipulator)
+        # define all the points of the workspace
+        # create the axis and terrain points and edges
+        self.axis_terrain_points = []  # initialize the points of the axis and terrain
+        self.axis_terrain_points.append([0, 0, 0, 1])
+        self.axis_terrain_points.append([self.x_axis_range, 0, 0, 1])
+        self.axis_terrain_points.append([0, self.y_axis_range, 0, 1])
+        self.axis_terrain_points.append([0, 0, self.z_axis_range, 1])
+        self.axis_terrain_points.append([0, 0, 0, 1])
+        self.axis_terrain_points.append([self.x_axis_range, self.y_axis_range, 0, 1])
+        self.axis_terrain_points.append([-self.x_axis_range, self.y_axis_range, 0, 1])
+        self.axis_terrain_points.append([-self.x_axis_range, -self.y_axis_range, 0, 1])
+        self.axis_terrain_points.append([self.x_axis_range, -self.y_axis_range, 0, 1])
+        self.axis_terrain_points = np.array(self.axis_terrain_points, dtype = float)  # convert the points of the axis and terrain to a numpy array
+        self.axis_terrain_points_num = len(self.axis_terrain_points)  # update the number of the axis and terrain points
+        self.axis_terrain_edges = self.axis_terrain_points_num * [None]  # initialize the edges of the axis and terrain
+        self.axis_terrain_edges[0] = [[1, self.workspace_axis_colors[0], self.workspace_axis_sizes], [2, self.workspace_axis_colors[1], self.workspace_axis_sizes], [3, self.workspace_axis_colors[2], self.workspace_axis_sizes]]
+        # create the robotic manipulator points and edges
+        self.robotic_manipulator_points = []  # initialize the points of the robotic manipulator
+        frames_origins, frames_orientations = self.get_all_frames_positions_orientations(np.zeros(self.joints_number,))  # get the positions and the orientations of the frames of the robotic manipulator
+        self.robotic_manipulator_points = [frames_origins[k].tolist() + [1.0] for k in range(self.frames_number)]  # add the homogeneous coordinate to the points of the robotic manipulator
+        for k in range(self.joints_number):  # for all the joints of the robotic manipulator
+            self.robotic_manipulator_points.append((frames_origins[k + 1] + frames_orientations[k + 1][:, 2] * self.joints_z_axis_positions[k]).tolist() + [1.0])  # add the points (homogeneous) of the joints of the robotic manipulator
+        points_num_before_links = len(self.robotic_manipulator_points)  # the number of the points of the robotic manipulator
+        robotic_manipulator_links_points = [np.array(frames_origins[0])] + [np.array(frames_origins[k + 1] + frames_orientations[k + 1][:, 2] * self.joints_z_axis_positions[k]) for k in range(self.joints_number)] + [np.array(frames_origins[-1])]  # the points of the links of the robotic manipulator
+        for k in range(self.joints_number + 2):  # for all the joints of the robotic manipulator (plus the base)
+            self.robotic_manipulator_points.append(robotic_manipulator_links_points[k].tolist() + [1.0])  # add the points (homogeneous) of the links of the robotic manipulator
+        self.robotic_manipulator_points = np.array(self.robotic_manipulator_points, dtype = float)  # convert the points of the robotic manipulator to a numpy array
+        self.robotic_manipulator_points_num = len(self.robotic_manipulator_points)  # update the number of the robotic manipulator points
+        self.robotic_manipulator_edges = self.robotic_manipulator_points_num * [None]  # initialize the edges of the robotic manipulator
+        for k in range(self.links_number):
+            self.robotic_manipulator_edges[points_num_before_links + k] = [[points_num_before_links + k + 1, self.links_colors[k], self.links_sizes[k]]]
+        # create the robotic manipulator end-effector frame points and edges
+        frame_axis_length = 0.05  # the length of the frame axis
+        frame_axis_size = 2  # the size of the frame axis
+        self.end_effector_frame_points = []  # initialize the points of the end-effector
+        self.end_effector_frame_points.append([0.0, 0.0, 0.0, 1.0])
+        self.end_effector_frame_points.append([frame_axis_length, 0.0, 0.0, 1.0])
+        self.end_effector_frame_points.append([0.0, frame_axis_length, 0.0, 1.0])
+        self.end_effector_frame_points.append([0.0, 0.0, frame_axis_length, 1.0])
+        self.end_effector_frame_points = np.array(self.end_effector_frame_points, dtype = float)  # convert the points of the end-effector to a numpy array
+        self.end_effector_frame_points_num = len(self.end_effector_frame_points)  # update the number of the end-effector points
+        self.end_effector_frame_edges = self.end_effector_frame_points_num * [None]  # initialize the edges of the end-effector
+        self.end_effector_frame_edges[0] = [[1, self.workspace_axis_colors[0], frame_axis_size], [2, self.workspace_axis_colors[1], frame_axis_size], [3, self.workspace_axis_colors[2], frame_axis_size]]
+        # create the obstacles plane points and edges
+        self.obstacles_plane_points = []  # initialize the points of the obstacles
+        self.obstacles_plane_points.append([self.obstacles_2d_plane_x_length / 2, self.obstacles_2d_plane_y_length / 2, 0.0, 1.0])
+        self.obstacles_plane_points.append([-self.obstacles_2d_plane_x_length / 2, self.obstacles_2d_plane_y_length / 2, 0.0, 1.0])
+        self.obstacles_plane_points.append([-self.obstacles_2d_plane_x_length / 2, -self.obstacles_2d_plane_y_length / 2, 0.0, 1.0])
+        self.obstacles_plane_points.append([self.obstacles_2d_plane_x_length / 2, -self.obstacles_2d_plane_y_length / 2, 0.0, 1.0])
+        start_pos_on_plane = np.array([self.start_pos_workspace_plane[0], self.start_pos_workspace_plane[1], 0.0, 1.0])  # the start position on the plane
+        target_pos_on_plane = np.array([self.target_pos_workspace_plane[0], self.target_pos_workspace_plane[1], 0.0, 1.0])  # the final position on the plane
+        positions_on_plane_transformation = np.array([[1.0, 0.0, 0.0, -self.obstacles_2d_plane_x_length / 2], [0.0, 1.0, 0.0, -self.obstacles_2d_plane_y_length / 2], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]])  # the transformation matrix of the positions on the plane
+        start_pos_on_plane = np.dot(positions_on_plane_transformation, start_pos_on_plane)  # the start position on the plane
+        target_pos_on_plane = np.dot(positions_on_plane_transformation, target_pos_on_plane)  # the final position on the plane
+        self.obstacles_plane_points.append(start_pos_on_plane.tolist())
+        self.obstacles_plane_points.append(target_pos_on_plane.tolist())
+        self.obstacles_plane_points = np.array(self.obstacles_plane_points, dtype = float)  # convert the points of the obstacles to a numpy array
+        self.obstacles_plane_points_num = len(self.obstacles_plane_points)  # update the number of the obstacles points
+        self.obstacles_plane_edges = self.obstacles_plane_points_num * [None]  # initialize the edges of the obstacles
+        self.obstacles_plane_edges[0] = [[1, "black", self.workspace_2d_plane_size], [3, "black", self.workspace_2d_plane_size]]
+        self.obstacles_plane_edges[2] = [[1, "black", self.workspace_2d_plane_size], [3, "black", self.workspace_2d_plane_size]]
+        # create the obstacles plane frame points and edges
+        frame_axis_length = 0.05  # the length of the frame axis
+        frame_axis_size = 2  # the size of the frame axis
+        self.plane_frame_points = []  # initialize the points of the obstacles
+        self.plane_frame_points.append([0.0, 0.0, 0.0, 1.0])
+        self.plane_frame_points.append([frame_axis_length, 0.0, 0.0, 1.0])
+        self.plane_frame_points.append([0.0, frame_axis_length, 0.0, 1.0])
+        self.plane_frame_points.append([0.0, 0.0, frame_axis_length, 1.0])
+        self.plane_frame_points = np.array(self.plane_frame_points, dtype = float)  # convert the points of the obstacles to a numpy array
+        self.plane_frame_points_num = len(self.plane_frame_points)  # update the number of the obstacles points
+        self.plane_frame_edges = self.plane_frame_points_num * [None]  # initialize the edges of the obstacles
+        self.plane_frame_edges[0] = [[1, self.workspace_axis_colors[0], frame_axis_size], [2, self.workspace_axis_colors[1], frame_axis_size], [3, self.workspace_axis_colors[2], frame_axis_size]]
+        # create the obstacles objects points and edges
+        self.obstacles_objects_points = []  # initialize the points of the obstacles
+        if self.obstacles_objects_enable_visualization == "shown" and len(self.obstacles_boundaries_for_solver) != 0:
+            for boundary in self.obstacles_boundaries_for_solver:  # for all the detected obstacles boundaries
+                for point in boundary:  # for all the points of the boundary
+                    self.obstacles_objects_points.append([point[0], point[1], 0.0, 1.0])
+        else:  # if the obstacles avoidance solver menu is disabled or the obstacles objects are hidden
+            self.obstacles_objects_points.append([0.0, 0.0, 0.0, 1.0])
+        self.obstacles_objects_points = np.array(self.obstacles_objects_points, dtype = float)  # convert the points of the obstacles to a numpy array
+        self.obstacles_objects_points_num = len(self.obstacles_objects_points)  # update the number of the obstacles points
+        self.obstacles_objects_edges = self.obstacles_objects_points_num * [None]  # initialize the edges of the obstacles
+        if self.obstacles_objects_enable_visualization == "shown" and len(self.obstacles_boundaries_for_solver) != 0:
+            boundaries_points_counter = 0  # the counter of the points of the boundaries
+            for boundary in self.obstacles_boundaries_for_solver:  # for all the detected obstacles boundaries
+                for k in range(len(boundary) - 1):  # for all the points of the boundary
+                    self.obstacles_objects_edges[boundaries_points_counter + k] = [[boundaries_points_counter + k + 1, self.workspace_obstacles_color, self.workspace_obstacles_size]]
+                boundaries_points_counter += len(boundary)  # update the counter of the points of the boundaries
+        # create the camera device points and edges
+        camera_device_length = 0.025  # the length of the camera device
+        camera_device_size = 3  # the size of the camera device
+        self.camera_device_points = []  # initialize the points of the camera
+        self.camera_device_points.append([camera_device_length / 2, camera_device_length / 2, 0.0, 1.0])
+        self.camera_device_points.append([-camera_device_length / 2, camera_device_length / 2, 0.0, 1.0])
+        self.camera_device_points.append([-camera_device_length / 2, -camera_device_length / 2, 0.0, 1.0])
+        self.camera_device_points.append([camera_device_length / 2, -camera_device_length / 2, 0.0, 1.0])
+        self.camera_device_points = np.array(self.camera_device_points, dtype = float)  # convert the points of the camera to a numpy array
+        self.camera_device_points_num = len(self.camera_device_points)  # update the number of the camera points
+        self.camera_device_edges = self.camera_device_points_num * [None]  # initialize the edges of the camera
+        self.camera_device_edges[0] = [[1, "orange", camera_device_size], [3, "orange", camera_device_size]]
+        self.camera_device_edges[2] = [[1, "orange", camera_device_size], [3, "orange", camera_device_size]]
+        # create the camera frame points and edges
+        camera_frame_axis_length = 0.025  # the length of the frame axis
+        camera_frame_axis_size = 2  # the size of the frame axis
+        self.camera_frame_points = []  # initialize the points of the camera
+        self.camera_frame_points.append([0.0, 0.0, 0.0, 1.0])
+        self.camera_frame_points.append([camera_frame_axis_length, 0.0, 0.0, 1.0])
+        self.camera_frame_points.append([0.0, camera_frame_axis_length, 0.0, 1.0])
+        self.camera_frame_points.append([0.0, 0.0, camera_frame_axis_length, 1.0])
+        self.camera_frame_points = np.array(self.camera_frame_points, dtype = float)  # convert the points of the camera to a numpy array
+        self.camera_frame_points_num = len(self.camera_frame_points)  # update the number of the camera points
+        self.camera_frame_edges = self.camera_frame_points_num * [None]  # initialize the edges of the camera
+        self.camera_frame_edges[0] = [[1, self.workspace_axis_colors[0], camera_frame_axis_size], [2, self.workspace_axis_colors[1], camera_frame_axis_size], [3, self.workspace_axis_colors[2], camera_frame_axis_size]]
+    def draw_next_workspace_canvas_frame(self):  # draw the next frame of the workspace
+        self.canvas_destroy_counter += 1  # increase the counter of the canvas destroy
+        if self.canvas_destroy_counter % (5.0 * self.canvas_fps) == 0:
+            self.create_workspace_canvas()  # recreate the workspace canvas
+            self.canvas_destroy_counter = 0  # reset the counter of the canvas destroy
+        self.create_initial_workspace_canvas_points_connections()  # create the points and edges of the workspace (axis and the robotic manipulator)
+        self.apply_workspace_transformation()  # apply the transformation defined by the proper transfer, rotation and scale variables to all the points of the workspace
+        self.workspace_canvas.delete("all")  # clear the workspace canvas
+        # choose the points and edges to draw
+        a = self.axis_terrain_points_num; b = self.robotic_manipulator_points_num; c = self.end_effector_frame_points_num; d = self.obstacles_plane_points_num; e = self.plane_frame_points_num; f = self.obstacles_objects_points_num; g = self.camera_device_points_num; h = self.camera_frame_points_num
+        self.canvas_moved_points = np.array(self.canvas_moved_points); self.canvas_moved_points = self.canvas_moved_points.tolist()  # convert the canvas moved points to a list
+        self.axis_terrain_moved_points = self.canvas_moved_points[0:a]  # the moved points of the axis and terrain
+        self.robotic_manipulator_moved_points = self.canvas_moved_points[a : a + b]  # the moved points of the robotic manipulator
+        self.end_effector_frame_moved_points = self.canvas_moved_points[a + b : a + b + c]  # the moved points of the end-effector frame
+        self.obstacles_plane_moved_points = self.canvas_moved_points[a + b + c: a + b + c + d]  # the moved points of the obstacles plane
+        self.obstacles_frame_moved_points = self.canvas_moved_points[a + b + c + d : a + b + c + d + e]  # the moved points of the obstacles frame
+        self.obstacles_objects_moved_points = self.canvas_moved_points[a + b + c + d + e : a + b + c + d + e + f]  # the moved points of the obstacles objects
+        self.camera_device_moved_points = self.canvas_moved_points[a + b + c + d + e + f : a + b + c + d + e + f + g]  # the moved points of the camera device
+        self.camera_frame_moved_points = self.canvas_moved_points[a + b + c + d + e + f + g : a + b + c + d + e + f + g + h]  # the moved points of the camera frame
+        # prepare the points of the various objects to draw on the canvas
+        # prepare the points of the axis and terrain object
+        points_counter = 0  # initialize the count of the points of the workspace
+        if self.axis_enable_visualization == "shown":  # if the axis is enabled to be visualized
+            for k in range(3):  # iterate through the three axis
+                self.axis_terrain_edges[0][k][1] = self.workspace_axis_colors[k]  # change the color of the axis connecting lines
+            axis_terrain_moved_points_properties = [[self.axis_terrain_moved_points[k], "black", self.workspace_axis_sizes + 5] for k in range(len(self.axis_terrain_moved_points))]  # the points of the axis and terrain with their properties
+            axis_terrain_moved_points_properties.append(points_counter)  # add the count of the points of the workspace
+        points_counter += self.axis_terrain_points_num  # update the count of the points of the workspace
+        # prepare the points of the robotic manipulator object
+        if self.robotic_manipulator_enable_visualization == "shown":  # if the robotic manipulator is enabled to be visualized
+            robotic_manipulator_moved_points_properties = [[self.robotic_manipulator_moved_points[k], self.frames_origins_colors[k], self.frames_origins_sizes[k] + 3] for k in range(self.frames_number)]  # the points of the frames of the robotic manipulator with their properties
+            robotic_manipulator_moved_points_properties += [[self.robotic_manipulator_moved_points[self.frames_number + k], self.frames_origins_colors[k + 1], self.frames_origins_sizes[k + 1] + 5] for k in range(self.joints_number)]  # the points of the joints of the robotic manipulator with their properties
+            robotic_manipulator_moved_points_properties += [[self.robotic_manipulator_moved_points[self.joints_number + self.frames_number + k], "black", 3] for k in range(self.links_number + 1)]  # the points of the links of the robotic manipulator with their properties
+            robotic_manipulator_moved_points_properties.append(points_counter)  # add the count of the points of the workspace
+        points_counter += self.robotic_manipulator_points_num  # update the count of the points of the workspace
+        # prepare the points of the robotic manipulator end-effector object
+        if self.end_effector_frame_enable_visualization == "shown":  # if the end-effector frame is enabled to be visualized
+            end_effector_frame_moved_points_properties = [[self.end_effector_frame_moved_points[k], "black", 5] for k in range(len(self.end_effector_frame_moved_points))]  # the points of the end-effector frame with their properties
+            end_effector_frame_moved_points_properties.append(points_counter)  # add the count of the points of the workspace
+        points_counter += self.end_effector_frame_points_num  # update the count of the points of the workspace
+        # prepare the points of the obstacles plane object
+        if self.obstacles_plane_enable_visualization == "shown":  # if the obstacles plane is enabled to be visualized
+            obstacles_plane_moved_points_properties = [[self.obstacles_plane_moved_points[k], "black", self.workspace_2d_plane_size+5] for k in range(len(self.obstacles_plane_moved_points) - 2)]  # the points of the obstacles plane with their properties
+            obstacles_plane_moved_points_properties.append([self.obstacles_plane_moved_points[-2], "magenta", [1, 7][[False, True].index(self.obst_avoid_solver_menu_is_enabled)]])  # the start position of the workspace plane
+            obstacles_plane_moved_points_properties.append([self.obstacles_plane_moved_points[-1], "green", [1, 7][[False, True].index(self.obst_avoid_solver_menu_is_enabled)]])  # the final position of the workspace plane
+            obstacles_plane_moved_points_properties.append(points_counter)  # add the count of the points of the workspace
+        points_counter += self.obstacles_plane_points_num  # update the count of the points of the workspace
+        # prepare the points of the obstacles frame object
+        if self.plane_frame_enable_visualization == "frame":  # if the obstacles frame is enabled to be visualized
+            plane_frame_moved_points_properties = [[self.obstacles_frame_moved_points[k], "black", 5] for k in range(len(self.obstacles_frame_moved_points))]  # the points of the obstacles frame with their properties
+            plane_frame_moved_points_properties.append(points_counter)  # add the count of the points of the workspace
+        points_counter += self.plane_frame_points_num  # update the count of the points of the workspace
+        # prepare the points of the obstacles objects
+        if self.obstacles_objects_enable_visualization == "shown":  # if the obstacles objects are enabled to be visualized
+            obstacles_objects_moved_points_properties = [[self.obstacles_objects_moved_points[k], self.workspace_obstacles_color, 1] for k in range(len(self.obstacles_objects_moved_points))]  # the points of the obstacles objects with their properties
+            obstacles_objects_moved_points_properties.append(points_counter)  # add the count of the points of the workspace
+        points_counter += self.obstacles_objects_points_num  # update the count of the points of the workspace
+        # prepare the points of the camera device object
+        if self.camera_enable_visualization == "shown":  # if the camera device is enabled to be visualized
+            camera_device_moved_points_properties = [[self.camera_device_moved_points[k], "black", 3] for k in range(len(self.camera_device_moved_points))]  # the points of the camera device with their properties
+            camera_device_moved_points_properties.append(points_counter)  # add the count of the points of the workspace
+        points_counter += self.camera_device_points_num  # update the count of the points of the workspace
+        # prepeare the points of the camera frame
+        if self.camera_frame_enable_visualization == "frame":  # if the camera frame is enabled to be visualized
+            camera_frame_moved_points_properties = [[self.camera_frame_moved_points[k], "black", 5] for k in range(len(self.camera_frame_moved_points))]  # the points of the camera frame with their properties
+            camera_frame_moved_points_properties.append(points_counter)  # add the count of the points of the workspace
+        points_counter += self.camera_frame_points_num  # update the count of the points of the workspace
+        # draw the various objects on the workspace canvas
+        # draw the terrain and the world axis objects
+        if self.terrain_enable_visualization == "shown":  # if the axis and terrain are enabled to be visualized
+            first_terrain_point = 5; self.workspace_canvas.create_polygon([self.axis_terrain_moved_points[first_terrain_point][0], self.axis_terrain_moved_points[first_terrain_point][1], self.axis_terrain_moved_points[first_terrain_point+1][0], self.axis_terrain_moved_points[first_terrain_point+1][1], \
+                                                                            self.axis_terrain_moved_points[first_terrain_point+2][0], self.axis_terrain_moved_points[first_terrain_point+2][1], self.axis_terrain_moved_points[first_terrain_point+3][0], self.axis_terrain_moved_points[first_terrain_point+3][1]], width = 1, fill = self.workspace_terrain_color, outline = "black")  # draw the terrain plane
+        if self.axis_enable_visualization == "shown":  # if the axis is enabled to be visualized
+            self.draw_workspace_object(axis_terrain_moved_points_properties, self.axis_terrain_edges, True, True)  # draw the axis and terrain objects
+            self.workspace_canvas.create_text(self.axis_terrain_moved_points[0][0]-15, self.axis_terrain_moved_points[0][1], text = "O", font = "Calibri 15 bold", fill = "black")  # draw the letter "O" on the axis origin
+            self.workspace_canvas.create_text(self.axis_terrain_moved_points[1][0]-15, self.axis_terrain_moved_points[1][1], text = "x", font = "Calibri 15 bold", fill = self.workspace_axis_colors[0])  # draw the letter "x" on the x axis
+            self.workspace_canvas.create_text(self.axis_terrain_moved_points[2][0]+15, self.axis_terrain_moved_points[2][1], text = "y", font = "Calibri 15 bold", fill = self.workspace_axis_colors[1])  # draw the letter "y" on the y axis
+            self.workspace_canvas.create_text(self.axis_terrain_moved_points[3][0]+15, self.axis_terrain_moved_points[3][1], text = "z", font = "Calibri 15 bold", fill = self.workspace_axis_colors[2])  # draw the letter "z" on the z axis
+        # draw the robotic manipulator and the obstacles in the right order
+        if self.drawing_order == "obstacles":  # if the robotic manipulator is drawn first
+            if self.robotic_manipulator_enable_visualization == "shown":
+                self.draw_workspace_object(robotic_manipulator_moved_points_properties, self.robotic_manipulator_edges, self.robot_joints_enable_visualization == "shown", self.robot_links_enable_visualization == "shown")
+            if self.end_effector_frame_enable_visualization == "shown":
+                self.draw_workspace_object(end_effector_frame_moved_points_properties, self.end_effector_frame_edges, self.robotic_manipulator_enable_visualization == "shown", self.robotic_manipulator_enable_visualization == "shown")
+            if self.obstacles_plane_enable_visualization == "shown":
+                first_2d_plane_point = 0; self.workspace_canvas.create_polygon([self.obstacles_plane_moved_points[first_2d_plane_point][0], self.obstacles_plane_moved_points[first_2d_plane_point][1], self.obstacles_plane_moved_points[first_2d_plane_point+1][0], self.obstacles_plane_moved_points[first_2d_plane_point+1][1], \
+                                                                                self.obstacles_plane_moved_points[first_2d_plane_point+2][0], self.obstacles_plane_moved_points[first_2d_plane_point+2][1], self.obstacles_plane_moved_points[first_2d_plane_point+3][0], self.obstacles_plane_moved_points[first_2d_plane_point+3][1]], width = 1, fill = self.workspace_2d_plane_color, outline = "black")  # draw the 2D plane of the obstacles
+                self.draw_workspace_object(obstacles_plane_moved_points_properties, self.obstacles_plane_edges, True, True)
+            if self.plane_frame_enable_visualization == "frame":
+                self.draw_workspace_object(plane_frame_moved_points_properties, self.plane_frame_edges, True, True)
+            if self.obstacles_objects_enable_visualization == "shown":
+                self.draw_workspace_object(obstacles_objects_moved_points_properties, self.obstacles_objects_edges, True, True)
+        elif self.drawing_order == "robot":  # if the obstacles are drawn first
+            if self.obstacles_plane_enable_visualization == "shown":
+                first_2d_plane_point = 0; self.workspace_canvas.create_polygon([self.obstacles_plane_moved_points[first_2d_plane_point][0], self.obstacles_plane_moved_points[first_2d_plane_point][1], self.obstacles_plane_moved_points[first_2d_plane_point+1][0], self.obstacles_plane_moved_points[first_2d_plane_point+1][1], \
+                                                                                self.obstacles_plane_moved_points[first_2d_plane_point+2][0], self.obstacles_plane_moved_points[first_2d_plane_point+2][1], self.obstacles_plane_moved_points[first_2d_plane_point+3][0], self.obstacles_plane_moved_points[first_2d_plane_point+3][1]], width = 1, fill = self.workspace_2d_plane_color, outline = "black")  # draw the 2D plane of the obstacles
+                self.draw_workspace_object(obstacles_plane_moved_points_properties, self.obstacles_plane_edges, True, True)
+            if self.plane_frame_enable_visualization == "frame":
+                self.draw_workspace_object(plane_frame_moved_points_properties, self.plane_frame_edges, True, True)
+            if self.obstacles_objects_enable_visualization == "shown":
+                self.draw_workspace_object(obstacles_objects_moved_points_properties, self.obstacles_objects_edges, True, True)
+            if self.robotic_manipulator_enable_visualization == "shown":
+                self.draw_workspace_object(robotic_manipulator_moved_points_properties, self.robotic_manipulator_edges, self.robot_joints_enable_visualization == "shown", self.robot_links_enable_visualization == "shown")
+            if self.end_effector_frame_enable_visualization == "shown":
+                self.draw_workspace_object(end_effector_frame_moved_points_properties, self.end_effector_frame_edges, self.robotic_manipulator_enable_visualization == "shown", self.robotic_manipulator_enable_visualization == "shown")
+        # draw the camera device object
+        if self.camera_enable_visualization == "shown":  # if the camera device is enabled to be visualized
+            self.draw_workspace_object(camera_device_moved_points_properties, self.camera_device_edges, True, True)
+        # draw the camera frame object
+        if self.camera_frame_enable_visualization == "frame":  # if the camera frame is enabled to be visualized
+            self.draw_workspace_object(camera_frame_moved_points_properties, self.camera_frame_edges, True, True)
+        # write the names of the current and the pending robotic manipulator models on the workspace canvas
+        if self.robotic_manipulator_is_built:  # if a robotic manipulator model is built
+            self.workspace_canvas.create_text(self.workspace_canvas_width / 2, 20, text = f"Current robotic manipulator:   {self.built_robotic_manipulator_info['name']}", font = "Calibri 12 bold", fill = "black")  # write the name of the built robotic manipulator model on the workspace canvas
+            if self.robotic_manipulator_model_name != "" and self.robotic_manipulator_model_name != self.built_robotic_manipulator_info["name"]:
+                self.workspace_canvas.create_text(self.workspace_canvas_width / 2, 40, text = f"Pending:   {self.robotic_manipulator_model_name}", font = "Calibri 12 bold", fill = "red")  # write the name of the pending robotic manipulator model on the workspace canvas
+        else:
+            if self.robotic_manipulator_model_name != "":
+                self.workspace_canvas.create_text(self.workspace_canvas_width / 2, 20, text = f"Pending:   {self.robotic_manipulator_model_name}", font = "Calibri 12 bold", fill = "red")  # write the name of the pending robotic manipulator model on the workspace canvas
+        self.choose_visualized_variables_button.configure(text = self.control_or_kinematics_variables_visualization)  # update the text of the button that allows the user to choose the visualized variables
+        # bind the points of the workspace to show their coordinates when the user's cursor is pointing to them
+        for point in range(len(self.workspace_canvas_points)):
+            self.workspace_canvas.tag_unbind(f"point{point}", "<Enter>")
+            self.workspace_canvas.tag_bind(f"point{point}", "<Enter>", self.show_point_coordinates_helper(point))
+        # loop the visualization function
+        self.workspace_canvas.after(int(1000.0 / self.canvas_fps), self.draw_next_workspace_canvas_frame)  # loop the visualization function
+    def draw_workspace_object(self, points, edges, points_are_shown, edges_are_shown):  # draw an object in the workspace
+        # draw the edges (connecting lines) between every point and its chosen neighbours
+        if edges_are_shown:  # if the edges are shown
+            for start_point in range(len(edges)):
+                if edges[start_point] != None:
+                    for [end_point, line_color, line_width] in edges[start_point]:
+                        try: self.workspace_canvas.create_line(points[start_point][0][0], points[start_point][0][1], points[end_point][0][0], points[end_point][0][1], width = line_width, fill = line_color, activefill = "white")
+                        except: pass
+        # draw the points
+        counter = points[-1]  # the count of the points of the workspace
+        points = points[:-1]
+        if points_are_shown:  # if the points are shown
+            for k in range(len(points)):
+                if points[k][0] != None:
+                    try: self.workspace_canvas.create_line(points[k][0][0], points[k][0][1], points[k][0][0], points[k][0][1], width = points[k][2], fill = points[k][1], capstyle = "round", activefill = "white", tags = f"point{counter + k}")
+                    except: pass
+    def show_point_coordinates_helper(self, point):  # helper function that returns the function that shows the coordinates of the point the user's cursor is pointing to
+        return lambda event: self.show_point_coordinates(point, event)
+    def show_point_coordinates(self, point, event = None):  # show the coordinates of the point the user's cursor is pointing to
+        self.pointing_to_point = f"({self.workspace_canvas_points[point][0]:.3f}, {self.workspace_canvas_points[point][1]:.3f}, {self.workspace_canvas_points[point][2]:.3f})"
+        self.workspace_canvas.create_text(self.workspace_canvas_width / 2, self.workspace_canvas_height - 20, text = f"Pointing to (m): {self.pointing_to_point}", font = "Calibri 12 bold", fill = "black")
 
     # functions for the creation of the menus
     def clear_menus_background(self, event = None):  # clear the menus background
@@ -1545,7 +2022,7 @@ class robotic_manipulators_playground_window():
         show_potential_field_gradients_button_x = show_potential_field_values_button_x; self.show_potential_field_gradients_button = gbl.menu_button(menu_frame, "plot field gradients", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_potential_field_gradients_button_x * menu_properties['width'], show_potential_field_gradients_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.plot_navigation_potential_field_gradients).button
         choose_solver_dt_label_x = 24/30; gbl.menu_label(menu_frame, "time step dt (s):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_solver_dt_label_x * menu_properties['width'], choose_solver_dt_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         self.choose_solver_dt_button_x = 28/30; self.choose_solver_dt_button = gbl.menu_button(menu_frame, self.solver_time_step_dt, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], self.choose_solver_dt_button_x * menu_properties['width'], choose_solver_dt_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_solver_dt).button 
-        compute_velocities_control_law_button_x = 1/4; self.compute_velocities_control_law_button = gbl.menu_button(menu_frame, "compute robot's velocities\napply the control law", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], compute_velocities_control_law_button_x * menu_properties['width'], compute_velocities_control_law_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.apply_control_law_compute_velocities).button
+        compute_velocities_control_law_button_x = 1/4; self.compute_velocities_control_law_button = gbl.menu_button(menu_frame, "apply\ncontrol law", f"Calibri {menu_properties['options_font']+2} bold", menu_properties['buttons_color'], menu_properties['bg_color'], compute_velocities_control_law_button_x * menu_properties['width'], compute_velocities_control_law_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.apply_control_law_compute_velocities).button
         apply_vels_to_simulated_robot_button_x = 2/4; self.apply_vels_to_simulated_robot_button = gbl.menu_button(menu_frame, "apply velocities to\nsimulated robot", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], apply_vels_to_simulated_robot_button_x * menu_properties['width'], apply_vels_to_simulated_robot_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.control_simulated_robotic_manipulator).button
         apply_vels_to_real_robot_button_x = 3/4; self.apply_vels_to_real_robot_button = gbl.menu_button(menu_frame, "apply velocities to\nreal robot", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], apply_vels_to_real_robot_button_x * menu_properties['width'], apply_vels_to_real_robot_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.control_real_robotic_manipulator).button
         self.update_obstacles_avoidance_solver_indicators()  # update the indicators of the obstacles avoidance solver
@@ -2086,7 +2563,7 @@ class robotic_manipulators_playground_window():
                     self.swift_sim_env.sim_time = 0.0
                     self.swift_env_load_robot()  # load the robotic manipulator model inside the Swift simulator environment
                     self.swift_env_load_workspace_obstacles()  # load the workspace obstacles inside the Swift simulator environment
-                    label_info = swift.Label("Robotic manipulator name:")
+                    label_info = swift.Label(f"Robotic manipulator name: {self.built_robotic_manipulator_info['name']}. If you want to exit the simulation, do not close the browser tab. Just press again the GUI's button that started the simulation.")
                     self.swift_sim_env.add(label_info)  # add the label inside the Swift simulator environment
                     self.start_swift_thread()  # start the thread that runs the online Swift simulation
                 else:
@@ -2111,7 +2588,7 @@ class robotic_manipulators_playground_window():
         self.swift_sim_camera._T = np.eye(4)  # the transformation of the camera object
         self.swift_sim_env.add(self.swift_sim_2d_plane)  # add the 2D obstacles plane inside the Swift simulator environment
         self.swift_sim_env.add(self.swift_sim_camera)  # add the camera object inside the Swift simulator environment
-        # for the obstacles objectss
+        # for the obstacles objects
         if len(self.chosen_workspace_saved_obstacles_objects_list) > 0:  # if there are saved workspaces with obstacles objects
             workspace_image_folder = self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_solver_workspace_image_name}"  # the path of the folder that contains the obstacles objects for the chosen workspace image
             obstacles_meshes_files = [workspace_image_folder + fr"/{obstacle_file}" for obstacle_file in os.listdir(workspace_image_folder) if ".stl" in obstacle_file]  # the stl files of the obstacles objects for the Swift simulation
@@ -2119,7 +2596,7 @@ class robotic_manipulators_playground_window():
             for k in range(len(obstacles_meshes_files)):  # iterate through all the obstacles objects for the chosen workspace
                 self.swift_sim_obstacles_objects.append(sg.Mesh(obstacles_meshes_files[k], scale = np.array([0.001, 0.001, 0.001]), color = obstacles_color))  # the obstacles objects for the Swift simulation
                 self.swift_sim_obstacles_objects[-1]._T = np.eye(4)  # the transformation of the obstacles objects
-                self.swift_sim_env.add(self.swift_sim_obstacles_objects[k])  # add the obstacles objects inside the Swift simulator environment            
+                self.swift_sim_env.add(self.swift_sim_obstacles_objects[k])  # add the obstacles objects inside the Swift simulator environment
     def update_model_visualization_indicators(self, event = None):  # update the model and visualization indicators
         try:
             # model indicators
@@ -2164,8 +2641,9 @@ class robotic_manipulators_playground_window():
             robotic_manipulator_links_points = [np.array(frames_origins[0])] + [np.array(frames_origins[k + 1] + frames_orientations[k + 1][:, 2] * self.joints_z_axis_positions[k]) for k in range(self.joints_number)] + [np.array(frames_origins[-1])]  # the points of the links of the robotic manipulator
             links_lengths = np.linalg.norm(np.diff(robotic_manipulator_links_points, axis = 0), axis = 1)  # the sizes of the links of the robotic manipulator
             self.link_length_indicator.configure(text = f"{links_lengths[link_number_visualization]:.3f}")  # change the text of the button that shows the length of the chosen link
-        except Exception as e:
-            if "invalid command name" not in str(e): print(f"Error in update_model_visualization_indicators: {e}")
+        except: pass
+        # except Exception as e:
+        #     if "invalid command name" not in str(e): print(f"Error in update_model_visualization_indicators: {e}")
 
     # the functions used for the thread that runs the online swift simulation
     def start_swift_thread(self, event = None):  # start the thread that runs the online Swift simulation
@@ -2182,10 +2660,10 @@ class robotic_manipulators_playground_window():
                     self.swift_robotic_manipulator.base = self.get_transformation_matrix(self.built_robotic_manipulator_info["base_position_wrt_world"], self.built_robotic_manipulator_info["base_orientation_wrt_world"])  # set the base pose of the robotic manipulator model
                     self.swift_robotic_manipulator.tool = self.get_transformation_matrix(self.built_robotic_manipulator_info["end_effector_position_wrt_last_frame"], self.built_robotic_manipulator_info["end_effector_orientation_wrt_last_frame"])  # set the end-effector pose of the robotic manipulator model
                     self.swift_robotic_manipulator.q = self.built_robotic_manipulator.q  # set the joints angles of the robotic manipulator model
-                    # for the 2D plane where the obstacles are located
-                    self.swift_sim_2d_plane._T = self.obst_plane_wrt_world_transformation_matrix  # set the 2D plane transformation
                     # for the camera object
                     self.swift_sim_camera._T = self.camera_wrt_world_transformation_matrix  # set the camera object transformation
+                    # for the 2D plane where the obstacles are located
+                    self.swift_sim_2d_plane._T = self.obst_plane_wrt_world_transformation_matrix  # set the 2D plane transformation
                     # for the obstacles objects
                     for obst in range(len(self.swift_sim_obstacles_objects)):
                         self.swift_sim_obstacles_objects[obst]._T = self.obst_plane_wrt_world_transformation_matrix  # set the obstacles objects transformation
@@ -2272,8 +2750,9 @@ class robotic_manipulators_playground_window():
                 for k in range(self.joints_number):
                     self.fkine_variables_sliders[k].set([np.rad2deg(self.forward_kinematics_variables[k]), self.forward_kinematics_variables[k]][self.joints_types_list.index(self.joints_types[k])])  # set the value of the chosen joint variable (changing the corresponding slider) for the forward kinematics analysis
                 self.joints_range_divisions_button.configure(text = f"{self.joints_range_divisions}")  # change the text of the button that shows the divisions of the joints range for the calculation of the robot's reachable workspace
-        except Exception as e:
-            if "invalid command name" not in str(e): print(f"Error in update_forward_kinematics_indicators: {e}")
+        except: pass
+        # except Exception as e:
+        #     if "invalid command name" not in str(e): print(f"Error in update_forward_kinematics_indicators: {e}")
     # inverse kinematics
     def get_fkine_pose_result(self, event = None):  # get the forward kinematics pose result to the inverse kinematics analysis
         self.chosen_frame_fkine = "end-effector"  # change the chosen frame for the forward kinematics analysis
@@ -2332,8 +2811,9 @@ class robotic_manipulators_playground_window():
                 else:
                     joints_configuration = "This end-effector configuration does not belong\nin the reachable workspace! No solution found!"
                 self.joints_configuration_indicator.configure(text = joints_configuration)  # change the text of the joints configuration indicator
-        except Exception as e:
-            if "invalid command name" not in str(e): print(f"Error in update_inverse_kinematics_indicators: {e}")
+        except: pass
+        # except Exception as e:
+        #     if "invalid command name" not in str(e): print(f"Error in update_inverse_kinematics_indicators: {e}")
     # differential kinematics
     def change_chosen_joint_number_diffkine(self, event = None):  # change the chosen joint number for the differential kinematics analysis
         self.chosen_joint_number_diffkine = int(self.choose_joint_number_diffkine_combobox.get().split(" ")[-1])  # change the chosen joint number for the differential kinematics analysis
@@ -2377,8 +2857,9 @@ class robotic_manipulators_playground_window():
                 self.end_effector_angular_vel_indicator.configure(text = str([np.round(np.rad2deg(self.diffkine_angular_vel[k]), self.angles_precision) for k in range(len(self.diffkine_angular_vel))]))  # change the text of the end-effector angular velocity indicator
                 for k in range(self.joints_number):
                     self.diffkine_variables_sliders[k].set([np.rad2deg(self.differential_kinematics_velocities[k]), self.differential_kinematics_velocities[k]][self.joints_types_list.index(self.joints_types[k])])  # set the value of the chosen joint velocity (changing the corresponding slider) for the differential kinematics analysis
-        except Exception as e: 
-            if "invalid command name" not in str(e): print(f"Error in update_differential_kinematics_indicators: {e}")
+        except: pass
+        # except Exception as e: 
+        #     if "invalid command name" not in str(e): print(f"Error in update_differential_kinematics_indicators: {e}")
     # inverse differential kinematics
     def get_diffkine_velocities_result(self, event = None):  # get the differential kinematics velocity result to the inverse differential kinematics analysis
         self.chosen_invdiffkine_linear_vel = np.copy(self.diffkine_linear_vel)  # change the end-effector linear velocity for the inverse differential kinematics analysis
@@ -2434,8 +2915,9 @@ class robotic_manipulators_playground_window():
                 else:
                     joints_velocities = "The resulting Jacobian is singular!\nNo solution found!"
                 self.joints_velocities_indicator.configure(text = joints_velocities)  # change the text of the joints configuration indicator
-        except Exception as e:
-            if "invalid command name" not in str(e): print(f"Error in update_inverse_differential_kinematics_indicators: {e}")
+        except: pass
+        # except Exception as e:
+        #     if "invalid command name" not in str(e): print(f"Error in update_inverse_differential_kinematics_indicators: {e}")
     # functions used for the robotic manipulator manipulation
     def get_transformation_matrix(self, position, orientation, event = None):  # get the transformation matrix from the position and orientation (given in the form of roll-pitch-yaw angles) of a frame
         return sm.SE3(np.array(position, dtype = float)) * sm.SE3.RPY(np.array(orientation, dtype = float))  # return the transformation matrix
@@ -2765,8 +3247,9 @@ class robotic_manipulators_playground_window():
                 self.end_effector_mult_factor_entrybox.delete(0, "end")  # clear the end-effector motor multiplication factor entry box
                 self.end_effector_mult_factor_entrybox.insert(0, f"{self.end_effector_motor_mult_factor:.3f}")  # insert the end-effector motor multiplication factor to the entry box
                 self.choose_control_mode_button.configure(text = self.robotic_manipulator_control_mode)  # change the text of the appropriate button to the chosen control mode
-        except Exception as e:
-            if "invalid command name" not in str(e): print(f"Error in update_control_variables_indicators: {e}")
+        except: pass
+        # except Exception as e:
+        #     if "invalid command name" not in str(e): print(f"Error in update_control_variables_indicators: {e}")
 
     # the functions used for the serial communication thread between the arduino microcontroller and the computer
     def start_serial_communication_thread(self, event = None):  # create and start a serial communication thread
@@ -3037,8 +3520,9 @@ You can also press left click on the number of a boundary to remove it and right
             self.obstacles_height_detection_button.configure(text = f"{self.workspace_obstacles_height_detection:.1f}")  # change the text of the choose obstacles height detection button
             self.xy_axis_res_mesh_button.configure(text = self.xy_res_obstacle_mesh)  # change the text of the choose xy axis res mesh button
             self.z_axis_res_mesh_button.configure(text = self.z_res_obstacle_mesh)  # change the text of the choose z axis res mesh button
-        except Exception as e:
-            if "invalid command name" not in str(e): print(f"Error in update_workspace_obstacles_indicators: {e}")
+        except: pass
+        # except Exception as e:
+        #     if "invalid command name" not in str(e): print(f"Error in update_workspace_obstacles_indicators: {e}")
 
     # for the main menu where the camera is controlled
     def determine_camera(self, event = None):  # determine the camera to use
@@ -3258,8 +3742,9 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
             self.apply_moving_average_filter_button.configure(text = ["no", "yes"][[False, True].index(self.apply_moving_average_poses_estimation)])  # change the text of the moving average filter button
             self.show_workspace_image_combobox["values"] = self.saved_workspace_images_list  # set the values of the show workspace image combobox
             self.show_workspace_image_combobox.set(self.shown_workspace_image_name)  # set the value of the show workspace image combobox
-        except Exception as e:
-            if "invalid command name" not in str(e): print(f"Error in update_camera_control_indicators: {e}")
+        except: pass
+        # except Exception as e:
+        #     if "invalid command name" not in str(e): print(f"Error in update_camera_control_indicators: {e}")
     
     # the functions used for the thread that continuously captures the camera frames
     def start_camera_thread(self, event = None):  # create and start a camera thread
@@ -3882,445 +4367,6 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             self.kill_robot_control_thread()  # kill the existed and running camera thread
             if not self.robot_control_thread_flag:  # if the thread is stopped
                 break  # break the while loop
-
-    # functions for the workspace options located at the borders of the workspace area
-    def change_workspace_width_ratio(self, change_type = +1, event = None):  # change the width ratio of the workspace area to the root window
-        if change_type == +1:  # if the width ratio of the workspace area is increased
-            self.workspace_width_ratio = self.alternate_matrix_elements(self.workspace_width_ratios_values, self.workspace_width_ratio)
-        elif change_type == -1:  # if the width ratio of the workspace area is decreased
-            self.workspace_width_ratio = self.alternate_matrix_elements(self.workspace_width_ratios_values[::-1], self.workspace_width_ratio)
-        self.change_workspace_width_ratio_button.configure(text = self.workspace_width_ratio)
-        self.resize_root_window()  # resize the root window
-    def change_workspace_control_sensitivity(self, event = None):  # change the workspace mouse control sensitivity
-        self.workspace_control_sensitivity = self.alternate_matrix_elements(self.workspace_sensitivity_values, self.workspace_control_sensitivity)
-        self.change_workspace_sensitivity_button.configure(text = self.workspace_sensitivity_degrees[self.workspace_sensitivity_values.index(self.workspace_control_sensitivity)])
-    def change_x_axis_range(self, event = None):  # change the x axis range
-        self.x_axis_range = self.alternate_matrix_elements(self.axis_range_values, self.x_axis_range)
-        self.change_x_axis_range_button.configure(text = self.x_axis_range)
-    def change_y_axis_range(self, event = None):  # change the y axis range
-        self.y_axis_range = self.alternate_matrix_elements(self.axis_range_values, self.y_axis_range)
-        self.change_y_axis_range_button.configure(text = self.y_axis_range)
-    def change_z_axis_range(self, event = None):  # change the z axis range
-        self.z_axis_range = self.alternate_matrix_elements(self.axis_range_values, self.z_axis_range)
-        self.change_z_axis_range_button.configure(text = self.z_axis_range)
-    def show_axis(self, event = None):  # show or hide the axis
-        self.axis_enable_visualization = self.alternate_matrix_elements(["shown", "hidden"], self.axis_enable_visualization)
-        self.show_axis_button.configure(text = self.axis_enable_visualization)
-    def show_terrain(self, event = None):  # show or hide the terrain
-        self.terrain_enable_visualization = self.alternate_matrix_elements(["shown", "hidden"], self.terrain_enable_visualization)
-        self.show_terrain_button.configure(text = self.terrain_enable_visualization)
-    def show_robotic_manipulator(self, event = None):  # show or hide the robotic manipulator
-        self.robotic_manipulator_enable_visualization = self.alternate_matrix_elements(["shown", "hidden"], self.robotic_manipulator_enable_visualization)
-        self.show_robotic_manipulator_button.configure(text = self.robotic_manipulator_enable_visualization)
-    def show_manipulator_joints(self, event = None):  # show or hide the joints of the robotic manipulator
-        self.robot_joints_enable_visualization = self.alternate_matrix_elements(["shown", "hidden"], self.robot_joints_enable_visualization)
-        self.show_manipulator_points_button.configure(text = self.robot_joints_enable_visualization)
-    def show_manipulator_links(self, event = None):  # show or hide the links of the robotic manipulator
-        self.robot_links_enable_visualization = self.alternate_matrix_elements(["shown", "hidden"], self.robot_links_enable_visualization)
-        self.show_manipulator_links_button.configure(text = self.robot_links_enable_visualization)
-    def show_end_effector_frame(self, event = None):  # show or hide the frame of the end-effector
-        self.end_effector_frame_enable_visualization = self.alternate_matrix_elements(["shown", "hidden"], self.end_effector_frame_enable_visualization)
-        self.show_end_effector_frame_button.configure(text = self.end_effector_frame_enable_visualization)
-    def show_obstacles_plane(self, event = None):  # show or hide the obstacles of the workspace
-        self.obstacles_plane_enable_visualization = self.alternate_matrix_elements(["shown", "hidden"], self.obstacles_plane_enable_visualization)
-        self.show_obstacles_plane_button.configure(text = self.obstacles_plane_enable_visualization)
-    def show_obstacles_plane_frame(self, event = None):  # show or hide the frame of the obstacles plane
-        self.plane_frame_enable_visualization = self.alternate_matrix_elements(["frame", "plain"], self.plane_frame_enable_visualization)
-        self.show_obstacles_plane_frame_button.configure(text = self.plane_frame_enable_visualization)
-    def show_obstacles_objects(self, event = None):  # show or hide the obstacles objects
-        self.obstacles_objects_enable_visualization = self.alternate_matrix_elements(["shown", "hidden"], self.obstacles_objects_enable_visualization)
-        self.show_obstacles_objects_button.configure(text = self.obstacles_objects_enable_visualization)
-    def show_camera(self, event = None):  # show or hide the camera object
-        self.camera_enable_visualization = self.alternate_matrix_elements(["shown", "hidden"], self.camera_enable_visualization)
-        self.show_camera_button.configure(text = self.camera_enable_visualization)
-    def show_camera_frame(self, event = None):  # show or hide the frame of the camera object
-        self.camera_frame_enable_visualization = self.alternate_matrix_elements(["frame", "plain"], self.camera_frame_enable_visualization)
-        self.show_camera_frame_button.configure(text = self.camera_frame_enable_visualization)
-    def change_drawing_order(self, event = None):  # change the drawing order of the robotic manipulator and the obstacles
-        self.drawing_order = self.alternate_matrix_elements(self.drawing_order_list, self.drawing_order)
-        self.choose_drawing_order_button.configure(text = self.drawing_order)
-    def change_x_axis_view(self, event = None):  # change the x axis view
-        self.x_axis_view = self.alternate_matrix_elements(["0", "-", "+"], self.x_axis_view)
-        self.change_x_axis_view_button.configure(text = self.x_axis_view)
-        self.set_canvas_view()
-    def change_y_axis_view(self, event = None):  # change the y axis view
-        self.y_axis_view = self.alternate_matrix_elements(["0", "-", "+"], self.y_axis_view)
-        self.change_y_axis_view_button.configure(text = self.y_axis_view)
-        self.set_canvas_view()
-    def change_z_axis_view(self, event = None):  # change the z axis view
-        self.z_axis_view = self.alternate_matrix_elements(["0", "-", "+"], self.z_axis_view)
-        self.change_z_axis_view_button.configure(text = self.z_axis_view)
-        self.set_canvas_view()
-    def visualize_control_or_kinematics_variables(self, event = None):  # choose the control or forward kinematics variables
-        self.control_or_kinematics_variables_visualization = self.alternate_matrix_elements(self.control_or_kinematics_variables_visualization_list, self.control_or_kinematics_variables_visualization)
-        if self.robotic_manipulator_is_built: # if a robotic manipulator is built
-            self.built_robotic_manipulator.q = self.get_robot_joints_variables(self.control_or_kinematics_variables_visualization)  # get the proper values for the joints variables (control or fkine)
-        self.update_model_visualization_indicators()  # update the indicators of the model visualization
-        self.update_differential_kinematics_indicators()  # update the indicators of the differential kinematics
-        self.update_inverse_differential_kinematics_indicators()  # update the indicators of the inverse differential kinematics
-
-    # functions for the control of the workspace
-    def apply_workspace_transformation(self, event = None):  # apply the transformation defined by the proper transfer, rotation and scale variables to all the points of the workspace
-        self.workspace_transfer_matrix = np.array([[1, 0, 0, 0], [0, 1, 0, self.y_cor_workspace_origin], [0, 0, 1, self.z_cor_workspace_origin], [0, 0, 0, 1]])
-        self.workspace_scale_matrix = np.array([[self.magnify_workspace_constant * self.scale_parameter, 0, 0, 0], [0, self.magnify_workspace_constant * self.scale_parameter, 0, 0], [0, 0, self.magnify_workspace_constant * self.scale_parameter, 0], [0, 0, 0, 1]])
-        self.workspace_y_rot_matrix = np.array([[np.cos(np.deg2rad(self.rot_y_workspace)), 0, np.sin(np.deg2rad(self.rot_y_workspace)), 0], [0, 1, 0, 0], [-np.sin(np.deg2rad(self.rot_y_workspace)), 0, np.cos(np.deg2rad(self.rot_y_workspace)), 0], [0, 0, 0, 1]])
-        self.workspace_z_rot_matrix = np.array([[np.cos(np.deg2rad(self.rot_z_workspace)), -np.sin(np.deg2rad(self.rot_z_workspace)), 0, 0], [np.sin(np.deg2rad(self.rot_z_workspace)), np.cos(np.deg2rad(self.rot_z_workspace)), 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
-        self.workspace_rotation_matrix = self.workspace_y_rot_matrix @ self.workspace_z_rot_matrix
-        self.workspace_transformation_matrix = self.workspace_transfer_matrix @ self.workspace_rotation_matrix @ self.workspace_scale_matrix
-        transformed_axis_terrain_points = np.copy(self.axis_terrain_points)  # the transformed points of the axis and terrain
-        transformed_robotic_manipulator_points = self.apply_robotic_manipulator_transformation()  # the transformed points of the robotic manipulator
-        transformed_end_effector_points = self.apply_end_effector_transformation(self.end_effector_frame_points)  # the transformed points of the robotic manipulator end-effector
-        transformed_obstacles_plane_points = self.apply_obstacles_transformation(self.obstacles_plane_points)  # the transformed points of the obstacles plane
-        transformed_plane_frame_points = self.apply_obstacles_transformation(self.plane_frame_points)  # the transformed points of the obstacles frame
-        transformed_obstacles_objects_points = self.apply_obstacles_transformation(self.obstacles_objects_points)  # the transformed points of the obstacles objects
-        transformed_camera_device_points = self.apply_camera_transformation(self.camera_device_points)  # the transformed points of the camera device
-        transformed_camera_frame_points = self.apply_camera_transformation(self.camera_frame_points)  # the transformed points of the camera frame        
-        self.workspace_canvas_points = np.concatenate((transformed_axis_terrain_points, transformed_robotic_manipulator_points, transformed_end_effector_points, \
-                                                        transformed_obstacles_plane_points, transformed_plane_frame_points, transformed_obstacles_objects_points, transformed_camera_device_points, transformed_camera_frame_points), axis = 0)
-        self.canvas_moved_points = (self.switch_coor_system_matrix @ self.workspace_transformation_matrix @ self.workspace_canvas_points.T).T  # the moved points of the workspace, converted to canvas coordinates, after the workspace transformation is applied
-        # for the visualization, based on the orientation of the terrain plane
-        terrain_draw_side = np.dot(self.workspace_rotation_matrix[:3, :3] @ np.array([0, 0, 1]), np.array([1, 0, 0]))  # the draw side of the axis and terrain
-        if terrain_draw_side >= 0:  # if the up side of the terrain is visible
-            self.workspace_terrain_color = self.up_side_terrain_color  # the color of the up side of the terrain
-        else:  # if the down side of the terrain is visible
-            self.workspace_terrain_color = self.down_side_terrain_color  # the color of the down side of the terrain
-        # for the visualization, based on the orientation of the workspace plane
-        obstacles_2d_plane_draw_side = np.dot(self.workspace_rotation_matrix[:3, :3] @ self.obst_plane_wrt_world_transformation_matrix[:3, :3] @ np.array([0, 0, 1]), np.array([1, 0, 0]))  # the draw side of the 2D plane
-        if obstacles_2d_plane_draw_side >= 0:  # if the front side of the 2D plane is visible
-            self.workspace_2d_plane_color = self.front_side_2d_plane_color  # the color of the front side of the 2D plane
-        else:  # if the back side of the 2D plane is visible
-            self.workspace_2d_plane_color = self.back_side_2d_plane_color  # the color of the back side of the 2D plane
-    def apply_robotic_manipulator_transformation(self, event = None):  # apply the transformation defined by the proper transfer and rotation matrices to the points of the robotic manipulator
-        if self.robotic_manipulator_is_built:  # if a robotic manipulator is built
-            self.built_robotic_manipulator.q = self.get_robot_joints_variables(self.control_or_kinematics_variables_visualization)  # get the proper values for the joints variables (control or fkine)
-            frames_origins, frames_orientations = self.get_all_frames_positions_orientations(self.built_robotic_manipulator.q)  # get the positions and the orientations of the frames of the robotic manipulator
-            robotic_manipulator_points = [frames_origins[k].tolist() + [1.0] for k in range(len(frames_origins))]  # add the homogeneous coordinate to the points of the robotic manipulator
-            for k in range(self.joints_number):  # for all the joints of the robotic manipulator
-                robotic_manipulator_points.append((frames_origins[k + 1] + frames_orientations[k + 1][:, 2] * self.joints_z_axis_positions[k]).tolist() + [1.0])  # add the points of the joints of the robotic manipulator
-            robotic_manipulator_points.append(frames_origins[0].tolist() + [1.0])
-            for k in range(self.joints_number):  # for all the joints of the robotic manipulator
-                robotic_manipulator_points.append((frames_origins[k + 1] + frames_orientations[k + 1][:, 2] * self.joints_z_axis_positions[k]).tolist() + [1.0])  # add the points of the joints of the robotic manipulator
-            robotic_manipulator_points.append(frames_origins[-1].tolist() + [1.0])            
-            return robotic_manipulator_points  # return the transformed points of the robotic manipulator
-        else:  # if no robotic manipulator is built
-            return [[0.0, 0.0, 0.0, 1.0] for k in range(self.robotic_manipulator_points_num)]  # return the default points of the robotic manipulator
-    def apply_end_effector_transformation(self, end_effector_frame_points, event = None):  # apply the transformation defined by the proper transfer and rotation matrices to the points of the end-effector
-        if self.robotic_manipulator_is_built:  # if a robotic manipulator is built
-            self.built_robotic_manipulator.q = self.get_robot_joints_variables(self.control_or_kinematics_variables_visualization)  # get the proper values for the joints variables (control or fkine)
-            end_effector_frame_origin, end_effector_frame_orientation = self.get_fkine_frame_position_orientation(self.built_robotic_manipulator.q, "end-effector")  # get the position and the orientation of the end-effector frame
-            end_effector_T = np.eye(4)  # the transformation matrix of the end-effector frame
-            end_effector_T[:3, :3] = end_effector_frame_orientation  # update the rotation matrix of the end-effector frame
-            end_effector_T[:3, 3] = end_effector_frame_origin  # update the translation vector of the end-effector frame
-            return (end_effector_T @ end_effector_frame_points.T).T  # return the transformed points of the end-effector
-        else:  # if no robotic manipulator is built
-            return (np.eye(4) @ end_effector_frame_points.T).T  # return the points of the end-effector
-    def apply_obstacles_transformation(self, obstacles_points, event = None):  # apply the transformation defined by the proper transfer and rotation matrices to the points of the obstacles
-        Tobs_total = self.obst_plane_wrt_world_transformation_matrix  # the total transformation matrix of the obstacles points
-        return (Tobs_total @ obstacles_points.T).T  # return the transformed points of the obstacles that lie on the 2D plane
-    def apply_camera_transformation(self, camera_points, event = None):  # apply the transformation defined by the proper transfer and rotation matrices to the points of the camera
-        Tcam_total = self.camera_wrt_world_transformation_matrix  # the total transformation matrix of the camera points
-        return (Tcam_total @ camera_points.T).T  # return the transformed points of the camera
-    def reset_workspace_canvas(self, event = None):  # reset the workspace to its initial state
-        self.scale_parameter = 1.0  # initialize the scale parameter of the workspace
-        self.y_cor_workspace_origin = 0.0; self.z_cor_workspace_origin = 0.0  # initialize the coordinates of the origin of the workspace
-        self.rot_y_workspace = 0.0; self.rot_z_workspace = 0.0  # initialize the rotation angles of the workspace
-        self.last_transfer_y = 0.0; self.last_transfer_z = 0.0  # initialize the coordinates of the last mouse position when the user starts to transfer the workspace
-        self.last_rotation_y = 0.0; self.last_rotation_z = 0.0  # initialize the coordinates of the last mouse position when the user starts to rotate the workspace
-    def reset_workspace_canvas_2(self, event = None):  # reset the workspace to its initial state
-        self.y_cor_workspace_origin = 0; self.z_cor_workspace_origin = 0  # initialize the coordinates of the origin of the workspace
-    def transfer_workspace_start(self, event):  # initialize the coordinates of the last mouse position when the user starts to transfer the workspace
-        self.last_transfer_y = event.x
-        self.last_transfer_z = event.y
-    def transfer_workspace(self, event):  # transfer the workspace according to the mouse movement
-        self.y_cor_workspace_origin = self.y_cor_workspace_origin + 2 * self.workspace_control_sensitivity * (event.x - self.last_transfer_y)
-        self.z_cor_workspace_origin = self.z_cor_workspace_origin - 2 * self.workspace_control_sensitivity * (event.y - self.last_transfer_z)
-        self.last_transfer_y = event.x
-        self.last_transfer_z = event.y
-    def scale_workspace(self, event):  # scale the workspace according to the mouse wheel movement
-        if event.delta == -120 and self.scale_parameter >= 0.2:
-            self.scale_parameter -= self.workspace_control_sensitivity / 5
-        elif event.delta == 120 and self.scale_parameter <= 15:
-            self.scale_parameter += self.workspace_control_sensitivity / 5
-    def rotate_workspace_start(self, event):  # initialize the coordinates of the last mouse position when the user starts to rotate the workspace
-        self.last_rotation_y = event.y
-        self.last_rotation_z = event.x
-    def rotate_workspace(self, event):  # rotate the workspace according to the mouse movement
-        self.rot_y_workspace = self.rot_y_workspace + self.workspace_control_sensitivity / 2 * (event.y - self.last_rotation_y)
-        self.rot_z_workspace = self.rot_z_workspace + self.workspace_control_sensitivity / 2 * (event.x - self.last_rotation_z)
-        self.last_rotation_y = event.y
-        self.last_rotation_z = event.x
-    def set_canvas_view(self, event = None):  # set the canvas view based on the x, y and z axis defined views
-        x_axis_view = [0, -1, 1][["0", "-", "+"].index(self.x_axis_view)]
-        y_axis_view = [0, -1, 1][["0", "-", "+"].index(self.y_axis_view)]
-        z_axis_view = [0, -1, 1][["0", "-", "+"].index(self.z_axis_view)]
-        self.rot_y_workspace = z_axis_view * [45, 90][[False, True].index(x_axis_view == 0 and y_axis_view == 0)]
-        if y_axis_view == 0: self.rot_z_workspace = [4, 0, 0][[-1, 0, 1].index(x_axis_view)] * 45
-        else: self.rot_z_workspace = (x_axis_view - 2) * (y_axis_view) * 45
-    
-    # functions for the visualization of the workspace
-    def create_initial_workspace_canvas_points_connections(self, event = None):  # create the points and edges of the workspace (axis and the robotic manipulator)
-        # define all the points of the workspace
-        # create the axis and terrain points and edges
-        self.axis_terrain_points = []  # initialize the points of the axis and terrain
-        self.axis_terrain_points.append([0, 0, 0, 1])
-        self.axis_terrain_points.append([self.x_axis_range, 0, 0, 1])
-        self.axis_terrain_points.append([0, self.y_axis_range, 0, 1])
-        self.axis_terrain_points.append([0, 0, self.z_axis_range, 1])
-        self.axis_terrain_points.append([0, 0, 0, 1])
-        self.axis_terrain_points.append([self.x_axis_range, self.y_axis_range, 0, 1])
-        self.axis_terrain_points.append([-self.x_axis_range, self.y_axis_range, 0, 1])
-        self.axis_terrain_points.append([-self.x_axis_range, -self.y_axis_range, 0, 1])
-        self.axis_terrain_points.append([self.x_axis_range, -self.y_axis_range, 0, 1])
-        self.axis_terrain_points = np.array(self.axis_terrain_points, dtype = float)  # convert the points of the axis and terrain to a numpy array
-        self.axis_terrain_points_num = len(self.axis_terrain_points)  # update the number of the axis and terrain points
-        self.axis_terrain_edges = self.axis_terrain_points_num * [None]  # initialize the edges of the axis and terrain
-        self.axis_terrain_edges[0] = [[1, self.workspace_axis_colors[0], self.workspace_axis_sizes], [2, self.workspace_axis_colors[1], self.workspace_axis_sizes], [3, self.workspace_axis_colors[2], self.workspace_axis_sizes]]
-        # create the robotic manipulator points and edges
-        self.robotic_manipulator_points = []  # initialize the points of the robotic manipulator
-        frames_origins, frames_orientations = self.get_all_frames_positions_orientations(np.zeros(self.joints_number,))  # get the positions and the orientations of the frames of the robotic manipulator
-        self.robotic_manipulator_points = [frames_origins[k].tolist() + [1.0] for k in range(self.frames_number)]  # add the homogeneous coordinate to the points of the robotic manipulator
-        for k in range(self.joints_number):  # for all the joints of the robotic manipulator
-            self.robotic_manipulator_points.append((frames_origins[k + 1] + frames_orientations[k + 1][:, 2] * self.joints_z_axis_positions[k]).tolist() + [1.0])  # add the points (homogeneous) of the joints of the robotic manipulator
-        points_num_before_links = len(self.robotic_manipulator_points)  # the number of the points of the robotic manipulator
-        robotic_manipulator_links_points = [np.array(frames_origins[0])] + [np.array(frames_origins[k + 1] + frames_orientations[k + 1][:, 2] * self.joints_z_axis_positions[k]) for k in range(self.joints_number)] + [np.array(frames_origins[-1])]  # the points of the links of the robotic manipulator
-        for k in range(self.joints_number + 2):  # for all the joints of the robotic manipulator (plus the base)
-            self.robotic_manipulator_points.append(robotic_manipulator_links_points[k].tolist() + [1.0])  # add the points (homogeneous) of the links of the robotic manipulator
-        self.robotic_manipulator_points = np.array(self.robotic_manipulator_points, dtype = float)  # convert the points of the robotic manipulator to a numpy array
-        self.robotic_manipulator_points_num = len(self.robotic_manipulator_points)  # update the number of the robotic manipulator points
-        self.robotic_manipulator_edges = self.robotic_manipulator_points_num * [None]  # initialize the edges of the robotic manipulator
-        for k in range(self.links_number):
-            self.robotic_manipulator_edges[points_num_before_links + k] = [[points_num_before_links + k + 1, self.links_colors[k], self.links_sizes[k]]]
-        # create the robotic manipulator end-effector frame points and edges
-        frame_axis_length = 0.05  # the length of the frame axis
-        frame_axis_size = 2  # the size of the frame axis
-        self.end_effector_frame_points = []  # initialize the points of the end-effector
-        self.end_effector_frame_points.append([0.0, 0.0, 0.0, 1.0])
-        self.end_effector_frame_points.append([frame_axis_length, 0.0, 0.0, 1.0])
-        self.end_effector_frame_points.append([0.0, frame_axis_length, 0.0, 1.0])
-        self.end_effector_frame_points.append([0.0, 0.0, frame_axis_length, 1.0])
-        self.end_effector_frame_points = np.array(self.end_effector_frame_points, dtype = float)  # convert the points of the end-effector to a numpy array
-        self.end_effector_frame_points_num = len(self.end_effector_frame_points)  # update the number of the end-effector points
-        self.end_effector_frame_edges = self.end_effector_frame_points_num * [None]  # initialize the edges of the end-effector
-        self.end_effector_frame_edges[0] = [[1, self.workspace_axis_colors[0], frame_axis_size], [2, self.workspace_axis_colors[1], frame_axis_size], [3, self.workspace_axis_colors[2], frame_axis_size]]
-        # create the obstacles plane points and edges
-        self.obstacles_plane_points = []  # initialize the points of the obstacles
-        self.obstacles_plane_points.append([self.obstacles_2d_plane_x_length / 2, self.obstacles_2d_plane_y_length / 2, 0.0, 1.0])
-        self.obstacles_plane_points.append([-self.obstacles_2d_plane_x_length / 2, self.obstacles_2d_plane_y_length / 2, 0.0, 1.0])
-        self.obstacles_plane_points.append([-self.obstacles_2d_plane_x_length / 2, -self.obstacles_2d_plane_y_length / 2, 0.0, 1.0])
-        self.obstacles_plane_points.append([self.obstacles_2d_plane_x_length / 2, -self.obstacles_2d_plane_y_length / 2, 0.0, 1.0])
-        start_pos_on_plane = np.array([self.start_pos_workspace_plane[0], self.start_pos_workspace_plane[1], 0.0, 1.0])  # the start position on the plane
-        target_pos_on_plane = np.array([self.target_pos_workspace_plane[0], self.target_pos_workspace_plane[1], 0.0, 1.0])  # the final position on the plane
-        positions_on_plane_transformation = np.array([[1.0, 0.0, 0.0, -self.obstacles_2d_plane_x_length / 2], [0.0, 1.0, 0.0, -self.obstacles_2d_plane_y_length / 2], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]])  # the transformation matrix of the positions on the plane
-        start_pos_on_plane = np.dot(positions_on_plane_transformation, start_pos_on_plane)  # the start position on the plane
-        target_pos_on_plane = np.dot(positions_on_plane_transformation, target_pos_on_plane)  # the final position on the plane
-        self.obstacles_plane_points.append(start_pos_on_plane.tolist())
-        self.obstacles_plane_points.append(target_pos_on_plane.tolist())
-        self.obstacles_plane_points = np.array(self.obstacles_plane_points, dtype = float)  # convert the points of the obstacles to a numpy array
-        self.obstacles_plane_points_num = len(self.obstacles_plane_points)  # update the number of the obstacles points
-        self.obstacles_plane_edges = self.obstacles_plane_points_num * [None]  # initialize the edges of the obstacles
-        self.obstacles_plane_edges[0] = [[1, "black", self.workspace_2d_plane_size], [3, "black", self.workspace_2d_plane_size]]
-        self.obstacles_plane_edges[2] = [[1, "black", self.workspace_2d_plane_size], [3, "black", self.workspace_2d_plane_size]]
-        # create the obstacles plane frame points and edges
-        frame_axis_length = 0.05  # the length of the frame axis
-        frame_axis_size = 2  # the size of the frame axis
-        self.plane_frame_points = []  # initialize the points of the obstacles
-        self.plane_frame_points.append([0.0, 0.0, 0.0, 1.0])
-        self.plane_frame_points.append([frame_axis_length, 0.0, 0.0, 1.0])
-        self.plane_frame_points.append([0.0, frame_axis_length, 0.0, 1.0])
-        self.plane_frame_points.append([0.0, 0.0, frame_axis_length, 1.0])
-        self.plane_frame_points = np.array(self.plane_frame_points, dtype = float)  # convert the points of the obstacles to a numpy array
-        self.plane_frame_points_num = len(self.plane_frame_points)  # update the number of the obstacles points
-        self.plane_frame_edges = self.plane_frame_points_num * [None]  # initialize the edges of the obstacles
-        self.plane_frame_edges[0] = [[1, self.workspace_axis_colors[0], frame_axis_size], [2, self.workspace_axis_colors[1], frame_axis_size], [3, self.workspace_axis_colors[2], frame_axis_size]]
-        # create the obstacles objects points and edges
-        self.obstacles_objects_points = []  # initialize the points of the obstacles
-        if self.obst_avoid_solver_menu_is_enabled and self.obstacles_objects_enable_visualization == "shown" and len(self.obstacles_boundaries_for_solver) != 0:
-            for boundary in self.obstacles_boundaries_for_solver:  # for all the detected obstacles boundaries
-                for point in boundary:  # for all the points of the boundary
-                    self.obstacles_objects_points.append([point[0], point[1], 0.0, 1.0])
-        else:  # if the obstacles avoidance solver menu is disabled or the obstacles objects are hidden
-            self.obstacles_objects_points.append([0.0, 0.0, 0.0, 1.0])
-        self.obstacles_objects_points = np.array(self.obstacles_objects_points, dtype = float)  # convert the points of the obstacles to a numpy array
-        self.obstacles_objects_points_num = len(self.obstacles_objects_points)  # update the number of the obstacles points
-        self.obstacles_objects_edges = self.obstacles_objects_points_num * [None]  # initialize the edges of the obstacles
-        if self.obst_avoid_solver_menu_is_enabled and self.obstacles_objects_enable_visualization == "shown" and len(self.obstacles_boundaries_for_solver) != 0:
-            boundaries_points_counter = 0  # the counter of the points of the boundaries
-            for boundary in self.obstacles_boundaries_for_solver:  # for all the detected obstacles boundaries
-                for k in range(len(boundary) - 1):  # for all the points of the boundary
-                    self.obstacles_objects_edges[boundaries_points_counter + k] = [[boundaries_points_counter + k + 1, self.workspace_obstacles_color, self.workspace_obstacles_size]]
-                boundaries_points_counter += len(boundary)  # update the counter of the points of the boundaries
-        # create the camera device points and edges
-        camera_device_length = 0.025  # the length of the camera device
-        camera_device_size = 3  # the size of the camera device
-        self.camera_device_points = []  # initialize the points of the camera
-        self.camera_device_points.append([camera_device_length / 2, camera_device_length / 2, 0.0, 1.0])
-        self.camera_device_points.append([-camera_device_length / 2, camera_device_length / 2, 0.0, 1.0])
-        self.camera_device_points.append([-camera_device_length / 2, -camera_device_length / 2, 0.0, 1.0])
-        self.camera_device_points.append([camera_device_length / 2, -camera_device_length / 2, 0.0, 1.0])
-        self.camera_device_points = np.array(self.camera_device_points, dtype = float)  # convert the points of the camera to a numpy array
-        self.camera_device_points_num = len(self.camera_device_points)  # update the number of the camera points
-        self.camera_device_edges = self.camera_device_points_num * [None]  # initialize the edges of the camera
-        self.camera_device_edges[0] = [[1, "orange", camera_device_size], [3, "orange", camera_device_size]]
-        self.camera_device_edges[2] = [[1, "orange", camera_device_size], [3, "orange", camera_device_size]]
-        # create the camera frame points and edges
-        camera_frame_axis_length = 0.025  # the length of the frame axis
-        camera_frame_axis_size = 2  # the size of the frame axis
-        self.camera_frame_points = []  # initialize the points of the camera
-        self.camera_frame_points.append([0.0, 0.0, 0.0, 1.0])
-        self.camera_frame_points.append([camera_frame_axis_length, 0.0, 0.0, 1.0])
-        self.camera_frame_points.append([0.0, camera_frame_axis_length, 0.0, 1.0])
-        self.camera_frame_points.append([0.0, 0.0, camera_frame_axis_length, 1.0])
-        self.camera_frame_points = np.array(self.camera_frame_points, dtype = float)  # convert the points of the camera to a numpy array
-        self.camera_frame_points_num = len(self.camera_frame_points)  # update the number of the camera points
-        self.camera_frame_edges = self.camera_frame_points_num * [None]  # initialize the edges of the camera
-        self.camera_frame_edges[0] = [[1, self.workspace_axis_colors[0], camera_frame_axis_size], [2, self.workspace_axis_colors[1], camera_frame_axis_size], [3, self.workspace_axis_colors[2], camera_frame_axis_size]]
-    def draw_next_workspace_canvas_frame(self):  # draw the next frame of the workspace
-        self.canvas_destroy_counter += 1  # increase the counter of the canvas destroy
-        if self.canvas_destroy_counter % (5.0 * self.canvas_fps) == 0:
-            self.create_workspace_canvas()  # recreate the workspace canvas
-            self.canvas_destroy_counter = 0  # reset the counter of the canvas destroy
-        self.create_initial_workspace_canvas_points_connections()  # create the points and edges of the workspace (axis and the robotic manipulator)
-        self.apply_workspace_transformation()  # apply the transformation defined by the proper transfer, rotation and scale variables to all the points of the workspace
-        self.workspace_canvas.delete("all")  # clear the workspace canvas
-        # choose the points and edges to draw
-        a = self.axis_terrain_points_num; b = self.robotic_manipulator_points_num; c = self.end_effector_frame_points_num; d = self.obstacles_plane_points_num; e = self.plane_frame_points_num; f = self.obstacles_objects_points_num; g = self.camera_device_points_num; h = self.camera_frame_points_num
-        self.canvas_moved_points = np.array(self.canvas_moved_points); self.canvas_moved_points = self.canvas_moved_points.tolist()  # convert the canvas moved points to a list
-        self.axis_terrain_moved_points = self.canvas_moved_points[0:a]  # the moved points of the axis and terrain
-        self.robotic_manipulator_moved_points = self.canvas_moved_points[a : a + b]  # the moved points of the robotic manipulator
-        self.end_effector_frame_moved_points = self.canvas_moved_points[a + b : a + b + c]  # the moved points of the end-effector frame
-        self.obstacles_plane_moved_points = self.canvas_moved_points[a + b + c: a + b + c + d]  # the moved points of the obstacles plane
-        self.obstacles_frame_moved_points = self.canvas_moved_points[a + b + c + d : a + b + c + d + e]  # the moved points of the obstacles frame
-        self.obstacles_objects_moved_points = self.canvas_moved_points[a + b + c + d + e : a + b + c + d + e + f]  # the moved points of the obstacles objects
-        self.camera_device_moved_points = self.canvas_moved_points[a + b + c + d + e + f : a + b + c + d + e + f + g]  # the moved points of the camera device
-        self.camera_frame_moved_points = self.canvas_moved_points[a + b + c + d + e + f + g : a + b + c + d + e + f + g + h]  # the moved points of the camera frame
-        # prepare the points of the various objects to draw on the canvas
-        # prepare the points of the axis and terrain object
-        points_counter = 0  # initialize the count of the points of the workspace
-        if self.axis_enable_visualization == "shown":  # if the axis is enabled to be visualized
-            for k in range(3):  # iterate through the three axis
-                self.axis_terrain_edges[0][k][1] = self.workspace_axis_colors[k]  # change the color of the axis connecting lines
-            axis_terrain_moved_points_properties = [[self.axis_terrain_moved_points[k], "black", self.workspace_axis_sizes + 5] for k in range(len(self.axis_terrain_moved_points))]  # the points of the axis and terrain with their properties
-            axis_terrain_moved_points_properties.append(points_counter)  # add the count of the points of the workspace
-        points_counter += self.axis_terrain_points_num  # update the count of the points of the workspace
-        # prepare the points of the robotic manipulator object
-        if self.robotic_manipulator_enable_visualization == "shown":  # if the robotic manipulator is enabled to be visualized
-            robotic_manipulator_moved_points_properties = [[self.robotic_manipulator_moved_points[k], self.frames_origins_colors[k], self.frames_origins_sizes[k] + 3] for k in range(self.frames_number)]  # the points of the frames of the robotic manipulator with their properties
-            robotic_manipulator_moved_points_properties += [[self.robotic_manipulator_moved_points[self.frames_number + k], self.frames_origins_colors[k + 1], self.frames_origins_sizes[k + 1] + 5] for k in range(self.joints_number)]  # the points of the joints of the robotic manipulator with their properties
-            robotic_manipulator_moved_points_properties += [[self.robotic_manipulator_moved_points[self.joints_number + self.frames_number + k], "black", 3] for k in range(self.links_number + 1)]  # the points of the links of the robotic manipulator with their properties
-            robotic_manipulator_moved_points_properties.append(points_counter)  # add the count of the points of the workspace
-        points_counter += self.robotic_manipulator_points_num  # update the count of the points of the workspace
-        # prepare the points of the robotic manipulator end-effector object
-        if self.end_effector_frame_enable_visualization == "shown":  # if the end-effector frame is enabled to be visualized
-            end_effector_frame_moved_points_properties = [[self.end_effector_frame_moved_points[k], "black", 5] for k in range(len(self.end_effector_frame_moved_points))]  # the points of the end-effector frame with their properties
-            end_effector_frame_moved_points_properties.append(points_counter)  # add the count of the points of the workspace
-        points_counter += self.end_effector_frame_points_num  # update the count of the points of the workspace
-        # prepare the points of the obstacles plane object
-        if self.obstacles_plane_enable_visualization == "shown":  # if the obstacles plane is enabled to be visualized
-            obstacles_plane_moved_points_properties = [[self.obstacles_plane_moved_points[k], "black", self.workspace_2d_plane_size+5] for k in range(len(self.obstacles_plane_moved_points) - 2)]  # the points of the obstacles plane with their properties
-            obstacles_plane_moved_points_properties.append([self.obstacles_plane_moved_points[-2], "magenta", [1, 7][[False, True].index(self.obst_avoid_solver_menu_is_enabled)]])  # the start position of the workspace plane
-            obstacles_plane_moved_points_properties.append([self.obstacles_plane_moved_points[-1], "green", [1, 7][[False, True].index(self.obst_avoid_solver_menu_is_enabled)]])  # the final position of the workspace plane
-            obstacles_plane_moved_points_properties.append(points_counter)  # add the count of the points of the workspace
-        points_counter += self.obstacles_plane_points_num  # update the count of the points of the workspace
-        # prepare the points of the obstacles frame object
-        if self.plane_frame_enable_visualization == "frame":  # if the obstacles frame is enabled to be visualized
-            plane_frame_moved_points_properties = [[self.obstacles_frame_moved_points[k], "black", 5] for k in range(len(self.obstacles_frame_moved_points))]  # the points of the obstacles frame with their properties
-            plane_frame_moved_points_properties.append(points_counter)  # add the count of the points of the workspace
-        points_counter += self.plane_frame_points_num  # update the count of the points of the workspace
-        # prepare the points of the obstacles objects
-        if self.obstacles_objects_enable_visualization == "shown":  # if the obstacles objects are enabled to be visualized
-            obstacles_objects_moved_points_properties = [[self.obstacles_objects_moved_points[k], self.workspace_obstacles_color, 1] for k in range(len(self.obstacles_objects_moved_points))]  # the points of the obstacles objects with their properties
-            obstacles_objects_moved_points_properties.append(points_counter)  # add the count of the points of the workspace
-        points_counter += self.obstacles_objects_points_num  # update the count of the points of the workspace
-        # prepare the points of the camera device object
-        if self.camera_enable_visualization == "shown":  # if the camera device is enabled to be visualized
-            camera_device_moved_points_properties = [[self.camera_device_moved_points[k], "black", 3] for k in range(len(self.camera_device_moved_points))]  # the points of the camera device with their properties
-            camera_device_moved_points_properties.append(points_counter)  # add the count of the points of the workspace
-        points_counter += self.camera_device_points_num  # update the count of the points of the workspace
-        # prepeare the points of the camera frame
-        if self.camera_frame_enable_visualization == "frame":  # if the camera frame is enabled to be visualized
-            camera_frame_moved_points_properties = [[self.camera_frame_moved_points[k], "black", 5] for k in range(len(self.camera_frame_moved_points))]  # the points of the camera frame with their properties
-            camera_frame_moved_points_properties.append(points_counter)  # add the count of the points of the workspace
-        points_counter += self.camera_frame_points_num  # update the count of the points of the workspace
-        # draw the various objects on the workspace canvas
-        # draw the terrain and the world axis objects
-        if self.terrain_enable_visualization == "shown":  # if the axis and terrain are enabled to be visualized
-            first_terrain_point = 5; self.workspace_canvas.create_polygon([self.axis_terrain_moved_points[first_terrain_point][0], self.axis_terrain_moved_points[first_terrain_point][1], self.axis_terrain_moved_points[first_terrain_point+1][0], self.axis_terrain_moved_points[first_terrain_point+1][1], \
-                                                                            self.axis_terrain_moved_points[first_terrain_point+2][0], self.axis_terrain_moved_points[first_terrain_point+2][1], self.axis_terrain_moved_points[first_terrain_point+3][0], self.axis_terrain_moved_points[first_terrain_point+3][1]], width = 1, fill = self.workspace_terrain_color, outline = "black")  # draw the terrain plane
-        if self.axis_enable_visualization == "shown":  # if the axis is enabled to be visualized
-            self.draw_workspace_object(axis_terrain_moved_points_properties, self.axis_terrain_edges, True, True)  # draw the axis and terrain objects
-            self.workspace_canvas.create_text(self.axis_terrain_moved_points[0][0]-15, self.axis_terrain_moved_points[0][1], text = "O", font = "Calibri 15 bold", fill = "black")  # draw the letter "O" on the axis origin
-            self.workspace_canvas.create_text(self.axis_terrain_moved_points[1][0]-15, self.axis_terrain_moved_points[1][1], text = "x", font = "Calibri 15 bold", fill = self.workspace_axis_colors[0])  # draw the letter "x" on the x axis
-            self.workspace_canvas.create_text(self.axis_terrain_moved_points[2][0]+15, self.axis_terrain_moved_points[2][1], text = "y", font = "Calibri 15 bold", fill = self.workspace_axis_colors[1])  # draw the letter "y" on the y axis
-            self.workspace_canvas.create_text(self.axis_terrain_moved_points[3][0]+15, self.axis_terrain_moved_points[3][1], text = "z", font = "Calibri 15 bold", fill = self.workspace_axis_colors[2])  # draw the letter "z" on the z axis
-        # draw the robotic manipulator and the obstacles in the right order
-        if self.drawing_order == "obstacles":  # if the robotic manipulator is drawn first
-            if self.robotic_manipulator_enable_visualization == "shown":
-                self.draw_workspace_object(robotic_manipulator_moved_points_properties, self.robotic_manipulator_edges, self.robot_joints_enable_visualization == "shown", self.robot_links_enable_visualization == "shown")
-            if self.end_effector_frame_enable_visualization == "shown":
-                self.draw_workspace_object(end_effector_frame_moved_points_properties, self.end_effector_frame_edges, self.robotic_manipulator_enable_visualization == "shown", self.robotic_manipulator_enable_visualization == "shown")
-            if self.obstacles_plane_enable_visualization == "shown":
-                first_2d_plane_point = 0; self.workspace_canvas.create_polygon([self.obstacles_plane_moved_points[first_2d_plane_point][0], self.obstacles_plane_moved_points[first_2d_plane_point][1], self.obstacles_plane_moved_points[first_2d_plane_point+1][0], self.obstacles_plane_moved_points[first_2d_plane_point+1][1], \
-                                                                                self.obstacles_plane_moved_points[first_2d_plane_point+2][0], self.obstacles_plane_moved_points[first_2d_plane_point+2][1], self.obstacles_plane_moved_points[first_2d_plane_point+3][0], self.obstacles_plane_moved_points[first_2d_plane_point+3][1]], width = 1, fill = self.workspace_2d_plane_color, outline = "black")  # draw the 2D plane of the obstacles
-                self.draw_workspace_object(obstacles_plane_moved_points_properties, self.obstacles_plane_edges, True, True)
-            if self.plane_frame_enable_visualization == "frame":
-                self.draw_workspace_object(plane_frame_moved_points_properties, self.plane_frame_edges, True, True)
-            if self.obstacles_objects_enable_visualization == "shown":
-                self.draw_workspace_object(obstacles_objects_moved_points_properties, self.obstacles_objects_edges, True, True)
-        elif self.drawing_order == "robot":  # if the obstacles are drawn first
-            if self.obstacles_plane_enable_visualization == "shown":
-                first_2d_plane_point = 0; self.workspace_canvas.create_polygon([self.obstacles_plane_moved_points[first_2d_plane_point][0], self.obstacles_plane_moved_points[first_2d_plane_point][1], self.obstacles_plane_moved_points[first_2d_plane_point+1][0], self.obstacles_plane_moved_points[first_2d_plane_point+1][1], \
-                                                                                self.obstacles_plane_moved_points[first_2d_plane_point+2][0], self.obstacles_plane_moved_points[first_2d_plane_point+2][1], self.obstacles_plane_moved_points[first_2d_plane_point+3][0], self.obstacles_plane_moved_points[first_2d_plane_point+3][1]], width = 1, fill = self.workspace_2d_plane_color, outline = "black")  # draw the 2D plane of the obstacles
-                self.draw_workspace_object(obstacles_plane_moved_points_properties, self.obstacles_plane_edges, True, True)
-            if self.plane_frame_enable_visualization == "frame":
-                self.draw_workspace_object(plane_frame_moved_points_properties, self.plane_frame_edges, True, True)
-            if self.obstacles_objects_enable_visualization == "shown":
-                self.draw_workspace_object(obstacles_objects_moved_points_properties, self.obstacles_objects_edges, True, True)
-            if self.robotic_manipulator_enable_visualization == "shown":
-                self.draw_workspace_object(robotic_manipulator_moved_points_properties, self.robotic_manipulator_edges, self.robot_joints_enable_visualization == "shown", self.robot_links_enable_visualization == "shown")
-            if self.end_effector_frame_enable_visualization == "shown":
-                self.draw_workspace_object(end_effector_frame_moved_points_properties, self.end_effector_frame_edges, self.robotic_manipulator_enable_visualization == "shown", self.robotic_manipulator_enable_visualization == "shown")
-        # draw the camera device object
-        if self.camera_enable_visualization == "shown":  # if the camera device is enabled to be visualized
-            self.draw_workspace_object(camera_device_moved_points_properties, self.camera_device_edges, True, True)
-        # draw the camera frame object
-        if self.camera_frame_enable_visualization == "frame":  # if the camera frame is enabled to be visualized
-            self.draw_workspace_object(camera_frame_moved_points_properties, self.camera_frame_edges, True, True)
-        # write the names of the current and the pending robotic manipulator models on the workspace canvas
-        if self.robotic_manipulator_is_built:  # if a robotic manipulator model is built
-            self.workspace_canvas.create_text(self.workspace_canvas_width / 2, 20, text = f"Current robotic manipulator:   {self.built_robotic_manipulator_info['name']}", font = "Calibri 12 bold", fill = "black")  # write the name of the built robotic manipulator model on the workspace canvas
-            if self.robotic_manipulator_model_name != "" and self.robotic_manipulator_model_name != self.built_robotic_manipulator_info["name"]:
-                self.workspace_canvas.create_text(self.workspace_canvas_width / 2, 40, text = f"Pending:   {self.robotic_manipulator_model_name}", font = "Calibri 12 bold", fill = "red")  # write the name of the pending robotic manipulator model on the workspace canvas
-        else:
-            if self.robotic_manipulator_model_name != "":
-                self.workspace_canvas.create_text(self.workspace_canvas_width / 2, 20, text = f"Pending:   {self.robotic_manipulator_model_name}", font = "Calibri 12 bold", fill = "red")  # write the name of the pending robotic manipulator model on the workspace canvas
-        self.choose_visualized_variables_button.configure(text = self.control_or_kinematics_variables_visualization)  # update the text of the button that allows the user to choose the visualized variables
-        # bind the points of the workspace to show their coordinates when the user's cursor is pointing to them
-        for point in range(len(self.workspace_canvas_points)):
-            self.workspace_canvas.tag_unbind(f"point{point}", "<Enter>")
-            self.workspace_canvas.tag_bind(f"point{point}", "<Enter>", self.show_point_coordinates_helper(point))
-        # loop the visualization function
-        self.workspace_canvas.after(int(1000.0 / self.canvas_fps), self.draw_next_workspace_canvas_frame)  # loop the visualization function
-    def draw_workspace_object(self, points, edges, points_are_shown, edges_are_shown):  # draw an object in the workspace
-        # draw the edges (connecting lines) between every point and its chosen neighbours
-        if edges_are_shown:  # if the edges are shown
-            for start_point in range(len(edges)):
-                if edges[start_point] != None:
-                    for [end_point, line_color, line_width] in edges[start_point]:
-                        try: self.workspace_canvas.create_line(points[start_point][0][0], points[start_point][0][1], points[end_point][0][0], points[end_point][0][1], width = line_width, fill = line_color, activefill = "white")
-                        except: pass
-        # draw the points
-        counter = points[-1]  # the count of the points of the workspace
-        points = points[:-1]
-        if points_are_shown:  # if the points are shown
-            for k in range(len(points)):
-                if points[k][0] != None:
-                    try: self.workspace_canvas.create_line(points[k][0][0], points[k][0][1], points[k][0][0], points[k][0][1], width = points[k][2], fill = points[k][1], capstyle = "round", activefill = "white", tags = f"point{counter + k}")
-                    except: pass
-    def show_point_coordinates_helper(self, point):  # helper function that returns the function that shows the coordinates of the point the user's cursor is pointing to
-        return lambda event: self.show_point_coordinates(point, event)
-    def show_point_coordinates(self, point, event = None):  # show the coordinates of the point the user's cursor is pointing to
-        self.pointing_to_point = f"({self.workspace_canvas_points[point][0]:.3f}, {self.workspace_canvas_points[point][1]:.3f}, {self.workspace_canvas_points[point][2]:.3f})"
-        self.workspace_canvas.create_text(self.workspace_canvas_width / 2, self.workspace_canvas_height - 20, text = f"Pointing to (m): {self.pointing_to_point}", font = "Calibri 12 bold", fill = "black")
     
 
 # the main function of the program

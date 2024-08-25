@@ -34,7 +34,7 @@ def compute_forward_kinematics_2(world_base_T, base_0_T, n_end_effector_T, DH_pa
     T = T @ np.array(n_end_effector_T, dtype = float)  # calculate the final transformation matrix from the world to the end-effector frame of coordinates
     return T  # return the total transformation matrix from the world to the end-effector frame of coordinates
 
-def compute_forward_kinematics_until_frame(world_base_T, base_0_T, n_end_effector_T, DH_parameters, joints_types, q_joints, until_frame = "end-effector"):  # calculate the partial forward kinematics of the robotic arm until the specified frame
+def compute_forward_kinematics_until_frame(robot, world_base_T, base_0_T, n_end_effector_T, DH_parameters, joints_types, q_joints, until_frame = "end-effector"):  # calculate the partial forward kinematics of the robotic arm until the specified frame
     DH_parameters = np.array(DH_parameters, dtype = float)  # convert the DH parameters to a numpy array
     a = DH_parameters[0, :].reshape((-1,)); alpha = DH_parameters[1, :].reshape((-1,)); d = DH_parameters[2, :].reshape((-1,)); theta = DH_parameters[3, :].reshape((-1,))  # reshape the DH parameters vectors
     if until_frame == "base":  # if the transformation matrix is calculated until the base frame of coordinates
@@ -48,6 +48,7 @@ def compute_forward_kinematics_until_frame(world_base_T, base_0_T, n_end_effecto
         return T  # return the total transformation matrix from the world to the specified frame of coordinates
     elif until_frame == "end-effector":  # if the transformation matrix is calculated until the end-effector frame of coordinates
         T = compute_forward_kinematics_2(world_base_T, base_0_T, n_end_effector_T, DH_parameters, joints_types, q_joints)  # calculate the forward kinematics of the robotic arm
+        # T = compute_forward_kinematics(robot, q_joints)  # calculate the forward kinematics of the robotic arm using roboticstoolbox
         return T  # return the total transformation matrix from the world to the end-effector frame of coordinates
 
 def compute_forward_kinematics_all_frames(world_base_T, base_0_T, n_end_effector_T, DH_parameters, joints_types, q_joints):  # calculate the partial forward kinematics of the robotic arm for all the important frames
