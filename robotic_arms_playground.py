@@ -4,6 +4,7 @@ import tkinter.simpledialog as sd
 import tkinter.messagebox as ms
 import tkinter.colorchooser as cc
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 from mpl_toolkits.mplot3d import Axes3D
 from PIL import Image, ImageColor
 import string, copy
@@ -80,7 +81,7 @@ class robotic_manipulators_playground_window():
             else:  # if the robotic manipulator model is in the rtbdata folder
                 shutil.rmtree(self.rtbdata_robots_meshes_path + fr"/{robot_model}")  # remove the robotic manipulator model from the rtbdata folder
                 shutil.copytree(self.saved_robots_descriptions_folder_path + fr"/{robot_model}", self.rtbdata_robots_meshes_path + fr"/{robot_model}")  # copy the robot model to the rtbdata folder
-        # define the parameters for the main menus and the sub menus
+        # define the menus of the GUI
         self.main_menu_choice = 0  # the number choice of the main menu
         construct_robotic_manipulator_menu_build_details = dict(title = "Construct the robotic manipulator", build_function = self.build_construct_robotic_manipulator_menus)  # a dictionary to store the details of the construct robotic manipulator menu
         forward_kinematics_menu_build_details = dict(title = "Forward kinematics analysis", build_function = self.build_robotic_manipulator_forward_kinematics_menus)  # a dictionary to store the details of the forward kinematics menu
@@ -353,8 +354,8 @@ class robotic_manipulators_playground_window():
         self.k_i_chosen_num = 1  # the currently chosen obstacle gain ki for the obstacle position qi on the transformed workspace
         self.K = 1.0  # the scalar gain K for the control law
         self.K_limits = [1e-2, 1e2]  # the limits of the scalar gain K for the control law
-        self.w_phi = 1.0  # the scalar constant w_phi for the function psi
-        self.w_phi_limits = [1e-2, 1e1]  # the limits of the scalar constant w_phi for the function psi
+        self.w_phi = 1.0  # the scalar constant w_phi for the navigation function psi
+        self.w_phi_limits = [1e-2, 1e2]  # the limits of the scalar constant w_phi for the navigation function psi
         self.gamma = 0.5  # the scalar constant gamma for the function s
         self.gamma_limits = [0.0, 1.0]  # the limits of the scalar constant gamma for the function s
         self.e_p = 0.1  # the scalar constant e_p for the function sigmap
@@ -366,9 +367,14 @@ class robotic_manipulators_playground_window():
             self.chosen_control_law_parameters = self.saved_control_law_parameters_list[0]  # the chosen control law parameters
         else:  # if there are no saved control law parameters
             self.chosen_control_law_parameters = ""  # the chosen control law parameters
+        self.navigation_field_plot_points_divs_list = [25, 50, 100, 200, 300, 400, 500, 750, 1000]  # the possible divisions of the plot points for the navigation field
+        self.navigation_field_plot_points_divs = 200  # the divisions of the plot points for the navigation field
         self.solver_time_step_dt = 1e-2  # the time step for the obstacles avoidance solver (in seconds)
         self.solver_time_step_dt_limits = [1e-3, 1e-1]  # the limits of the time step for the obstacles avoidance solver (in seconds)
-        self.robot_control_law_joints_output = []  # the joints output of the robot control law for the obstacles avoidance solver
+        self.solver_error_tolerance = 1.0  # the error tolerance of the control law for the obstacles avoidance solver (in millimeters)
+        self.solver_error_tolerance_limits = [1e-1, 1e2]  # the limits of the error tolerance of the control law for the obstacles avoidance solver (in millimeters)
+        self.realws_path_control_law_output = []  # the path on the real workspace found by the control law for the obstacles avoidance solver
+        self.robot_joints_control_law_output = []  # the robot joints found by the control law for the obstacles avoidance solver
         self.robot_control_thread_flag = False  # the flag to run/stop the robot control thread
         # define the variables for the online Swift simulator
         self.swift_simulated_robots_list = [line.strip() for line in open(self.robots_run_by_swift_file_path)]  # the list of the robotic manipulators that can be simulated by the Swift simulator
@@ -1745,7 +1751,7 @@ class robotic_manipulators_playground_window():
         plane_singularities_tolerance_button_x = 2/7; self.plane_singularities_tolerance_button = gbl.menu_button(menu_frame, f"{self.plane_singularities_tolerance:.3f}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], plane_singularities_tolerance_button_x * menu_properties['width'], plane_singularities_tolerance_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.choose_plane_singularities_tolerance).button
         plane_singularities_samples_label_x = 3/7; gbl.menu_label(menu_frame, "Samples:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], plane_singularities_samples_label_x * menu_properties['width'], plane_singularities_samples_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         plane_singularities_samples_button_x = 3/7; self.plane_singularities_samples_button = gbl.menu_button(menu_frame, f"{self.plane_singularities_samples}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], plane_singularities_samples_button_x * menu_properties['width'], plane_singularities_samples_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.choose_plane_singularities_samples).button
-        find_plane_singularities_button_x = 4/7; self.find_plane_singularities_button = gbl.menu_button(menu_frame, "find\nsingularities", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], find_plane_singularities_button_x * menu_properties['width'], find_plane_singularities_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.find_plane_singularities).button
+        find_plane_singularities_button_x = 4/7; self.find_plane_singularities_button = gbl.menu_button(menu_frame, "find\nkinematic\nsingularities", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], find_plane_singularities_button_x * menu_properties['width'], find_plane_singularities_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.find_plane_singularities).button
         save_obstacles_transformation_button_x = 5/7; self.save_obstacles_transformation_button = gbl.menu_button(menu_frame, "save\nplane", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], save_obstacles_transformation_button_x * menu_properties['width'], save_obstacles_transformation_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.save_obstacles_transformation).button
         load_obstacles_transformation_label_x = 7/8; gbl.menu_label(menu_frame, "Load plane:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], load_obstacles_transformation_label_x * menu_properties['width'], load_obstacles_transformation_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         self.load_obstacles_transformation_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']} bold", state = "readonly", width = 13, values = self.saved_obstacles_transformations_list, justify = "center")
@@ -1936,14 +1942,14 @@ class robotic_manipulators_playground_window():
         check_start_target_pos_label_ord = start_pos_plane_label_ord-0.2
         check_start_target_pos_indicator_ord = check_start_target_pos_label_ord+1
         wtoR2_total_transformation_label_ord = 9
-        start_transforming_button_ord = wtoR2_total_transformation_label_ord+0.8
-        show_transformations_built_indicator_ord = wtoR2_total_transformation_label_ord+1.7
         build_wtd_transformation_label_ord = wtoR2_total_transformation_label_ord+1.2
         build_wtd_transformation_button_ord = build_wtd_transformation_label_ord-0.3
         show_wtd_details_button_ord = build_wtd_transformation_label_ord+0.3
         build_dtR2_transformation_label_ord = build_wtd_transformation_label_ord
         build_dtR2_transformation_button_ord = build_dtR2_transformation_label_ord-0.3
         show_dtR2_details_button_ord = build_dtR2_transformation_label_ord+0.3
+        start_transforming_button_ord = build_wtd_transformation_label_ord-0.4
+        show_transformations_built_indicator_ord = start_transforming_button_ord+0.8
         compute_control_law_for_robot_label_ord = 11.5
         define_control_parameters_label_ord = compute_control_law_for_robot_label_ord+1.5
         k_d_parameter_label_ord = define_control_parameters_label_ord-0.4
@@ -1956,11 +1962,15 @@ class robotic_manipulators_playground_window():
         save_control_parameters_button_ord = define_control_parameters_label_ord-0.7
         load_control_parameters_label_ord = save_control_parameters_button_ord+0.7
         load_control_parameters_combobox_ord = load_control_parameters_label_ord+0.7
-        navigation_potential_field_label_ord = define_control_parameters_label_ord+2
-        show_potential_field_values_button_ord = navigation_potential_field_label_ord-0.4
-        show_potential_field_gradients_button_ord = navigation_potential_field_label_ord+0.4
-        choose_solver_dt_label_ord = define_control_parameters_label_ord+1.7
-        choose_solver_dt_button_ord = choose_solver_dt_label_ord
+        navigation_field_label_ord = define_control_parameters_label_ord+1.9
+        show_field_values_button_ord = navigation_field_label_ord-0.3
+        show_field_gradients_button_ord = navigation_field_label_ord+0.3
+        field_plot_points_divs_label_ord = navigation_field_label_ord
+        field_plot_points_divs_slider_ord = navigation_field_label_ord
+        choose_solver_dt_label_ord = navigation_field_label_ord-0.3
+        choose_solver_dt_button_ord = navigation_field_label_ord-0.3
+        choose_solver_error_tol_label_ord = navigation_field_label_ord+0.3
+        choose_solver_error_tol_button_ord = navigation_field_label_ord+0.3
         compute_velocities_control_law_button_ord = compute_control_law_for_robot_label_ord+5
         apply_vels_to_simulated_robot_button_ord = compute_control_law_for_robot_label_ord+5
         apply_vels_to_real_robot_button_ord = compute_control_law_for_robot_label_ord+5
@@ -2017,11 +2027,15 @@ class robotic_manipulators_playground_window():
         self.load_control_parameters_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "readonly", width = 13, values = self.saved_control_law_parameters_list, justify = "center")
         load_control_parameters_combobox_x = load_control_parameters_label_x; self.load_control_parameters_combobox.place(x = load_control_parameters_combobox_x * menu_properties['width'], y = load_control_parameters_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
         self.load_control_parameters_combobox.bind("<<ComboboxSelected>>", self.load_control_law_parameters)
-        navigation_potential_field_label_x = 3/30; gbl.menu_label(menu_frame, "Navigation\npotential field:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], navigation_potential_field_label_x * menu_properties['width'], navigation_potential_field_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        show_potential_field_values_button_x = 9/30; self.show_potential_field_values_button = gbl.menu_button(menu_frame, "plot field values", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_potential_field_values_button_x * menu_properties['width'], show_potential_field_values_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.plot_navigation_potential_field_values).button
-        show_potential_field_gradients_button_x = show_potential_field_values_button_x; self.show_potential_field_gradients_button = gbl.menu_button(menu_frame, "plot field gradients", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_potential_field_gradients_button_x * menu_properties['width'], show_potential_field_gradients_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.plot_navigation_potential_field_gradients).button
-        choose_solver_dt_label_x = 24/30; gbl.menu_label(menu_frame, "time step dt (s):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_solver_dt_label_x * menu_properties['width'], choose_solver_dt_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        self.choose_solver_dt_button_x = 28/30; self.choose_solver_dt_button = gbl.menu_button(menu_frame, self.solver_time_step_dt, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], self.choose_solver_dt_button_x * menu_properties['width'], choose_solver_dt_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_solver_dt).button 
+        navigation_field_label_x = 3/30; gbl.menu_label(menu_frame, "Navigation\npotential field:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], navigation_field_label_x * menu_properties['width'], navigation_field_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        show_field_values_button_x = 8/30; self.show_field_values_button = gbl.menu_button(menu_frame, "plot function", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_field_values_button_x * menu_properties['width'], show_field_values_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.plot_navigation_potential_field_values).button
+        show_field_gradients_button_x = show_field_values_button_x; self.show_field_gradients_button = gbl.menu_button(menu_frame, "plot gradients", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_field_gradients_button_x * menu_properties['width'], show_field_gradients_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.plot_navigation_potential_field_gradients).button
+        field_plot_points_divs_label_x = 14/30; gbl.menu_label(menu_frame, "Points divisions\nto plot:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], field_plot_points_divs_label_x * menu_properties['width'], field_plot_points_divs_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        field_plot_points_divs_button_x = 18/30; self.navigation_field_plot_points_divs_button = gbl.menu_button(menu_frame, self.navigation_field_plot_points_divs, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], field_plot_points_divs_button_x * menu_properties['width'], field_plot_points_divs_slider_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_field_plot_points_divs).button
+        choose_solver_dt_label_x = 23/30; gbl.menu_label(menu_frame, "Time step dt (s):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_solver_dt_label_x * menu_properties['width'], choose_solver_dt_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        choose_solver_dt_button_x = 28/30; self.choose_solver_dt_button = gbl.menu_button(menu_frame, self.solver_time_step_dt, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], choose_solver_dt_button_x * menu_properties['width'], choose_solver_dt_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_solver_dt).button 
+        choose_solver_error_tol_label_x = choose_solver_dt_label_x; gbl.menu_label(menu_frame, "Error tolerance (mm):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_solver_error_tol_label_x * menu_properties['width'], choose_solver_error_tol_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        choose_solver_error_tol_button_x = choose_solver_dt_button_x; self.choose_solver_error_tol_button = gbl.menu_button(menu_frame, self.solver_error_tolerance, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], choose_solver_error_tol_button_x * menu_properties['width'], choose_solver_error_tol_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_solver_error_tol).button
         compute_velocities_control_law_button_x = 1/4; self.compute_velocities_control_law_button = gbl.menu_button(menu_frame, "apply\ncontrol law", f"Calibri {menu_properties['options_font']+2} bold", menu_properties['buttons_color'], menu_properties['bg_color'], compute_velocities_control_law_button_x * menu_properties['width'], compute_velocities_control_law_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.apply_control_law_compute_velocities).button
         apply_vels_to_simulated_robot_button_x = 2/4; self.apply_vels_to_simulated_robot_button = gbl.menu_button(menu_frame, "apply velocities to\nsimulated robot", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], apply_vels_to_simulated_robot_button_x * menu_properties['width'], apply_vels_to_simulated_robot_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.control_simulated_robotic_manipulator).button
         apply_vels_to_real_robot_button_x = 3/4; self.apply_vels_to_real_robot_button = gbl.menu_button(menu_frame, "apply velocities to\nreal robot", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], apply_vels_to_real_robot_button_x * menu_properties['width'], apply_vels_to_real_robot_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.control_real_robotic_manipulator).button
@@ -4028,7 +4042,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             ms.showerror("Error", "The workspace transformations cannot be built because the obstacles boundaries are not detected and / or the start and target positions are not set correctly!")
     def build_realws_to_unit_disk_transformation(self, event = None):  # build the transformation from the real workspace to the unit disk
         if self.hntf2d_solver != None:  # if the hntf2d control law object has been created
-            self.hntf2d_solver.calculate_realws_to_disk_transformation()  # calculate the transformation from the real workspace to the unit disk
+            self.hntf2d_solver.realws_to_disk_transformation()  # calculate the transformation from the real workspace to the unit disk
             if self.hntf2d_solver.wtd_transformation_is_built:  # if the transformation from the real workspace to the unit disk is built
                 ms.showinfo("Info", "The transformation from the real workspace to the unit disk has been built successfully!")  # show an info message
             else:  # if the transformation from the real workspace to the unit disk is not built
@@ -4083,10 +4097,9 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                 self.output_point_plot, = fig_ax2.plot(output_point[0], output_point[1], "ko", markersize = 5)  # plot the output point
                 self.output_point_plot_text = fig_ax2.text(output_point[0], output_point[1], f"({output_point[0]:.3f}, {output_point[1]:.3f})", fontsize = 7, color = "k")  # write the text of the output point
             plt.draw()  # redraw the plot
-        self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def build_unit_disk_to_R2_transformation(self, event = None):  # build the transformation from the unit disk to the R2 plane
         if self.hntf2d_solver != None:  # if the hntf2d control law object has been created
-            self.hntf2d_solver.calculate_disk_to_R2_transformation()  # calculate the transformation from the unit disk to the R2 plane
+            self.hntf2d_solver.disk_to_R2_transformation()  # calculate the transformation from the unit disk to the R2 plane
             if self.hntf2d_solver.dtp_transformation_is_built:  # if the transformation from the unit disk to the R2 plane is built
                 ms.showinfo("Info", "The transformation from the unit disk to the R2 plane has been built successfully!")  # show an info message
             else:  # if the transformation from the unit disk to the R2 plane is not built
@@ -4142,7 +4155,6 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                 self.output_point_plot, = fig_ax2.plot(output_point[0], output_point[1], "ko", markersize = 5)  # plot the output point
                 self.output_point_plot_text = fig_ax2.text(output_point[0], output_point[1], f"({output_point[0]:.3f}, {output_point[1]:.3f})", fontsize = 7, color = "k")  # write the text of the output point
             plt.draw()  # redraw the plot
-        self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def check_workspace_transformations_built(self, event = None):  # check which workspace transformations have been built
         if self.hntf2d_solver == None:  # if the hntf2d control law object has not been created yet
             self.check_transformations_built_text = "Press start!"  # change the text of the label that shows the built transformations
@@ -4251,47 +4263,118 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
     def plot_navigation_potential_field_values(self, event = None):  # plot the navigation function of the obstacles avoidance solver
         if self.hntf2d_solver != None and self.transformations_are_built:  # if the workspace transformations are built
             points_max_norm = max([np.linalg.norm(self.hntf2d_solver.q_i[k]) for k in range(len(self.hntf2d_solver.q_i))] + [np.linalg.norm(self.hntf2d_solver.q_init), np.linalg.norm(self.hntf2d_solver.q_d)])  # calculate the maximum norm of the points
-            x = np.linspace(-1.5 * points_max_norm, 1.5 * points_max_norm, 100)  # the x values
-            y = np.linspace(-1.5 * points_max_norm, 1.5 * points_max_norm, 100)  # the y values
+            grid_points_size = self.navigation_field_plot_points_divs  # the number of points in the grid
+            grid_scale_factor = 1.2  # the scale factor of the grid
+            x = np.linspace(-grid_scale_factor * points_max_norm, grid_scale_factor * points_max_norm, grid_points_size)  # the x values
+            y = np.linspace(-grid_scale_factor * points_max_norm, grid_scale_factor * points_max_norm, grid_points_size)  # the y values
             X, Y = np.meshgrid(x, y)  # the meshgrid of the x and y values
             P = np.array([X.flatten(), Y.flatten()]).T  # the points to evaluate the navigation function
-            Z = self.hntf2d_solver.psi(P)  # the values of the navigation function
+            Z = np.zeros_like(X.flatten())  # the values of the navigation function
+            for k in range(len(P)):  # for each point p
+                Z[k] = self.hntf2d_solver.navigation_psi(P[k])  # the values of the navigation function
+            # plot the navigation function
             fig = plt.figure()
             ax = fig.add_subplot(111, projection = "3d")
-            ax.plot_surface(X, Y, Z.reshape(X.shape), cmap = "viridis", edgecolor = "none")
-            ax.set_title("Navigation function of the obstacles avoidance solver")
+            values_map = mcolors.Normalize(vmin = np.min(Z), vmax = np.max(Z))
+            color_map = plt.get_cmap("viridis")
+            ax.plot_surface(X, Y, Z.reshape(X.shape), cmap = color_map, edgecolor = "none")
+            cbar = plt.colorbar(mappable = plt.cm.ScalarMappable(norm = values_map, cmap = color_map), ax = ax)
+            cbar.set_label("True gradients\nnorm")
+            q_init_plot, = ax.plot([self.hntf2d_solver.q_init[0]], [self.hntf2d_solver.q_init[1]], [self.hntf2d_solver.navigation_psi(self.hntf2d_solver.q_init)], "mo", markersize = 5)
+            q_d_plot, = ax.plot([self.hntf2d_solver.q_d[0]], [self.hntf2d_solver.q_d[1]], [self.hntf2d_solver.navigation_psi(self.hntf2d_solver.q_d)], "go", markersize = 5)
+            for i in range(len(self.hntf2d_solver.q_i)):
+                q_i_plot, = ax.plot([self.hntf2d_solver.q_i[i][0]], [self.hntf2d_solver.q_i[i][1]], [self.hntf2d_solver.navigation_psi(self.hntf2d_solver.q_i[i])], "bo", markersize = 5)
+                ax.text(self.hntf2d_solver.q_i[i][0], self.hntf2d_solver.q_i[i][1], self.hntf2d_solver.navigation_psi(self.hntf2d_solver.q_i[i]), f"{i+1}", fontsize = 7)
+            ax.legend([q_init_plot, q_d_plot, q_i_plot], ["Start", "Target", "Obstacles"], fontsize = 7, loc = "upper right")
+            ax.set_title("Navigation function for the obstacles avoidance solver\n")
             ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_zlabel("psi(x, y)")
             plt.show()
+        else:  # if the workspace transformations are not built
+            ms.showerror("Error", "The workspace transformations have not been built yet!", parent = self.menus_area)  # show an error message
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def plot_navigation_potential_field_gradients(self, event = None):  # plot the gradient of the navigation function of the obstacles avoidance solver
         if self.hntf2d_solver != None and self.transformations_are_built:  # if the workspace transformations are built
             points_max_norm = max([np.linalg.norm(self.hntf2d_solver.q_i[k]) for k in range(len(self.hntf2d_solver.q_i))] + [np.linalg.norm(self.hntf2d_solver.q_init), np.linalg.norm(self.hntf2d_solver.q_d)])  # calculate the maximum norm of the points
-            x = np.linspace(-1.5 * points_max_norm, 1.5 * points_max_norm, 100)  # the x values
-            y = np.linspace(-1.5 * points_max_norm, 1.5 * points_max_norm, 100)  # the y values
+            grid_points_size = self.navigation_field_plot_points_divs  # the number of points in the grid
+            grid_scale_factor = 1.2  # the scale factor of the grid
+            x = np.linspace(-grid_scale_factor * points_max_norm, grid_scale_factor * points_max_norm, grid_points_size)  # the x values
+            y = np.linspace(-grid_scale_factor * points_max_norm, grid_scale_factor * points_max_norm, grid_points_size)  # the y values
             X, Y = np.meshgrid(x, y)  # the meshgrid of the x and y values
             P = np.array([X.flatten(), Y.flatten()]).T  # the points to evaluate the navigation function
-            Z = self.hntf2d_solver.psi(P)  # the values of the navigation function
-            grad_Z = self.hntf2d_solver.psi_gradient(P)  # the gradient of the navigation function
+            gradients = np.zeros((len(P), 2))  # the gradients of the navigation function
+            gradients_scaled = np.zeros((len(X.flatten()), 2))  # the scaled gradients of the navigation function
+            gradients_desired_norm = 1.2 * (2.0 * grid_scale_factor * points_max_norm) / grid_points_size  # the desired norm of the plotted gradients
+            reject_point = False  # the flag to reject the point
+            for k in range(len(P)):  # for each point p
+                for i in range(len(self.hntf2d_solver.q_i)):
+                    if np.linalg.norm(P[k] - self.hntf2d_solver.q_i[i]) < (2.0 * grid_scale_factor * points_max_norm) / 100.0:  # if the point p is on an obstacle
+                        reject_point = True  # set the flag to reject the point
+                        break
+                if not reject_point:  # if the point p is not near an obstacle
+                    gradients[k] = self.hntf2d_solver.navigation_psi_gradient(P[k])  # the gradient of the navigation function at point p
+                    gradient_norm = np.sqrt(gradients[k, 0]**2 + gradients[k, 1]**2)  # the norm of the current gradient
+                    if gradient_norm != 0:  # if the norm of the current gradient is not zero
+                        gradients_scaled[k] = gradients[k] / gradient_norm * gradients_desired_norm  # the normalized and rescaled gradient of the navigation function at point p
+                reject_point = False  # reset the flag to reject the point
+            # plot the gradients
             fig = plt.figure()
             ax = fig.add_subplot(111)
-            ax.quiver(P[:, 0], P[:, 1], grad_Z[:, 0], grad_Z[:, 1])
-            ax.set_title("Gradient of the navigation function of the obstacles avoidance solver")
-            ax.set_xlabel("x"); ax.set_ylabel("y")
+            norms_cap_value = 100  # the cap value of the norms of the gradients
+            gradients_true_norms = np.linalg.norm(gradients, axis = 1)  # the true norms of the gradients
+            gradients_capped_norms = np.minimum(gradients_true_norms, norms_cap_value)  # the capped norms of the gradients
+            norms_map = mcolors.Normalize(vmin = 0.0, vmax = np.max(gradients_capped_norms))
+            color_map = plt.get_cmap("turbo")
+            ax.quiver(X, Y, -gradients_scaled[:, 0], -gradients_scaled[:, 1], color = color_map(norms_map(gradients_capped_norms)), angles = "xy", scale_units = "xy", scale = 1)
+            cbar = plt.colorbar(mappable = plt.cm.ScalarMappable(norm = norms_map, cmap = color_map), ax = ax)
+            cbar.set_label("True gradients\nnorm")
+            q_init_plot, = ax.plot([self.hntf2d_solver.q_init[0]], [self.hntf2d_solver.q_init[1]], "mo", markersize = 5)
+            q_d_plot, = ax.plot([self.hntf2d_solver.q_d[0]], [self.hntf2d_solver.q_d[1]], "go", markersize = 5)
+            for i in range(len(self.hntf2d_solver.q_i)):
+                q_i_plot, = ax.plot([self.hntf2d_solver.q_i[i][0]], [self.hntf2d_solver.q_i[i][1]], "bo", markersize = 5)
+                ax.text(self.hntf2d_solver.q_i[i][0], self.hntf2d_solver.q_i[i][1], f"{i+1}", fontsize = 7)
+            ax.legend([q_init_plot, q_d_plot, q_i_plot], ["Start", "Target", "Obstacles"], fontsize = 7, loc = "upper right")
+            ax.set_title("Negative gradient of the navigation function for the obstacles avoidance solver\n(press mouse right click)")
+            ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_aspect("equal")
+            fig.canvas.mpl_connect("button_press_event", lambda event: self.mark_navigation_field_gradients(event, ax))  # connect a function to the plot
             plt.show()
-    def change_solver_dt(self, event = None):  # change the time step for the obstacles avoidance solver
-        solver_dt = sd.askfloat("Choose the solver time step", "Enter the time step for the obstacles avoidance solver (in seconds):", initialvalue = self.solver_time_step_dt, minvalue = self.solver_time_step_dt_limits[0], maxvalue = self.solver_time_step_dt_limits[1], parent = self.menus_area)  # ask the user to enter the new value of the solver time step
+        else:  # if the workspace transformations are not built
+            ms.showerror("Error", "The workspace transformations have not been built yet!", parent = self.menus_area)  # show an error message
+        self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
+    def mark_navigation_field_gradients(self, event, fig_ax):  # mark the navigation field gradients on the plot
+        if event.inaxes:  # if the event is inside the axis space
+            x, y = event.xdata, event.ydata  # get the coordinates of the mouse click
+            if event.button == 3:  # if the user presses mouse right click
+                try:
+                    self.gradient_plot.remove()  # try to remove the plotted gradient
+                    self.gradient_plot_text.remove()  # try to remove the plotted gradient text
+                except: pass
+                point = np.array([x, y])  # the point
+                self.gradient_plot, = fig_ax.plot(x, y, "ko", markersize = 5)  # plot the gradient
+                self.gradient_plot_text = fig_ax.text(x, y, f"({x:.3f}, {y:.3f}):\n-grad: {np.round(-self.hntf2d_solver.navigation_psi_gradient(point), 3)}\ngrad norm: {np.round(np.linalg.norm(self.hntf2d_solver.navigation_psi_gradient(point)), 3)}", fontsize = 10, color = "k")  # write the text of the gradient
+            plt.draw()  # redraw the plot
+    def change_field_plot_points_divs(self, event = None):  # change the number of points divisions in the navigation field plot
+        self.navigation_field_plot_points_divs = self.alternate_matrix_elements(self.navigation_field_plot_points_divs_list, self.navigation_field_plot_points_divs)  # change the number of points divisions in the navigation field plot
+        self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
+    def change_solver_dt(self, event = None):  # change the time step for the control law
+        solver_dt = sd.askfloat("Choose the solver time step", "Enter the time step dt (in seconds)\nfor the control law:", initialvalue = self.solver_time_step_dt, minvalue = self.solver_time_step_dt_limits[0], maxvalue = self.solver_time_step_dt_limits[1], parent = self.menus_area)  # ask the user to enter the new value of the solver's time step
         if solver_dt != None:  # if the user enters a number
-            self.solver_time_step_dt = solver_dt  # change the time step for the obstacles avoidance solver
+            self.solver_time_step_dt = solver_dt  # change the time step for the control law
+        self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
+    def change_solver_error_tol(self, event = None):  # change the error tolerance for the control law
+        solver_error_tol = sd.askfloat("Choose the solver error tolerance", "Enter the error tolerance (in millimeters)\nof the target position convergence for the control law:", initialvalue = self.solver_error_tolerance, minvalue = self.solver_error_tolerance_limits[0], maxvalue = self.solver_error_tolerance_limits[1], parent = self.menus_area)  # ask the user to enter the new value of the solver's error tolerance
+        if solver_error_tol != None:  # if the user enters a number
+            self.solver_error_tolerance = solver_error_tol  # change the error tolerance for the control law
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def apply_control_law_compute_velocities(self, event = None):  # apply the control law and compute the velocities of the robotic manipulator
         if not self.robot_control_thread_flag:  # if the robot control thread is not running
             if self.robotic_manipulator_is_built: # if a robotic manipulator is built
+                # self.realws_path_control_law_output
                 total_steps = 100
-                self.robot_control_law_joints_output = [self.get_robot_joints_variables(self.control_or_kinematics_variables_visualization_list[0])]  # the joints variables time series for the robot control
+                self.robot_joints_control_law_output = [self.get_robot_joints_variables(self.control_or_kinematics_variables_visualization_list[0])]  # the joints variables time series for the robot control
                 for i in range(total_steps):
-                    self.robot_control_law_joints_output.append(self.robot_control_law_joints_output[-1].copy())  # append the last joints variables
+                    self.robot_joints_control_law_output.append(self.robot_joints_control_law_output[-1].copy())  # append the last joints variables
                     for k in range(self.joints_number):  # for each joint of the robotic manipulator
-                        self.robot_control_law_joints_output[-1][k] += np.pi/2.0/total_steps  # increment the joints variables
+                        self.robot_joints_control_law_output[-1][k] += np.pi/2.0/total_steps  # increment the joints variables
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def control_simulated_robotic_manipulator(self, event = None):  # control the simulated robotic manipulator
         if not self.robot_control_thread_flag:  # if the robot control thread is not running
@@ -4334,8 +4417,12 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             self.choose_gamma_parameter_button.configure(text = f"{self.gamma:.2f}")  # change the text of the button that allows the user to choose the gamma parameter
             self.choose_e_p_parameter_button.configure(text = f"{self.e_p:.2f}")  # change the text of the button that allows the user to choose the e_p parameter
             self.choose_e_v_parameter_button.configure(text = f"{self.e_v:.2f}")  # change the text of the button that allows the user to choose the e_v parameter
-            self.choose_solver_dt_button.configure(text = f"{self.solver_time_step_dt:.3f}")  # change the text of the button that allows the user to choose the time step for the differential kinematics analysis
+            self.navigation_field_plot_points_divs_button.configure(text = f"{self.navigation_field_plot_points_divs}")  # change the text of the button that allows the user to change the number of points divisions in the navigation field plot
+            self.choose_solver_dt_button.configure(text = f"{self.solver_time_step_dt:.3f}")  # change the text of the button that allows the user to choose the time step for the control law
+            self.choose_solver_error_tol_button.configure(text = f"{self.solver_error_tolerance:.1f}")  # change the text of the button that allows the user to choose the error tolerance for the control law
             if self.hntf2d_solver != None:  # if the hntf2d control law object has been created
+                self.hntf2d_solver.p_init = self.start_pos_workspace_plane + np.array([-self.workspace_image_plane_x_length/2, -self.workspace_image_plane_y_length/2])  # change the initial position of the obstacles avoidance solver
+                self.hntf2d_solver.p_d = self.target_pos_workspace_plane + np.array([-self.workspace_image_plane_x_length/2, -self.workspace_image_plane_y_length/2])  # change the target position of the obstacles avoidance solver
                 self.hntf2d_solver.k_d = self.k_d  # change the k_d parameter of the obstacles avoidance solver
                 self.hntf2d_solver.k_i = self.k_i  # change the k_i parameters of the obstacles avoidance solver
                 self.hntf2d_solver.K = self.K  # change the K parameter of the obstacles avoidance solver
@@ -4343,6 +4430,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                 self.hntf2d_solver.gamma = self.gamma  # change the gamma parameter of the obstacles avoidance solver
                 self.hntf2d_solver.e_p = self.e_p  # change the e_p parameter of the obstacles avoidance solver
                 self.hntf2d_solver.e_v = self.e_v  # change the e_v parameter of the obstacles avoidance solver
+                self.hntf2d_solver.start_target_positions_transformations()  # transform the start and target positions
         except Exception as e:
             if "invalid command name" not in str(e): print(f"Error in update_obstacles_avoidance_solver_indicators: {e}")
 
@@ -4357,12 +4445,12 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
     def robot_control_thread_run_function(self):  # the run function, it continuously captures and displays the camera frames
         control_or_kinematics_choose = self.control_or_kinematics_variables_visualization
         while True:  # while the thread is running
-            for k in range(len(self.robot_control_law_joints_output)):  # loop through the joints variables time series for the robot control
+            for k in range(len(self.robot_joints_control_law_output)):  # loop through the joints variables time series for the robot control
                 if control_or_kinematics_choose == self.control_or_kinematics_variables_visualization_list[0]:  # if the user wants to visualize the control variables
-                    self.control_joints_variables = self.robot_control_law_joints_output[k].copy()  # the joints variables for the robot control, for the current time step
+                    self.control_joints_variables = self.robot_joints_control_law_output[k].copy()  # the joints variables for the robot control, for the current time step
                     # animate
                 elif control_or_kinematics_choose == self.control_or_kinematics_variables_visualization_list[1]:  # if the user wants to visualize the forward kinematics variables
-                    self.forward_kinematics_variables = self.robot_control_law_joints_output[k].copy()  # the joints variables for the robot control, for the current time step
+                    self.forward_kinematics_variables = self.robot_joints_control_law_output[k].copy()  # the joints variables for the robot control, for the current time step
                 time.sleep(self.solver_time_step_dt)  # wait for some time equal to the time step of the solver
             self.kill_robot_control_thread()  # kill the existed and running camera thread
             if not self.robot_control_thread_flag:  # if the thread is stopped

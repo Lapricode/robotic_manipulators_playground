@@ -19,7 +19,7 @@ class hntf2d_control_law:
         self.k_d = k_d  # the target gain kd for the target position qd on the transformed workspace
         self.k_i = k_i  # the obstacles gains kis for the obstacles punctures positions qis on the transformed workspace
         self.K = K  # the scalar gain K for the control law
-        self.w_phi = w_phi  # the scalar constant w_phi for the function psi
+        self.w_phi = w_phi  # the scalar constant w_phi for the navigation function psi
         self.gamma = gamma  # the scalar constant gamma for the function s
         self.e_p = e_p  # the scalar constant e_p for the function sigmap
         self.e_v = e_v  # the scalar constant e_v for the function sigmav
@@ -32,37 +32,41 @@ class hntf2d_control_law:
             print(ssh_response["message"])  # print the message from the SSH response
         except:  # if an error occurs
             print("Error: Could not create a new HarmonicMap2D object!")  # print an error message
-    def calculate_realws_to_disk_transformation(self):  # calculate the harmonic transformation that maps the real workspace to the sphere world
+    def realws_to_disk_transformation(self):  # calculate the harmonic transformation that maps the real workspace to the sphere world
         # the outer boundary goes to the unit circle, the inner boundaries go to discrete punctures
         try:  # try to calculate the transformation that maps the real workspace to the unit disk
             if not self.wtd_transformation_is_built:  # check if the real workspace to disk transformation has not been done yet
                 ssh_url = "http://127.0.0.1:5000/calculate_harmonic_transformation"  # the SSH URL to communicate with the virtual machine
-                outer_boundary = []; inner_boundaries = []  # initialize the outer boundary and the inner boundaries
                 outer_boundary = self.outer_boundary.tolist()  # make sure the outer boundary is a list
+                inner_boundaries = []  # initialize the inner boundaries
                 for i in range(len(self.inner_boundaries)): inner_boundaries.append(self.inner_boundaries[i].tolist())  # make sure the inner boundaries are lists
                 ssh_response = requests.post(ssh_url, json = {"outer_boundary": outer_boundary, "inner_boundaries": inner_boundaries}).json()  # the SSH response from the virtual machine
                 self.unit_circle = np.array(ssh_response["unit_circle"])  # the unit_circle from the SSH response
-                if np.linalg.norm(self.unit_circle[0] - self.unit_circle[-1]) != 0.0: self.unit_circle = np.vstack((self.unit_circle, self.unit_circle[0]))  # close the unit circle if it is not closed
-                self.q_i = np.array(ssh_response["punctures"])  # the punctures from the SSH response
-                self.q_init = self.realws_to_unit_disk_mapping(self.p_init)  # map the start position from the real workspace to the sphere world
-                self.q_d = self.realws_to_unit_disk_mapping(self.p_d)  # map the target position from the real workspace to the sphere world
-                self.q_init_disk = self.q_init.copy()  # store the start position from the unit disk
-                self.q_d_disk = self.q_d.copy()  # store the target position from the unit disk
-                self.q_i_disk = self.q_i.copy()  # store the obstacles punctures positions from the unit disk
+                if np.linalg.norm(self.unit_circle[0] - self.unit_circle[-1]) != 0.0:  # check if the unit circle is not closed
+                    self.unit_circle = np.vstack((self.unit_circle, self.unit_circle[0]))  # close the unit circle if it is not closed
+                self.q_i_disk = np.array(ssh_response["punctures"])  # the obstacles punctures positions from the SSH response
+                self.q_i = self.q_i_disk.copy()  # store the obstacles punctures positions on the transformed workspace
                 self.wtd_transformation_is_built = True  # set the flag to True to indicate that the real workspace to disk transformation has been done
                 print("Harmonic transformation from the real workspace to unit disk computed successfully!")  # print a message to the console
         except:  # if an error occurs
             print("Error: Could not compute the transformation from the real workspace to the unit disk!")  # print an error message
-    def calculate_disk_to_R2_transformation(self):  # calculate the transformation that maps the sphere world to the R2 plane
+    def disk_to_R2_transformation(self):  # calculate the transformation that maps the sphere world to the R2 plane
         # the unit circle goes to infinity, the punctures positions have to be recalculated
         if self.wtd_transformation_is_built:  # check if the real workspace to disk transformation has been done
             if not self.dtp_transformation_is_built:  # check if the disk to R2 transformation has not been done yet
                 for k in range(len(self.q_i)):  # calculate the punctures positions on the R2 plane
                     self.q_i[k] = self.unit_disk_to_R2_mapping(self.q_i[k])  # map the punctures from the unit disk to the R2 plane
-                self.q_init = self.unit_disk_to_R2_mapping(self.q_init)  # map the start position from the sphere world to the R2 plane
-                self.q_d = self.unit_disk_to_R2_mapping(self.q_d)  # map the target position from the sphere world to the R2 plane
                 self.dtp_transformation_is_built = True  # set the flag to True to indicate that the unit disk to R2 transformation has been done
             print("Transformation from the unit disk to the R2 plane computed successfully!")  # print a message to the console
+    def start_target_positions_transformations(self):  # calculate the mapping of the start and target positions from the real workspace to the R2 plane
+        if self.wtd_transformation_is_built:  # check if the real workspace to disk transformation has been done
+            self.q_init_disk = self.realws_to_unit_disk_mapping(self.p_init)  # map the start position from the real workspace to the sphere world
+            self.q_d_disk = self.realws_to_unit_disk_mapping(self.p_d)  # map the target position from the real workspace to the sphere world
+            self.q_init = self.q_init_disk.copy()  # store the start position on the transformed workspace
+            self.q_d = self.q_d_disk.copy()  # store the target position on the transformed workspace
+        if self.dtp_transformation_is_built:  # check if the disk to R2 transformation has been done
+            self.q_init = self.unit_disk_to_R2_mapping(self.q_init_disk)  # map the start position from the sphere world to the R2 plane
+            self.q_d = self.unit_disk_to_R2_mapping(self.q_d_disk)  # map the target position from the sphere world to the R2 plane
     def realws_to_unit_disk_mapping(self, p):  # map the point p from the real workspace to the sphere world (unit disk)
         # p = [px, py] is the point on the real workspace
         try:  # try to map the point p from the real workspace to the unit disk
@@ -74,7 +78,7 @@ class hntf2d_control_law:
         except:  # if an error occurs
             print("Error: Could not map the point from the real workspace to the sphere world!")  # print an error message
             return None  # return None
-    def workspace_to_unit_disk_jacobian(self, p):  # calculate the jacobian of the transformation from the real workspace to the sphere world at the given point p
+    def realws_to_unit_disk_jacobian(self, p):  # calculate the jacobian of the transformation from the real workspace to the sphere world at the given point p
         # p = [px, py] is the point on the real workspace
         try:  # try to calculate the jacobian of the transformation at the point p
             p = np.array(p).reshape(-1, 1)  # make sure p is a numpy array
@@ -104,97 +108,51 @@ class hntf2d_control_law:
     def harmonic_field_phi_gradient(self, q):  # calculate the gradient of the harmonic potential field phi
         # kd * (q - qd) / np.linalg.norm(q - qd)**2 is the gradient of the target harmonic potential field phi
         # sum(ki * (q - qi) / np.linalg.norm(q - qi)**2) is the gradient of the obstacles harmonic potential field phi
-        return self.k_d * (q - self.q_d) / (np.linalg.norm(q - self.q_d))**2.0 - sum([self.k_i[i] * (q - self.q_i[i]) / np.log(np.linalg.norm(q - self.q_i[i]))**2.0 for i in range(len(self.q_i))])  # return the gradient of the harmonic potential field phi
-    def psi(self, q):  # calculate the function psi
-        return (1.0 + np.tanh(self.harmonic_field_phi(q) / self.w_phi)) / 2.0  # return the function psi
-    def psi_gradient(self, q):  # calculate the gradient of the function psi
-        return (1.0 - np.tanh(self.harmonic_field_phi(q) / self.w_phi)**2.0) / (2.0 * self.w_phi) @ self.harmonic_field_phi_gradient(q)  # return the gradient of the function psi
+        return self.k_d * (q - self.q_d) / (np.linalg.norm(q - self.q_d))**2.0 - sum([self.k_i[i] * (q - self.q_i[i]) / np.linalg.norm(q - self.q_i[i])**2.0 for i in range(len(self.q_i))])  # return the gradient of the harmonic potential field phi
+    def navigation_psi(self, q):  # calculate the navigation function psi
+        return (1.0 + np.tanh(self.harmonic_field_phi(q) / self.w_phi)) / 2.0  # return the navigation function psi
+    def navigation_psi_gradient(self, q):  # calculate the gradient of the navigation function psi
+        # return (1.0 / np.cosh(self.harmonic_field_phi(q) / self.w_phi)**2.0) / (2.0 * self.w_phi) * self.harmonic_field_phi_gradient(q)  # return the gradient of the navigation function psi
+        return (1.0 - np.tanh(self.harmonic_field_phi(q) / self.w_phi)**2.0) / (2.0 * self.w_phi) * self.harmonic_field_phi_gradient(q)  # return the gradient of the navigation function psi
     def sigmap_func(self, x):  # calculate the value of the function sigmap
-        return x**2.0 * (3.0 - 2.0 * x)  # return the value of the function sigmap
+        return 1 if x <= 1.0 else np.exp(1.0 - x)  # return the value of the function sigmap
     def sigmav_func(self, x):  # calculate the value of the function sigmav
-        return 0.0 if x < 0.0 else x**2.0  # return the value of the function sigmav
+        return 0.0 if x <= 0.0 else x**2.0  # return the value of the function sigmav
     def scalar_gain_s(self, q):  # calculate the scalar gain s
-        return (1 - self.gamma) * self.sigmav_func((self.psi_gradient(q) @ q) / self.e_v) + self.gamma * self.sigmap_func(0.0)  # return the scalar gain s
-    def control_law(self, p):  # calculate the control law
-        # p is the current position of the end-effector on the real workspace
-        p = np.array(p)  # make sure q is a numpy array
-        q = p
-        # q = self.workspace_to_unit_disk_tranformation(p)  # transform the current position p to the sphere world
-        s = self.scalar_gain_s(q)
-        psi_grad = self.psi_gradient(q)
-        obstacles_points = self.workspace_to_unit_disk_tranformation(self.outer_boundary, self.inner_boundaries)
-        J_wtd = self.workspace_to_unit_disk_tranformation_jacobian(self.outer_boundary, self.inner_boundaries)
-        J_dtp = self.unit_disk_to_R2_tranformation_jacobian(obstacles_points)
-        return -self.K * s * np.linalg.inv(J_wtd) @ np.linalg.inv(J_dtp) @  psi_grad  # return the control law
+        psi_grad = self.navigation_psi_gradient(q)  # calculate the gradient of the navigation function psi at the point q
+        return self.K * (self.gamma * self.sigmap_func(np.linalg.norm(q) / self.e_p) + (1 - self.gamma) * self.sigmav_func(np.dot(psi_grad.T, q) / (self.e_v + np.linalg.norm(psi_grad) * np.linalg.norm(q))))  # return the scalar gain s
+    def control_law(self, dt, error_tolerance):  # calculate the control law and the path on the real workspace
+        # dt is the time step for the control law and error_tolerance is the error tolerance for the target position
+        # the start position is p_init and the target position is p_d
+        p = np.array(self.p_init)  # initialize the point p on the real workspace
+        q = np.array(self.q_init)  # initialize the point q on the real workspace
+        steps_counter  = 0  # initialize the steps counter
+        max_steps = 1000  # set the maximum number of steps
+        p_list = [p]  # initialize the list of points on the real workspace
+        q_list = [q]  # initialize the list of points on the transformed workspace
+        p_dot_list = []  # initialize the list of control laws on the real workspace
+        q_dot_list = []  # initialize the list of control laws on the transformed workspace
+        while steps_counter < max_steps:  # loop until the maximum number of steps is reached, unless the target position is reached (within the error tolerance, then break the loop)
+            s = self.scalar_gain_s(q)  # calculate the scalar gain s
+            psi_grad = self.navigation_psi_gradient(q)  # calculate the gradient of the navigation function psi at the point q
+            J_wtd = self.realws_to_unit_disk_jacobian(q)  # calculate the jacobian of the transformation from the real workspace to the unit disk at the point q
+            J_dtp = self.unit_disk_to_R2_jacobian(q)  # calculate the jacobian of the transformation from the unit disk to the R2 plane at the point q
+            # the control law on the transformed workspace
+            q_dot = -s * psi_grad  # calculate the control law on the transformed workspace
+            q_dot_list.append(q_dot)  # append the control law on the transformed workspace to the list
+            q = q + q_dot * dt  # update the point q on the transformed workspace
+            q_list.append(q)  # append the point q to the list
+            # the control law on the real workspace
+            p_dot = np.linalg.inv(J_wtd) @ np.linalg.inv(J_dtp) @ q_dot  # calculate the control law on the real workspace
+            p_dot_list.append(p_dot)  # append the control law on the real workspace to the list
+            p = p + p_dot * dt  # update the point p on the real workspace
+            p_list.append(p)  # append the point p to the list
+            if np.linalg.norm(p - self.p_d) <= error_tolerance:  # check if the target position is reached within the error tolerance
+                break  # break the loop
+            steps_counter += 1
+        if np.linalg.norm(p_list[-1] - self.p_d) <= error_tolerance:  # if the target position is not reached within the error tolerance after the maximum number of steps
+            return p_list, q_list, p_dot_list, q_dot_list, False  # return the control law on the real and transformed workspaces and a flag indicating that the target position is not reached
+        return p_list, q_list, p_dot_list, q_dot_list, True  # return the control law on the real and transformed workspaces and a flag indicating that the target position is reached
     def plot_control_law(self):  # plot the control law
         # use black line for the control law drawing
         return
-
-
-# # The outer boundary is oriented counter-clockwise.
-# points_num = 100
-# t = np.linspace(-1., +1., points_num+1)[:points_num]
-# outer_boundary = np.zeros((4*points_num, 2))
-# # Outer boundary: line segment ((-1, -1) -> (1, -1))
-# outer_boundary[:points_num, 0] = t[:]
-# outer_boundary[:points_num, 1] = -1
-# # Outer boundary: line segment ((1, -1) -> (1, 1))
-# outer_boundary[points_num:2*points_num, 0] = 1
-# outer_boundary[points_num:2*points_num, 1] = t[:]
-# # Outer boundary: line segment ((1, 1) -> (-1, 1))
-# outer_boundary[2*points_num:3*points_num, 0] = -t[:]
-# outer_boundary[2*points_num:3*points_num, 1] = 1
-# # Outer boundary: line segment ((-1, 1) -> (-1, -1))
-# outer_boundary[3*points_num:4*points_num, 0] = -1
-# outer_boundary[3*points_num:4*points_num, 1] = -t[:]
-# # Outer boundary: first and last vertices must be equal
-# outer_boundary[-1, :] = outer_boundary[0, :]
-
-# # Add a box-shaped inner boundary:
-# # XXX: Inner boundaries must be clock-wise oriented.
-# points_num = 10
-# t = np.linspace(-0.1, +0.1, points_num+1)[:points_num]
-# inner_boundary = np.zeros((4*points_num, 2))
-# # Inner boundary: line segment ((-0.1, -0.1) -> (-0.1, 0.1))
-# inner_boundary[:points_num, 0] = -0.1
-# inner_boundary[:points_num, 1] = t[:]
-# # Inner boundary: line segment ((-0.1, 0.1) -> (0.1, 0.1))
-# inner_boundary[points_num:2*points_num, 0] = t[:]
-# inner_boundary[points_num:2*points_num, 1] = 0.1
-# # Inner boundary: line segment ((0.1, 0.1) -> (0.1, -0.1))
-# inner_boundary[2*points_num:3*points_num, 0] = 0.1
-# inner_boundary[2*points_num:3*points_num, 1] = -t[:]
-# # Inner boundary: line segment ((0.1, -0.1) -> (-0.1, -0.1))
-# inner_boundary[3*points_num:4*points_num, 0] = -t[:]
-# inner_boundary[3*points_num:4*points_num, 1] = -0.1
-# # Inner boundary: first and last vertices must be equal
-# inner_boundary[-1, :] = inner_boundary[0, :]
-
-# t = np.linspace(-0.1, +0.1, 41)[:40]
-# inner_boundary2 = np.zeros((120, 2))
-# # Inner boundary: line segment ((-0.1, -0.1) -> (-0.1, 0.1))
-# inner_boundary2[:40, 0] = -0.1
-# inner_boundary2[:40, 1] = t[:]
-# # Inner boundary: line segment ((-0.1, 0.1) -> (0.1, 0.1))
-# inner_boundary2[40:80, 0] = t[:]
-# inner_boundary2[40:80, 1] = 0.1
-# # Inner boundary: line segment ((0.1, 0.1) -> (0.1, -0.1))
-# t = np.linspace(-0.1, +0.1, 21)[:20]
-# inner_boundary2[80:100, 0] = 0.1
-# inner_boundary2[80:100, 1] = -t[:]
-# # Inner boundary: line segment ((0.1, -0.1) -> (-0.1, -0.1))
-# inner_boundary2[100:120, 0] = -t[:]
-# inner_boundary2[100:120, 1] = -0.1
-# # Inner boundary: first and last vertices must be equal
-# inner_boundary2[-1, :] = inner_boundary2[0, :]
-
-
-# outer_boundary = outer_boundary
-# inner_boundaries = [inner_boundary, (inner_boundary2+np.array([0.4, 0.2]))]
-# obst_plane_x_length = 3
-# obst_plane_y_length = 3
-
-# hntf2d_control_object = hntf2d_control_law(p_init = [-0.8, 0.8], p_d = [0.9, -0.9], outer_boundary = outer_boundary, inner_boundaries = inner_boundaries, k_d = 1.0, k_i = [1.0, 1.0], w_phi = 1.0, gamma = 0.5, e_p = 0.1, e_v = 0.1, K = 1.0)
-# hntf2d_control_object.create_new_harmonic_map_object()
-# hntf2d_control_object.calculate_realws_to_disk_transformation(plot_map = True, keep_plot_on_screen = False)
-# hntf2d_control_object.calculate_disk_to_R2_transformation(plot_map = True, keep_plot_on_screen = True)
