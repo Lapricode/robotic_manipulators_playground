@@ -92,7 +92,9 @@ class hntf2d_control_law:
     def unit_disk_to_R2_mapping(self, p):  # map the point p from the sphere world to the R2 plane
         # p = [px, py] is the point on the sphere world (unit disk)
         p = np.array(p).reshape(-1, 1)  # make sure p is a numpy array
-        q = (1.0 / (1.0 - np.linalg.norm(p)) * p).flatten()  # the mapped point q on the R2 plane
+        p_norm = np.linalg.norm(p)  # the norm of the point p
+        q = (1.0 / (1.0 - p_norm) * p).flatten()  # the mapped point q on the R2 plane
+        # q = (p_norm / (1.0 - p_norm) * p).flatten()  # the mapped point q on the R2 plane
         return q  # return the mapped point q
     def unit_disk_to_R2_jacobian(self, p):  # calculate the jacobian of the transformation from the sphere world to the R2 plane at the given point p
         # p = [px, py] is the point on the sphere world (unit disk)
@@ -100,6 +102,7 @@ class hntf2d_control_law:
         p_norm = np.linalg.norm(p)  # the norm of the point p
         jacobian = ((1.0 - p_norm) * np.eye(2) + np.outer(p, p) / p_norm) / (1.0 - p_norm)**2.0  # the jacobian matrix of the transformation at the point p
         # jacobian = ((1.0 - p_norm) * np.eye(2) + (p @ p.T) / p_norm) / (1.0 - p_norm)**2.0  # the jacobian matrix of the transformation at the point p
+        # jacobian = ((1.0 - p_norm) * np.eye(2) + np.outer(p, p) / p_norm) / (1.0 - p_norm)**2.0 - np.eye(2)  # the jacobian matrix of the transformation at the point p
         return jacobian  # return the jacobian matrix at the given point p
     def harmonic_field_phi(self, q):  # calculate the harmonic potential field phi
         # kd * np.log(np.linalg.norm(q - qd)) is the target harmonic potential field phi
@@ -115,44 +118,69 @@ class hntf2d_control_law:
         # return (1.0 / np.cosh(self.harmonic_field_phi(q) / self.w_phi)**2.0) / (2.0 * self.w_phi) * self.harmonic_field_phi_gradient(q)  # return the gradient of the navigation function psi
         return (1.0 - np.tanh(self.harmonic_field_phi(q) / self.w_phi)**2.0) / (2.0 * self.w_phi) * self.harmonic_field_phi_gradient(q)  # return the gradient of the navigation function psi
     def sigmap_func(self, x):  # calculate the value of the function sigmap
-        return 1 if x <= 1.0 else np.exp(1.0 - x)  # return the value of the function sigmap
+        # return 1 if x <= 1.0 else np.exp(1.0 - x)  # return the value of the function sigmap
+        return 1 if x > 1.0 else x**2.0 * (3.0 - 2.0 * x)  # return the value of the function sigmap
     def sigmav_func(self, x):  # calculate the value of the function sigmav
         return 0.0 if x <= 0.0 else x**2.0  # return the value of the function sigmav
     def scalar_gain_s(self, q):  # calculate the scalar gain s
         psi_grad = self.navigation_psi_gradient(q)  # calculate the gradient of the navigation function psi at the point q
-        return self.K * (self.gamma * self.sigmap_func(np.linalg.norm(q) / self.e_p) + (1 - self.gamma) * self.sigmav_func(np.dot(psi_grad.T, q) / (self.e_v + np.linalg.norm(psi_grad) * np.linalg.norm(q))))  # return the scalar gain s
-    def control_law(self, dt, error_tolerance):  # calculate the control law and the path on the real workspace
+        return self.K * (self.gamma * self.sigmap_func((np.linalg.norm(q - self.q_d)) / self.e_p) + (1 - self.gamma) * self.sigmav_func(np.dot(psi_grad.T, q) / (self.e_v + np.linalg.norm(psi_grad) * np.linalg.norm(q))))  # return the scalar gain s
+    def run_control_law(self, dt = 0.01, error_tolerance = 0.001, max_iterations = 1000):  # calculate the control law and the path on the real workspace
         # dt is the time step for the control law and error_tolerance is the error tolerance for the target position
         # the start position is p_init and the target position is p_d
-        p = np.array(self.p_init)  # initialize the point p on the real workspace
-        q = np.array(self.q_init)  # initialize the point q on the real workspace
-        steps_counter  = 0  # initialize the steps counter
-        max_steps = 1000  # set the maximum number of steps
+        p = np.array(self.p_init)  # initialize the control law position on the real workspace
+        p_dot = np.zeros(2)  # initialize the control law velocity on the real workspace
+        q = np.array(self.q_init)  # initialize the control law position on the transformed workspace
+        q_dot = np.zeros(2)  # initialize the control law velocity on the transformed workspace
+        steps_counter = 0  # initialize the steps counter
         p_list = [p]  # initialize the list of points on the real workspace
-        q_list = [q]  # initialize the list of points on the transformed workspace
         p_dot_list = []  # initialize the list of control laws on the real workspace
-        q_dot_list = []  # initialize the list of control laws on the transformed workspace
-        while steps_counter < max_steps:  # loop until the maximum number of steps is reached, unless the target position is reached (within the error tolerance, then break the loop)
+        # q_list = [q]  # initialize the list of points on the transformed workspace
+        # q_dot_list = []  # initialize the list of control laws on the transformed workspace
+        while steps_counter < max_iterations:  # loop until the maximum number of steps is reached, unless the target position is reached (within the error tolerance, then break the loop)
+            steps_counter += 1
             s = self.scalar_gain_s(q)  # calculate the scalar gain s
             psi_grad = self.navigation_psi_gradient(q)  # calculate the gradient of the navigation function psi at the point q
-            J_wtd = self.realws_to_unit_disk_jacobian(q)  # calculate the jacobian of the transformation from the real workspace to the unit disk at the point q
-            J_dtp = self.unit_disk_to_R2_jacobian(q)  # calculate the jacobian of the transformation from the unit disk to the R2 plane at the point q
-            # the control law on the transformed workspace
             q_dot = -s * psi_grad  # calculate the control law on the transformed workspace
-            q_dot_list.append(q_dot)  # append the control law on the transformed workspace to the list
-            q = q + q_dot * dt  # update the point q on the transformed workspace
-            q_list.append(q)  # append the point q to the list
-            # the control law on the real workspace
-            p_dot = np.linalg.inv(J_wtd) @ np.linalg.inv(J_dtp) @ q_dot  # calculate the control law on the real workspace
-            p_dot_list.append(p_dot)  # append the control law on the real workspace to the list
-            p = p + p_dot * dt  # update the point p on the real workspace
+            # q_dot_list.append(q_dot)  # append the control law on the transformed workspace to the list
+            
+            p_dot_new = self.convert_q_dot_to_p_dot(p, q_dot)  # convert the control law from the transformed workspace to the real workspace
+            if np.linalg.norm(p_dot_new) != 0.0: p_dot = p_dot_new  # update the control law on the real workspace if it is not zero
+            # p_dot_list.append(p_dot)  # append the control law on the real workspace to the list
+            p = self.euler(p, p_dot, dt)  # update the point p on the real workspace
+            # p = self.runge_kutta_4th_order(p, q_dot, self.convert_q_dot_to_p_dot, dt)  # update the point p on the real workspace
             p_list.append(p)  # append the point p to the list
+            
+            q_disk = self.realws_to_unit_disk_mapping(p)  # calculate the mapping of the point p from the real workspace to the unit disk
+            q = self.unit_disk_to_R2_mapping(q_disk)  # calculate the mapping of the point q from the unit disk to the R2 plane
+            # q = self.euler(q, q_dot, dt)  # update the point q on the transformed workspace
+            # q_list.append(q)  # append the point q to the list
             if np.linalg.norm(p - self.p_d) <= error_tolerance:  # check if the target position is reached within the error tolerance
                 break  # break the loop
-            steps_counter += 1
-        if np.linalg.norm(p_list[-1] - self.p_d) <= error_tolerance:  # if the target position is not reached within the error tolerance after the maximum number of steps
-            return p_list, q_list, p_dot_list, q_dot_list, False  # return the control law on the real and transformed workspaces and a flag indicating that the target position is not reached
-        return p_list, q_list, p_dot_list, q_dot_list, True  # return the control law on the real and transformed workspaces and a flag indicating that the target position is reached
-    def plot_control_law(self):  # plot the control law
-        # use black line for the control law drawing
-        return
+            # if np.linalg.norm(q - self.q_d) <= error_tolerance:  # check if the target position is reached within the error tolerance
+            #     break  # break the loop
+        # if np.linalg.norm(p_list[-1] - self.p_d) > error_tolerance:  # if the target position is not reached within the error tolerance after the maximum number of steps
+        #     return p_list, p_dot_list, False  # return the failed control law on the real workspace and a flag indicating that the target position is not reached
+        # return p_list, p_dot_list, True  # return the successfull control law on the real workspace and a flag indicating that the target position is reached
+        if np.linalg.norm(p_list[-1] - self.p_d) > error_tolerance:  # if the target position is not reached within the error tolerance after the maximum number of steps
+            return p_list, p_dot_list, False  # return the failed control law on the real workspace and a flag indicating that the target position is not reached
+        return p_list, p_dot_list, True  # return the successfull control law on the real workspace and a flag indicating that the target position is reached
+    def convert_q_dot_to_p_dot(self, p, q_dot):  # convert the control law from the transformed workspace to the real workspace
+        q_disk = self.realws_to_unit_disk_mapping(p)  # calculate the mapping of the point p from the real workspace to the unit disk
+        J_wtd = self.realws_to_unit_disk_jacobian(p)  # calculate the jacobian of the transformation from the real workspace to the unit disk at the point q
+        J_dtp = self.unit_disk_to_R2_jacobian(q_disk)  # calculate the jacobian of the transformation from the unit disk to the R2 plane at the point q
+        try:  # if the inverse of the jacobian matrices can be calculated
+            p_dot = np.linalg.inv(J_wtd) @ np.linalg.inv(J_dtp) @ q_dot  # calculate the control law on the real workspace
+            return p_dot  # return the control law on the real workspace
+        except:  # if an error occurs, due to a singular Jacobian matrix for example
+            return np.zeros(2)  # return a zero control law
+    def euler(self, pk, uk, dt):  # implement the euler numerical integration
+        p = pk + uk * dt  # calculate the next position p
+        return p  # return the next position p
+    def runge_kutta_4th_order(self, pk, uk, dynamics, dt):  # implement the runge-kutta 4th order numerical integration
+        f1 = dynamics(pk, uk)
+        f2 = dynamics(pk + f1 * dt / 2, uk)
+        f3 = dynamics(pk + f2 * dt / 2, uk)
+        f4 = dynamics(pk + f3 * dt, uk)
+        p = pk + (f1 + 2*f2 + 2*f3 + f4) / 6.0 * dt  # calculate the next position p
+        return p  # return the next position p

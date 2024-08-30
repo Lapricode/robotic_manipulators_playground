@@ -71,29 +71,29 @@ def compute_inverse_kinematics(robot, end_effector_desired_pose_T, tol_error = 1
     invkine_success = invkine_solver[1]  # extract the success flag, which is 1 if the solver converged to a solution and 0 otherwise
     return q_joints, invkine_success  # return the joints configuration and the success flag
 
-def compute_differential_kinematics(robot, q_dot_joints, wrt_frame = "world"):  # calculate the differential kinematics of the robotic arm using roboticstoolbox
-    J0 = np.array(robot.jacob0(robot.q))  # calculate the geometric Jacobian matrix of the robotic arm wrt the world frame
+def compute_differential_kinematics(robot, q_joints, q_dot_joints, wrt_frame = "world"):  # calculate the differential kinematics of the robotic arm using roboticstoolbox
+    J0 = np.array(robot.jacob0(q_joints))  # calculate the geometric Jacobian matrix of the robotic arm wrt the world frame
     if wrt_frame == "world":  # if the Jacobian is calculated wrt the world frame
         return (J0 @ np.array(q_dot_joints).reshape(-1, 1)).reshape(-1,)  # return the end-effector velocities in the world frame
     elif wrt_frame == "end-effector":  # if the Jacobian is calculated wrt the end-effector frame
-        Je = np.array(robot.jacobe(robot.q))  # calculate the geometric Jacobian matrix of the robotic arm wrt the end-effector frame
+        Je = np.array(robot.jacobe(q_joints))  # calculate the geometric Jacobian matrix of the robotic arm wrt the end-effector frame
         # T_fkine = compute_forward_kinematics(robot, q_joints)  # calculate the forward kinematics of the robotic arm
         # Je = np.block([[T_fkine[:3, :3].T, np.zeros((3, 3))], [np.zeros((3, 3)), T_fkine[:3, :3].T]]) @ J0  # calculate the geometric Jacobian matrix of the robotic arm wrt the end-effector frame
         return (Je @ np.array(q_dot_joints).reshape(-1, 1)).reshape(-1,)  # return the end-effector velocities in the end-effector frame
 
-def compute_inverse_differential_kinematics(robot, end_effector_velocity, wrt_frame = "world"):  # calculate the inverse differential kinematics of the robotic arm
-    J0 = np.array(robot.jacob0(robot.q))  # calculate the geometric Jacobian matrix of the robotic arm wrt the world frame
-    J0_is_full_rank = np.linalg.matrix_rank(J0) == min(J0.shape)  # check if the Jacobian matrix is full rank
+def compute_inverse_differential_kinematics(robot, q_joints, end_effector_velocity, wrt_frame = "world"):  # calculate the inverse differential kinematics of the robotic arm
+    J0 = np.array(robot.jacob0(q_joints))  # calculate the geometric Jacobian matrix of the robotic arm wrt the world frame
+    J0_is_full_rank = (np.linalg.matrix_rank(J0) == min(J0.shape))  # check if the Jacobian matrix is full rank
     if J0_is_full_rank:  # if the Jacobian matrix is full rank
         if wrt_frame == "world":  # if the Jacobian is calculated wrt the world frame
             J0_pinv = np.linalg.pinv(J0)  # calculate the pseudo-inverse of the Jacobian matrix
             return (J0_pinv @ np.array(end_effector_velocity).reshape(-1, 1)).reshape(-1,), J0_is_full_rank  # return the joints velocities in the world frame
         elif wrt_frame == "end-effector":  # if the Jacobian is calculated wrt the end-effector frame
-            Je = np.array(robot.jacobe(robot.q))  # calculate the geometric Jacobian matrix of the robotic arm wrt the end-effector frame
+            Je = np.array(robot.jacobe(q_joints))  # calculate the geometric Jacobian matrix of the robotic arm wrt the end-effector frame
             Je_pinv = np.linalg.pinv(Je)  # calculate the pseudo-inverse of the Jacobian matrix
             return (Je_pinv @ np.array(end_effector_velocity).reshape(-1, 1)).reshape(-1,), J0_is_full_rank  # return the joints velocities in the end-effector frame
     else:  # if the Jacobian matrix is not full rank
-        return np.zeros(len(robot.q)), J0_is_full_rank  # return zero joints velocities
+        return np.zeros(len(q_joints)), J0_is_full_rank  # return zero joints velocities
 
 def find_reachable_workspace(robot, divs = 5, show_plots = False):  # find the reachable workspace of the robotic arm, i.e. the positions that the end-effector can reach in the 3D space no matter the orientation of the end-effector frame
     joints_num = len(robot.q)  # get the number of joints of the robotic arm
@@ -165,7 +165,7 @@ def find_kinematic_singularities_on_plane(robot, plane_x_range, plane_y_range, p
         ax1.scatter(x_s, y_s, z_s, c = "r", marker = ".")
         ax1.scatter(x_ns, y_ns, z_ns, c = "g", marker = ".")
         ax1.scatter(x_nrp, y_nrp, z_nrp, c = "k", marker = ".")
-        ax1.set_title(f"\n(Singularities upper bound: {singul_bound})\nReachable points = {len(reachable_pos)}: Non-singular points = {len(non_singular_pos)}, Singular points = {len(singular_pos)}\nNon reachable points = {len(non_reachable_pos)}")
+        ax1.set_title(f"Reachable points = {len(reachable_pos)}: Non-singular points = {len(non_singular_pos)}, Singular points = {len(singular_pos)}\nNon reachable points = {len(non_reachable_pos)}\n(Jacobian determinant -if it exists- upper bound: {singul_bound})")
         ax1.legend(["Singular poses", "Non-singular poses", "Non-reachable poses"])
         ax1.grid(True)
         plane_pos = np.array(plane_T_rev @ np.array([0, 0, 0, 1], dtype = float)).reshape(-1, 1)[:-1]
@@ -219,7 +219,7 @@ def find_kinematic_singularities_3d_space(robot, divs = 5, singul_bound = 1e-3, 
         ax1.set_xlabel("x (m)"); ax1.set_ylabel("y (m)"); ax1.set_zlabel("z (m)"); ax1.set_aspect("equal"); ax1.view_init(elev = 0, azim = 0)
         ax2 = fig.add_subplot(122, projection = "3d")
         ax2.scatter(x_s, y_s, z_s, c = "r", marker = ".", linewidths = 0.1, edgecolors = "k")
-        ax2.set_title(f"Singular points = {len(singular_pos)}\n(Singularities upper bound: {singul_bound})")
+        ax2.set_title(f"Singular points = {len(singular_pos)}\n(Jacobian determinant -if it exists- upper bound: {singul_bound})")
         ax2.set_xlabel("x (m)"); ax2.set_ylabel("y (m)"); ax2.set_zlabel("z (m)"); ax2.set_aspect("equal"); ax2.view_init(elev = 0, azim = 0)
         plt.show()
     else:

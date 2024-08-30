@@ -317,12 +317,12 @@ class robotic_manipulators_playground_window():
             self.chosen_obstacle_object_name = self.chosen_workspace_saved_obstacles_objects_list[0]  # the chosen obstacle name from the saved obstacles objects
         else:  # if there are no saved obstacles objects for the chosen workspace image
             self.chosen_obstacle_object_name = ""  # the chosen obstacle name from the saved obstacles objects
-        self.workspace_obstacles_height_detection = 10.0  # the height of the workspace obstacles for the obstacles detection in millimeters
-        self.workspace_obstacles_height_saved = self.workspace_obstacles_height_detection  # the saved height of the workspace obstacles in millimeters
-        self.workspace_obstacles_max_height = 100.0  # the maximum height of the obstacles (in millimeters)
+        self.workspace_obstacles_height_detection = 0.010  # the height of the workspace obstacles for the obstacles detection (in meters)
+        self.workspace_obstacles_height_saved = self.workspace_obstacles_height_detection  # the saved height of the workspace obstacles (in meters)
+        self.workspace_obstacles_max_height = 0.100  # the maximum height of the obstacles (in meters)
         self.boundaries_precision_parameter = 10  # the precision parameter for the obstacles boundaries detection (it is used to create an error for the boundaries approximation)
         self.boundaries_minimum_vertices = 3  # the minimum number of vertices for the obstacles boundaries detection
-        self.xy_res_obstacle_mesh_list = [25, 50, 100, 150, 200, 250, 300, 500, 1000]  # the possible values of the x and y axis resolution for the obstacles's mesh
+        self.xy_res_obstacle_mesh_list = [50, 100, 150, 200, 250, 300, 500, 1000]  # the possible values of the x and y axis resolution for the obstacles's mesh
         self.xy_res_obstacle_mesh = 100  # the x and y axis resolution for the obstacle mesh
         self.z_res_obstacle_mesh_list = [10, 25, 50, 100]  # the possible values of the z axis resolution for the obstacle mesh
         self.z_res_obstacle_mesh = 10  # the z axis resolution for the obstacle mesh
@@ -348,14 +348,14 @@ class robotic_manipulators_playground_window():
         self.transformations_are_built = False  # the flag to check if the transformations are built for the obstacles avoidance solver
         self.hntf2d_solver = None  # the solver object for the 2D obstacles avoidance
         self.k_d = 1.0  # the target gain kd for the target position qd on the transformed workspace
-        self.k_d_limits = [1e-2, 1e2]  # the limits of the target gain kd for the target position qd on the transformed workspace
+        self.k_d_limits = [1e-2, 1e3]  # the limits of the target gain kd for the target position qd on the transformed workspace
         self.k_i = [1.0]  # the obstacles gains kis for the obstacles positions qis on the transformed workspace
-        self.k_i_limits = [1e-2, 1e2]  # the limits of the obstacles gains kis for the obstacles positions qis on the transformed workspace
+        self.k_i_limits = [1e-2, 1e3]  # the limits of the obstacles gains kis for the obstacles positions qis on the transformed workspace
         self.k_i_chosen_num = 1  # the currently chosen obstacle gain ki for the obstacle position qi on the transformed workspace
-        self.K = 1.0  # the scalar gain K for the control law
-        self.K_limits = [1e-2, 1e2]  # the limits of the scalar gain K for the control law
-        self.w_phi = 1.0  # the scalar constant w_phi for the navigation function psi
-        self.w_phi_limits = [1e-2, 1e2]  # the limits of the scalar constant w_phi for the navigation function psi
+        self.K = 100.0  # the scalar gain K for the control law
+        self.K_limits = [1e-1, 1e6]  # the limits of the scalar gain K for the control law
+        self.w_phi = 10.0  # the scalar constant w_phi for the navigation function psi
+        self.w_phi_limits = [1e-2, 1e3]  # the limits of the scalar constant w_phi for the navigation function psi
         self.gamma = 0.5  # the scalar constant gamma for the function s
         self.gamma_limits = [0.0, 1.0]  # the limits of the scalar constant gamma for the function s
         self.e_p = 0.1  # the scalar constant e_p for the function sigmap
@@ -369,11 +369,14 @@ class robotic_manipulators_playground_window():
             self.chosen_control_law_parameters = ""  # the chosen control law parameters
         self.navigation_field_plot_points_divs_list = [25, 50, 100, 200, 300, 400, 500, 750, 1000]  # the possible divisions of the plot points for the navigation field
         self.navigation_field_plot_points_divs = 200  # the divisions of the plot points for the navigation field
-        self.solver_time_step_dt = 1e-2  # the time step for the obstacles avoidance solver (in seconds)
-        self.solver_time_step_dt_limits = [1e-3, 1e-1]  # the limits of the time step for the obstacles avoidance solver (in seconds)
-        self.solver_error_tolerance = 1.0  # the error tolerance of the control law for the obstacles avoidance solver (in millimeters)
-        self.solver_error_tolerance_limits = [1e-1, 1e2]  # the limits of the error tolerance of the control law for the obstacles avoidance solver (in millimeters)
+        self.solver_time_step_dt = 0.001  # the time step for the obstacles avoidance solver (in seconds)
+        self.solver_time_step_dt_limits = [1e-3, 1e-2]  # the limits of the time step for the obstacles avoidance solver (in seconds)
+        self.solver_error_tolerance = 0.010  # the error tolerance of the control law for the obstacles avoidance solver (in meters)
+        self.solver_error_tolerance_limits = [1e-4, 1e-1]  # the limits of the error tolerance of the control law for the obstacles avoidance solver (in meters)
+        self.solver_maximum_iterations = 1000  # the maximum number of iterations of the control law for the obstacles avoidance solver
         self.realws_path_control_law_output = []  # the path on the real workspace found by the control law for the obstacles avoidance solver
+        self.unit_disk_path_control_law_output = []  # the path on the unit disk found by the control law for the obstacles avoidance solver
+        self.R2_plane_path_control_law_output = []  # the path on the R2 plane found by the control law for the obstacles avoidance solver
         self.robot_joints_control_law_output = []  # the robot joints found by the control law for the obstacles avoidance solver
         self.robot_control_thread_flag = False  # the flag to run/stop the robot control thread
         # define the variables for the online Swift simulator
@@ -1069,12 +1072,54 @@ class robotic_manipulators_playground_window():
         self.clear_menus_background()  # clear the menus background
         # create the define parameters sub menu
         parameters_menu_title = "Define robot's parameters"
-        parameters_menu_info = "Here you can define the various parameters of the robotic manipulator."
+        parameters_menu_info = "--- Define Robot's Parameters ---\n\
+This submenu allows the user to define the physical and kinematic properties of the robotic manipulator:\n\
+• Model Name: You can nput a name for the robotic model.\"\n\
+• Joints Number (n): This field specifies the number of joints in the robotic manipulator.\n\
+- Denavit-Hartenberg Parameters:\n\
+These parameters are critical for defining the geometry and structure of the robot:\n\
+• Joint Number: A dropdown menu allows to select the joint to configure.\n\
+• Joint Type:  Choose the type of joint (e.g., revolute or prismatic) from a dropdown menu.\n\
+• a (meters): The distance between the previous joint axis and the current joint axis, measured along the previous joint axis.\n\
+• alpha (degrees): The twist angle, which defines the angle between the previous and current joint axes.\n\
+• d (meters): The offset along the previous joint axis to the current joint, which is the variable for prismatic joints.\n\
+• theta (degrees): The rotation angle around the current joint axis, which is the variable for revolute joints.\n\
+• Variable Limits: These fields define the minimum and maximum limits for the joint variables, in degrees or meters depending on the joint type. This is crucial for constraining the motion of the robot.\n\
+- Base and End-Effector Systems:\n\
+• World → Base → Frame \"0\": This section defines the position and orientation of the base frame relative to the world coordinate system and of the first joint frame relative to the base frame.\n\
+• Frame \"n\" → End-Effector: This section defines the position and orientation of the end-effector relative to the last joint frame.\n\
+- Robot control operations:\n\
+• Show Current Robot Info: Displays detailed information about the current robot configuration.\n\
+• Save Robot: Saves the current robot configuration to a text file.\n\
+• Delete Robot: Allows the user to delete a previously saved robot model.\n\
+• Build Robot: Constructs the robot model based on the defined parameters.\n\
+• Destroy Robot: Dismantles or deletes the currently built robot model.\n\
+• Load Robot Model: A dropdown to select and load a previously saved robot model."
         parameters_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = parameters_menu_title, info = parameters_menu_info, row = 0, column = 0, width = self.menus_background_width / 2, height = self.menus_background_height, \
                                             rows = 21, bg_color = "black", title_font = 15, options_font = 12, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
         # create the adjust visualization sub menu
         visualization_menu_title = "Adjust the visualization"
-        visualization_menu_info = "Here you can change the way the robotic manipulator is visualized. The visualization is drawn with a maximum of 100 fps in the workspace canvas shown to the left side of the application."
+        visualization_menu_info = "--- Adjust the Visualization ---\n\
+This submenu allows the user to customize how the robotic manipulator and its environment are visualized within the software:\n\
+- Robotic Manipulator Visualization:\n\
+• Frame: Selects which frame of the robot to visualize (e.g. base, frame 0, end-effector).\n\
+• Frame Color: Allows the user to set a color for the selected frame, with an option to apply the same color to all frames.\n\
+• Frame Size: Sets the size of the frame visualization, with an option to apply the same size to all frames.\n\
+• Joint Position (m): Specifies the position of the joint along its axis in meters.\n\
+• Link: Selects which link of the robot to visualize (e.g., link 1).\n\
+• Link Color: Allows the user to set a color for the selected link, with an option to apply the same color to all links.\n\
+• Link Size: Sets the size of the link visualization, with an option to apply the same size to all links.\n\
+• Link Length (m): Displays the length of the link in meters.\n\
+- Workspace Visualization:\n\
+• Canvas: Customizes the background color of the workspace.\n\
+• Terrain: Adjusts the color and appearance of the simulated ground.\n\
+• Axis: Sets the color and size of the axis visualization within the workspace.\n\
+• 2D Plane: Configures the color and size of the 2D obstacles plane shown in the workspace.\n\
+• Obstacles: Sets the color and size of the obstacles located on the 2D plane, if any are present.\n\
+- Simulators:\n\
+Provides options for different simulators to visualize the robotic manipulator:\n\
+• Matplotlib: A simple, interactive visualization only for the robotic manipulator.\n\
+• Swift: The online Swift simulator for real-time and more advanced visualizations of the robotic manipulator and its environment."
         visualization_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = visualization_menu_title, info = visualization_menu_info, row = 0, column = 1, width = self.menus_background_width / 2, height = self.menus_background_height, \
                                                 rows = 18, bg_color = "black", title_font = 15, options_font = 12, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
         # generate the sub menus
@@ -1085,8 +1130,8 @@ class robotic_manipulators_playground_window():
         menu_title_ord = 1
         menu_info_button_ord = 1
         model_name_label_ord = 2
-        joint_number_model_label_ord_ord = 3
-        den_har_parameters_label_ord = joint_number_model_label_ord_ord+1
+        joints_number_model_label_ord = 3
+        den_har_parameters_label_ord = joints_number_model_label_ord+1
         choose_joint_number_model_label_ord = den_har_parameters_label_ord+1
         choose_joint_type_label_ord = choose_joint_number_model_label_ord+1
         a_parameter_label_ord = choose_joint_type_label_ord+1
@@ -1103,8 +1148,8 @@ class robotic_manipulators_playground_window():
         end_effector_label_ord = base_label_ord+1.6
         end_effector_pos_button_ord = end_effector_label_ord-0.4
         end_effector_orient_button_ord = end_effector_label_ord+0.4
-        menu_divider_line_ord = end_effector_label_ord+1.3
-        build_robot_button_ord = menu_divider_line_ord+1.0
+        robot_control_operations_label_ord = end_effector_label_ord+1.4
+        build_robot_button_ord = robot_control_operations_label_ord+1.0
         destroy_robot_button_ord = build_robot_button_ord+0.8
         show_model_info_button_ord = build_robot_button_ord+0.4
         save_model_button_ord = build_robot_button_ord+1.8
@@ -1118,8 +1163,8 @@ class robotic_manipulators_playground_window():
         model_name_entrybox_x = 2/3; self.model_name_entrybox.place(x = model_name_entrybox_x * menu_properties['width'], y = model_name_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
         self.model_name_entrybox.insert(0, self.robotic_manipulator_model_name)
         self.model_name_entrybox.bind("<Return>", self.change_robotic_manipulator_model_name)
-        joint_number_model_label_ord_x = 1/3; gbl.menu_label(menu_frame, "Joints number (n):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], joint_number_model_label_ord_x * menu_properties['width'], joint_number_model_label_ord_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        joints_number_button_ord = joint_number_model_label_ord_ord; joints_number_button_x = 2/3; self.joints_number_button = gbl.menu_button(menu_frame, self.joints_number, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], joints_number_button_x * menu_properties['width'], joints_number_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_joints_number).button
+        joints_number_model_label_x = 1/3; gbl.menu_label(menu_frame, "Joints number (n):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], joints_number_model_label_x * menu_properties['width'], joints_number_model_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        joints_number_button_ord = joints_number_model_label_ord; joints_number_button_x = 2/3; self.joints_number_button = gbl.menu_button(menu_frame, self.joints_number, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], joints_number_button_x * menu_properties['width'], joints_number_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_joints_number).button
         den_har_parameters_label_x = 1/2; gbl.menu_label(menu_frame, "Denavit - Hartenberg parameters:", f"Calibri {menu_properties['options_font']} bold", menu_properties['subtitles_color'], menu_properties['bg_color'], den_har_parameters_label_x * menu_properties['width'], den_har_parameters_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         choose_joint_number_model_label_x = 1/3; gbl.menu_label(menu_frame, "Joint number:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_joint_number_model_label_x * menu_properties['width'], choose_joint_number_model_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         self.choose_joint_number_model_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "readonly", width = 8, values = [f"joint {joint}" for joint in range(1, self.joints_number + 1)], justify = "center")
@@ -1149,15 +1194,15 @@ class robotic_manipulators_playground_window():
         end_effector_label_x = 1/3; gbl.menu_label(menu_frame, "Frame \"n\" ⭢\nEnd-effector:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], end_effector_label_x * menu_properties['width'], end_effector_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         end_effector_pos_button_x = 2/3; self.end_effector_pos_button = gbl.menu_button(menu_frame, "position", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], end_effector_pos_button_x * menu_properties['width'], end_effector_pos_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_end_effector_position).button
         end_effector_orient_button_x = 2/3; self.end_effector_orient_button = gbl.menu_button(menu_frame, "orientation", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], end_effector_orient_button_x * menu_properties['width'], end_effector_orient_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_end_effector_orientation).button
-        menu_divider_line_x = 1/2; gbl.menu_label(menu_frame, "-------------------------", f"Calibri {menu_properties['options_font']} bold", menu_properties['subtitles_color'], menu_properties['bg_color'], menu_divider_line_x * menu_properties['width'], menu_divider_line_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        build_robot_button_x = 2/3; self.build_robot_button = gbl.menu_button(menu_frame, "build robot", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], build_robot_button_x * menu_properties['width'], build_robot_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.build_robotic_manipulator_model).button
-        destroy_robot_button_x = 2/3; self.destroy_robot_button = gbl.menu_button(menu_frame, "destroy robot", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], destroy_robot_button_x * menu_properties['width'], destroy_robot_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.destroy_robotic_manipulator_model).button
-        show_model_info_button_x = 1/5; self.show_model_info_button = gbl.menu_button(menu_frame, "show current\nrobot info", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_model_info_button_x * menu_properties['width'], show_model_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.show_robotic_manipulator_model_info).button
-        save_model_button_ord_x = 1/5; self.save_robotic_manipulator_model_file_button = gbl.menu_button(menu_frame, "save robot", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], save_model_button_ord_x * menu_properties['width'], save_model_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.save_robotic_manipulator_model_file).button
-        delete_model_button_x = 1/5; self.delete_robotic_amr_model_button = gbl.menu_button(menu_frame, "delete robot", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], delete_model_button_x * menu_properties['width'], delete_model_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.delete_robotic_manipulator_model_file).button
-        load_model_label_x = 2/3; gbl.menu_label(menu_frame, "Load robot model:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], load_model_label_x * menu_properties['width'], load_model_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        robot_control_operations_label_x = 1/2; gbl.menu_label(menu_frame, "Robot control operations:", f"Calibri {menu_properties['options_font']} bold", menu_properties['subtitles_color'], menu_properties['bg_color'], robot_control_operations_label_x * menu_properties['width'], robot_control_operations_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        show_model_info_button_x = 4/16; self.show_model_info_button = gbl.menu_button(menu_frame, "show current\nrobot info", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_model_info_button_x * menu_properties['width'], show_model_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.show_robotic_manipulator_model_info).button
+        save_model_button_ord_x = 4/16; self.save_robotic_manipulator_model_file_button = gbl.menu_button(menu_frame, "save robot", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], save_model_button_ord_x * menu_properties['width'], save_model_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.save_robotic_manipulator_model_file).button
+        delete_model_button_x = 4/16; self.delete_robotic_amr_model_button = gbl.menu_button(menu_frame, "delete robot", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], delete_model_button_x * menu_properties['width'], delete_model_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.delete_robotic_manipulator_model_file).button
+        build_robot_button_x = 11/16; self.build_robot_button = gbl.menu_button(menu_frame, "build robot", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], build_robot_button_x * menu_properties['width'], build_robot_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.build_robotic_manipulator_model).button
+        destroy_robot_button_x = 11/16; self.destroy_robot_button = gbl.menu_button(menu_frame, "destroy robot", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], destroy_robot_button_x * menu_properties['width'], destroy_robot_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.destroy_robotic_manipulator_model).button
+        load_model_label_x = 11/16; gbl.menu_label(menu_frame, "Load robot model:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], load_model_label_x * menu_properties['width'], load_model_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         self.load_model_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "readonly", width = 15, values = self.saved_robots_models_files_list, justify = "center")
-        load_model_combobox_x = 2/3; self.load_model_combobox.place(x = load_model_combobox_x * menu_properties['width'], y = (load_model_label_ord + 0.8) * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
+        load_model_combobox_x = load_model_label_x; self.load_model_combobox.place(x = load_model_combobox_x * menu_properties['width'], y = (load_model_label_ord + 0.8) * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
         self.load_model_combobox.bind("<<ComboboxSelected>>", lambda event: self.load_robotic_manipulator_model("", event))
     def generate_adjust_visualization_menu(self, menu_frame, menu_properties, event = None):  # build the adjust visualization menu
         # options order
@@ -1246,22 +1291,323 @@ class robotic_manipulators_playground_window():
         swift_simulator_button_x = 2/3; self.swift_simulator_button = gbl.menu_button(menu_frame, "Swift", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], swift_simulator_button_x * menu_properties['width'], swift_simulator_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.open_close_swift_simulator).button
         # create an option for the item appearing as the end-effector of the robotic manipulator
         self.update_model_visualization_indicators()  # update the model and visualization indicators
+    def build_robotic_manipulator_forward_kinematics_menus(self, event = None):  # build the sub menus of the main menu that analyzes the forward kinematics (and inverse kinematics) of the robotic manipulator
+        self.clear_menus_background()  # clear the menus background
+        # create the forward kinematics sub menu
+        fkine_menu_title = "Forward kinematics"
+        fkine_menu_info = "--- Forward Kinematics ---\n\
+Forward kinematics involves determining the position and orientation of the end-effector (the part of the robot that interacts with the environment) based on the known joint parameters (e.g., angles, lengths). The operations in this submenu include:\n\
+• Joint Number and Joint Value:\n\
+You can select a joint (e.g., joint 1) from a dropdown menu and input its value, which represents the angle (for revolute joints) or distance (for prismatic joints) of that particular joint.\n\
+Sliders are provided to adjust the values of multiple joints, giving a visual way to control joints parameters.\n\
+• Frame:\n\
+This dropdown allows you to select the frame on which to perform the forward kinematics analysis. It can be the base, the end-effector, or any intermediate frame.\n\
+• Position and Orientation:\n\
+Displays the current position (in meters) and orientation (in Euler angles, quaternions or in the form of a rotation matrix) of the selected frame, which is updated based on the joints values.\n\
+• Find Reachable Workspace:\n\
+A feature to determine the space that the end-effector can reach given the current joints limits. The reachable workspace is the volume of space where the robot can position its end-effector, regardless of orientation.\n\
+• Joints Range Divisions:\n\
+It refers to the number of subdivisions used when calculating and plotting the reachable workspace.\n\
+• Compute and Plot:\n\
+An action button that computes the reachable workspace and displays it in a 3D plot."
+        fkine_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = fkine_menu_title, info = fkine_menu_info, row = 1, column = 0, width = self.menus_background_width, height = self.menus_background_height * 11 / 20, 
+                                        rows = 12, bg_color = "black", title_font = 15, options_font = 11, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
+        # create the inverse kinematics sub menu
+        invkine_menu_title = "Inverse kinematics"
+        invkine_menu_info = "--- Inverse Kinematics ---\n\
+Inverse kinematics is the process of determining the joint parameters needed to achieve a specific position and orientation of the end-effector. The operations in this submenu include:\n\
+• Get Forward Kinematics Analysis Result:\n\
+This option allows you to retrieve the results from the forward kinematics analysis, which will serve as input for the inverse kinematics analysis.\n\
+• Send Inverse Kinematics Analysis Result:\n\
+It submits the currently found inverse kinematics result (joints configuration) to the forward kinematics submenu.\n\
+• End-Effector Position and Orientation:\n\
+Input fields where you can specify the desired position and orientation of the end-effector.\n\
+• Numerical Solver Maximum Allowed Error (Tolerance):\n\
+This field allows you to specify the tolerance level for the numerical solver, which impacts the precision of the inverse kinematics solution. Lower tolerance values yield more precise results but may require more computation time.\n\
+• Joints Configuration:\n\
+Displays the resulting joint configurations that achieve the specified end-effector position and orientation.\n\
+A warning or notification indicates if the specified configuration is not achievable within the robot's workspace."
+        invkine_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = invkine_menu_title, info = invkine_menu_info, row = 2, column = 0, width = self.menus_background_width, height = self.menus_background_height * 9 / 20, \
+                                        rows = 9, bg_color = "black", title_font = 15, options_font = 11, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
+        # generate the sub menus
+        self.generate_forward_kinematics_menu(self.create_static_menu_frame(fkine_menu_properties), fkine_menu_properties)
+        self.generate_inverse_kinematics_menu(self.create_static_menu_frame(invkine_menu_properties), invkine_menu_properties)
+    def generate_forward_kinematics_menu(self, menu_frame, menu_properties, event = None):  # build the forward kinematics menu
+        # options order
+        menu_title_ord = 1
+        menu_info_button_ord = 1
+        choose_joint_number_fkine_label_ord = 2.5
+        choose_joint_number_fkine_combobox_ord = choose_joint_number_fkine_label_ord
+        choose_fkine_variable_value_label_ord = choose_joint_number_fkine_label_ord-0.4
+        fkine_value_unit_indicator_ord = choose_joint_number_fkine_label_ord+0.4
+        joint_fkine_value_combobox_ord = choose_joint_number_fkine_label_ord
+        get_control_values_button_ord = choose_joint_number_fkine_label_ord
+        choose_frame_label_ord = choose_joint_number_fkine_label_ord+6.5
+        choose_frame_combobox_ord = choose_frame_label_ord+0.8
+        frame_position_label_ord = choose_frame_label_ord
+        frame_position_indicator_ord = frame_position_label_ord+0.8
+        frame_orientation_label_ord = choose_frame_label_ord
+        frame_orientation_representation_combobox_ord = frame_orientation_label_ord+0.8
+        frame_orientation_indicator_ord = choose_frame_label_ord+0.5
+        find_reachable_workspace_label_ord = choose_frame_label_ord+2.5
+        joints_range_divisions_label_ord = find_reachable_workspace_label_ord
+        joints_range_divisions_button_ord = find_reachable_workspace_label_ord
+        compute_reachable_workspace_button_ord = find_reachable_workspace_label_ord
+        show_fkine_info_button_ord = menu_properties['rows']-1.0
+        fkine_variables_sliders_rows = 3; fkine_variables_sliders_ord_list = []
+        for k in range(self.joints_number):
+            fkine_variables_sliders_ord_list.append(choose_joint_number_fkine_label_ord+1.7 + 1.5*(k % fkine_variables_sliders_rows))
+            # fkine_variables_sliders_ord_list.append(choose_joint_number_fkine_label_ord+2.5)
+        # create the options
+        menu_title_x = 1/2; gbl.menu_label(menu_frame, menu_properties['sub_menu_title'], f"Calibri {menu_properties['title_font']} bold underline", "gold", menu_properties['bg_color'], menu_title_x * menu_properties['width'], menu_title_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        menu_info_button_x = 1/20; gbl.menu_button(menu_frame, "ⓘ", f"Calibri {menu_properties['title_font'] - 5} bold", "white", menu_properties['bg_color'], menu_info_button_x * menu_properties['width'], menu_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), lambda event: ms.showinfo(menu_properties['sub_menu_title'], menu_properties['info'], master = self.root)).button
+        choose_joint_number_fkine_label_x = 1/6; gbl.menu_label(menu_frame, "Joint\nnumber:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_joint_number_fkine_label_x * menu_properties['width'], choose_joint_number_fkine_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        self.choose_joint_number_fkine_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "readonly", width = 8, values = [f"joint {joint}" for joint in range(1, self.joints_number + 1)], justify = "center")
+        choose_joint_number_fkine_combobox_x = 2/6; self.choose_joint_number_fkine_combobox.place(x = choose_joint_number_fkine_combobox_x * menu_properties['width'], y = choose_joint_number_fkine_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
+        self.choose_joint_number_fkine_combobox.bind("<<ComboboxSelected>>", self.change_chosen_joint_number_fkine)
+        choose_fkine_variable_value_label_x = 3/6; gbl.menu_label(menu_frame, "Joint value:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_fkine_variable_value_label_x * menu_properties['width'], choose_fkine_variable_value_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        fkine_value_unit_indicator_x = 3/6; self.fkine_value_unit_indicator = gbl.menu_label(menu_frame, self.joints_types[self.chosen_joint_number_fkine - 1] + " " + ["(°)", "(m)"][self.joints_types_list.index(self.joints_types[self.chosen_joint_number_fkine - 1])], f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], fkine_value_unit_indicator_x * menu_properties['width'], fkine_value_unit_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
+        self.joint_fkine_value_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "normal", width = 8, values = "", justify = "center")
+        joint_fkine_value_combobox_x = 4/6; self.joint_fkine_value_combobox.place(x = joint_fkine_value_combobox_x * menu_properties['width'], y = joint_fkine_value_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
+        self.joint_fkine_value_combobox.bind("<<ComboboxSelected>>", self.change_chosen_joint_number_fkine_2)
+        self.joint_fkine_value_combobox.bind("<Return>", self.change_chosen_fkine_variable)
+        get_control_values_button_x = 5/6; self.get_control_values_button = gbl.menu_button(menu_frame, "get control\nvalues", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], get_control_values_button_x * menu_properties['width'], get_control_values_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.copy_control_to_fkine_values).button
+        choose_frame_label_x = 1/7; gbl.menu_label(menu_frame, "Frame:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_frame_label_x * menu_properties['width'], choose_frame_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        self.choose_frame_fkine_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "readonly", width = 12, values = ["base"] + [f"frame {frame}" for frame in range(self.links_number)] + ["end-effector"], justify = "center")
+        choose_frame_combobox_x = 1/7; self.choose_frame_fkine_combobox.place(x = choose_frame_combobox_x * menu_properties['width'], y = choose_frame_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
+        self.choose_frame_fkine_combobox.bind("<<ComboboxSelected>>", self.change_chosen_frame_fkine)
+        frame_position_label_x = 2/6; gbl.menu_label(menu_frame, "Position (m):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], frame_position_label_x * menu_properties['width'], frame_position_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        frame_position_indicator_x = 2/6; self.frame_position_indicator = gbl.menu_label(menu_frame, "position", f"Calibri {menu_properties['options_font']} bold", menu_properties['indicators_color'], menu_properties['bg_color'], frame_position_indicator_x * menu_properties['width'], frame_position_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
+        frame_orientation_label_x = 9/16; gbl.menu_label(menu_frame, "Orientation:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], frame_orientation_label_x * menu_properties['width'], frame_orientation_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        self.frame_orientation_representation_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "readonly", width = 12, values = self.orientation_representations_fkine_list, justify = "center")
+        frame_orientation_representation_combobox_x = 9/16; self.frame_orientation_representation_combobox.place(x = frame_orientation_representation_combobox_x * menu_properties['width'], y = frame_orientation_representation_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
+        self.frame_orientation_representation_combobox.bind("<<ComboboxSelected>>", self.change_orientation_representation_fkine)
+        frame_orientation_indicator_x = 31/40; self.frame_orientation_indicator = gbl.menu_label(menu_frame, "orientation", f"Calibri {menu_properties['options_font']} bold", menu_properties['indicators_color'], menu_properties['bg_color'], frame_orientation_indicator_x * menu_properties['width'], frame_orientation_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
+        find_reachable_workspace_label_x = 1/5; gbl.menu_label(menu_frame, "Find reachable workspace:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], find_reachable_workspace_label_x * menu_properties['width'], find_reachable_workspace_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        joints_range_divisions_label_x = 4/9; gbl.menu_label(menu_frame, "Joints range\ndivisions:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], joints_range_divisions_label_x * menu_properties['width'], joints_range_divisions_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        joints_range_divisions_button_x = 5/9; self.joints_range_divisions_button = gbl.menu_button(menu_frame, "set\ndivs", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], joints_range_divisions_button_x * menu_properties['width'], joints_range_divisions_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.set_joints_range_divisions).button
+        compute_reachable_workspace_button_x = 3/4; self.compute_reachable_workspace_button = gbl.menu_button(menu_frame, "compute and plot", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], compute_reachable_workspace_button_x * menu_properties['width'], compute_reachable_workspace_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.compute_plot_reachable_workspace).button
+        # show_fkine_info_button_x = 19/20; self.show_fkine_info_button = gbl.menu_button(menu_frame, "🕮", f"Calibri {menu_properties['options_font']+5} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_fkine_info_button_x * menu_properties['width'], show_fkine_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.show_fkine_info).button
+        self.fkine_variables_sliders = []
+        for k in range(self.joints_number):
+            joint_type_index = self.joints_types_list.index(self.joints_types[k])  # the index of the current joint type (0 for revolute and 1 for prismatic) for the forward kinematics analysis
+            fkine_variables_limits = self.control_joints_variables_limits[k][joint_type_index]  # the control variable limits of the current joint
+            self.fkine_variables_sliders.append(tk.Scale(menu_frame, font = f"Arial {menu_properties['options_font'] - 3}", orient = tk.HORIZONTAL, from_ = fkine_variables_limits[0], to = fkine_variables_limits[1], resolution = [10**(-self.angles_precision), 10**(-self.distances_precision)][joint_type_index], length = menu_properties['width'] / 7.0, bg = menu_properties['bg_color'], fg = "white", troughcolor = "brown", highlightbackground = menu_properties['bg_color'], highlightcolor = menu_properties['bg_color'], highlightthickness = 2, sliderlength = 25, command = lambda event, slider_num = k: self.change_fkine_variable_slider(slider_num, event)))
+            # fkine_variables_sliders_x = 1/10 * (k + 1); self.fkine_variables_sliders.append(tk.Scale(menu_frame, font = f"Arial {menu_properties['options_font'] - 3}", orient = tk.VERTICAL, length = menu_properties['width'] / 5.0, bg = menu_properties['bg_color'], fg = "white", troughcolor = "brown", highlightbackground = menu_properties['bg_color'], highlightcolor = menu_properties['bg_color'], highlightthickness = 2, sliderlength = 25, command = lambda event, slider_num = k: self.change_fkine_variable_slider(slider_num, event)))
+            fkine_variables_sliders_x = 1/(np.ceil(self.joints_number / fkine_variables_sliders_rows) + 1) * (k // fkine_variables_sliders_rows + 1); self.fkine_variables_sliders[k].place(x = fkine_variables_sliders_x * menu_properties['width'], y = fkine_variables_sliders_ord_list[k] * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
+            fkine_variables_labels_x = 1/(np.ceil(self.joints_number / fkine_variables_sliders_rows) + 1) * (k // fkine_variables_sliders_rows + 1) - 2/3*1/7; gbl.menu_label(menu_frame, f"{k + 1}\n{['(°)', '(m)'][joint_type_index]}:", f"Calibri {menu_properties['options_font']-3} bold", menu_properties['labels_color'], menu_properties['bg_color'], fkine_variables_labels_x * menu_properties['width'], fkine_variables_sliders_ord_list[k] * menu_properties['height'] / (menu_properties['rows'] + 1) - 0.8)
+        self.update_forward_kinematics_indicators()  # update the indicators of the forward kinematics of the robotic manipulator
+    def generate_inverse_kinematics_menu(self, menu_frame, menu_properties, event = None):  # build the inverse kinematics menus
+        # options order
+        menu_title_ord = 1
+        menu_info_button_ord = 1
+        get_fkine_result_button_ord = 2.5
+        send_invkine_result_button_ord = get_fkine_result_button_ord
+        choose_end_effector_position_label = get_fkine_result_button_ord+1.8
+        choose_end_effector_position_button = choose_end_effector_position_label
+        choose_end_effector_orientation_label = choose_end_effector_position_label
+        choose_end_effector_orientation_button = choose_end_effector_position_label
+        choose_invkine_tolerance_label_ord = choose_end_effector_position_label+1.8
+        choose_invkine_tolerance_button_ord = choose_invkine_tolerance_label_ord
+        joints_configuration_label_ord = choose_end_effector_position_label+3.5
+        joints_configuration_indicator_ord = joints_configuration_label_ord
+        show_invkine_info_button_ord = menu_properties['rows']-1.0
+        # create the options
+        menu_title_x = 1/2; gbl.menu_label(menu_frame, menu_properties['sub_menu_title'], f"Calibri {menu_properties['title_font']} bold underline", "gold", menu_properties['bg_color'], menu_title_x * menu_properties['width'], menu_title_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        menu_info_button_x = 1/20; gbl.menu_button(menu_frame, "ⓘ", f"Calibri {menu_properties['title_font'] - 5} bold", "white", menu_properties['bg_color'], menu_info_button_x * menu_properties['width'], menu_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), lambda event: ms.showinfo(menu_properties['sub_menu_title'], menu_properties['info'], master = self.root)).button
+        get_fkine_result_button_x = 1/3; self.get_fkine_result_button = gbl.menu_button(menu_frame, "↓ get forward kinematics\nanalysis result", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], get_fkine_result_button_x * menu_properties['width'], get_fkine_result_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.get_fkine_pose_result).button
+        send_invkine_result_button_x = 2/3; self.send_invkine_result_button = gbl.menu_button(menu_frame, "↑ send inverse kinematics\nanalysis result", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], send_invkine_result_button_x * menu_properties['width'], send_invkine_result_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.send_invkine_joints_config_result).button
+        choose_end_effector_position_label_x = 1/5; gbl.menu_label(menu_frame, "End-effector\nposition (m):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_end_effector_position_label_x * menu_properties['width'], choose_end_effector_position_label * menu_properties['height'] / (menu_properties['rows'] + 1))
+        choose_end_effector_position_button_x = 2/5; self.choose_end_effector_position_button = gbl.menu_button(menu_frame, "position", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], choose_end_effector_position_button_x * menu_properties['width'], choose_end_effector_position_button * menu_properties['height'] / (menu_properties['rows'] + 1), self.choose_end_effector_position_invkine).button
+        choose_end_effector_orientation_label_x = 3/5; gbl.menu_label(menu_frame, "End-effector\norientation (°):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_end_effector_orientation_label_x * menu_properties['width'], choose_end_effector_orientation_label * menu_properties['height'] / (menu_properties['rows'] + 1))
+        choose_end_effector_orientation_button_x = 4/5; self.choose_end_effector_orientation_button = gbl.menu_button(menu_frame, "orientation", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], choose_end_effector_orientation_button_x * menu_properties['width'], choose_end_effector_orientation_button * menu_properties['height'] / (menu_properties['rows'] + 1), self.choose_end_effector_orientation_invkine).button
+        choose_invkine_tolerance_label_x = 2/5; gbl.menu_label(menu_frame, "Numerical solver maximum allowed error (tolerance):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_invkine_tolerance_label_x * menu_properties['width'], choose_invkine_tolerance_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        choose_invkine_tolerance_button_x = 3/4; self.choose_invkine_tolerance_button = gbl.menu_button(menu_frame, self.invkine_tolerance, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], choose_invkine_tolerance_button_x * menu_properties['width'], choose_invkine_tolerance_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_invkine_tolerance).button
+        joints_configuration_label_x = 1/6; gbl.menu_label(menu_frame, "Joints\nconfiguration:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], joints_configuration_label_x * menu_properties['width'], joints_configuration_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        joints_configuration_indicator_x = 3/5; self.joints_configuration_indicator = gbl.menu_label(menu_frame, "joints configuration", f"Calibri {menu_properties['options_font']} bold", menu_properties['indicators_color'], menu_properties['bg_color'], joints_configuration_indicator_x * menu_properties['width'], joints_configuration_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
+        # show_invkine_info_button_x = 19/20; self.show_invkine_info_button = gbl.menu_button(menu_frame, "🕮", f"Calibri {menu_properties['options_font']+5} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_invkine_info_button_x * menu_properties['width'], show_invkine_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.show_invkine_info).button
+        self.update_inverse_kinematics_indicators()  # update the indicators of the inverse kinematics of the robotic manipulator
+    def build_robotic_manipulator_differential_kinematics_menus(self, event = None):  # build the sub menus of the main menu that analyzes the differential kinematics of the robotic manipulator
+        self.clear_menus_background()  # clear the menus background
+        # create the differential kinematics sub menu
+        diffkine_menu_title = "Differential kinematics"
+        diffkine_menu_info = "--- Differential Kinematics ---\n\
+Differential kinematics is used to determine the velocity of the end-effector based on the velocities of the individual joints. This submenu of the interface includes the following elements:\n\
+• Joint Number and Joint Velocity:\n\
+You can select a specific joint (e.g., joint 1) from a dropdown menu and input its velocity, which is typically expressed in degrees per second (°/s) for revolute joints.\n\
+Sliders are provided for each joint to adjust their respective velocities. These sliders allow users to see the effect of different joint velocities on the overall system.\n\
+• End-Effector Linear Velocity (m/s):\n\
+This displays the calculated linear velocity of the end-effector in meters per second (m/s). This value is computed based on the current joint velocities.\n\
+• End-Effector Angular Velocity (°/s):\n\
+This field shows the angular velocity of the end-effector in degrees per second (°/s), reflecting how fast the end-effector is rotating.\n\
+• Configuration:\n\
+This setting (it can be \"control\" or \"kinematics\") indicates the current joints configuration mode, which may affect how the velocities are interpreted.\n\
+• W.r.t. Frame:\n\
+This dropdown allows you to specify the frame of reference for the velocities (it can be \"world\" or \"end-effector\"), ensuring consistency in how the velocities are calculated and displayed."
+        diffkine_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = diffkine_menu_title, info = diffkine_menu_info, row = 1, column = 0, width = self.menus_background_width, height = self.menus_background_height * 1 / 2, \
+                                        rows = 10, bg_color = "black", title_font = 15, options_font = 11, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
+        # create the inverse differential kinematics sub menu
+        invdiffkine_menu_title = "Inverse differential kinematics"
+        invdiffkine_menu_info = "--- Inverse Differential Kinematics ---\n\
+Inverse differential kinematics is the process of determining the joint velocities required to achieve a specific end-effector velocity. The elements in this submenu include:\n\
+• Get Differential Kinematics Analysis Result:\n\
+This button retrieves results from the differential kinematics analysis to use as a starting point for the inverse calculations.\n\
+• Send Inverse Differential Kinematics Analysis Result:\n\
+This action submits the currently found inverse differential kinematics result (joints velocities) to the differential kinematics submenu.\n\
+• End-Effector Linear and Angular Velocity:\n\
+These fields allow users to input desired values for the linear and angular velocities of the end-effector. The system will then compute the necessary joint velocities to achieve these values.\n\
+• Velocities Defined W.r.t. Frame:\n\
+This dropdown allows you to specify the frame of reference for the velocities (it can be \"world\" or \"end-effector\"), ensuring consistency in how the velocities are calculated and displayed.\n\
+• Joints Velocities:\n\
+The resulting joint velocities needed to achieve the specified end-effector velocities are displayed here. If a valid solution is found, these fields will show the computed values.\n\
+If no solution is found, a warning or notification will indicate that the system was unable to compute a valid set of joint velocities for the given end-effector velocity."
+        invdiffkine_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = invdiffkine_menu_title, info = invdiffkine_menu_info, row = 2, column = 0, width = self.menus_background_width, height = self.menus_background_height * 1 / 2, \
+                                            rows = 9, bg_color = "black", title_font = 15, options_font = 11, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
+        # generate the sub menus
+        self.generate_differential_kinematics_menu(self.create_static_menu_frame(diffkine_menu_properties), diffkine_menu_properties)
+        self.generate_inverse_differential_kinematics_menu(self.create_static_menu_frame(invdiffkine_menu_properties), invdiffkine_menu_properties)
+    def generate_differential_kinematics_menu(self, menu_frame, menu_properties, event = None):  # build the differential kinematics menu
+        # options order
+        menu_title_ord = 1
+        menu_info_button_ord = 1
+        choose_joint_number_diffkine_label_ord = 2.5
+        joints_configuration_diffkine_label_ord = choose_joint_number_diffkine_label_ord-0.4
+        joints_configuration_diffkine_indicator_ord = joints_configuration_diffkine_label_ord+0.8
+        choose_joint_number_diffkine_combobox_ord = choose_joint_number_diffkine_label_ord
+        choose_diffkine_velocity_label_ord = choose_joint_number_diffkine_label_ord-0.3
+        diffkine_value_unit_indicator_ord = choose_joint_number_diffkine_label_ord+0.3
+        joint_diffkine_velocity_combobox_ord = choose_joint_number_diffkine_label_ord
+        end_effector_linear_vel_label_ord = choose_joint_number_diffkine_label_ord+6.5
+        end_effector_linear_vel_indicator_ord = end_effector_linear_vel_label_ord+0.8
+        end_effector_angular_vel_label_ord = end_effector_linear_vel_label_ord
+        end_effector_angular_vel_indicator_ord = end_effector_angular_vel_label_ord+0.8
+        diffkine_wrt_frame_label_ord = end_effector_linear_vel_label_ord
+        diffkine_wrt_frame_button_ord = end_effector_linear_vel_label_ord+0.8
+        show_diffkine_info_button_ord = menu_properties['rows']-1.0
+        difffkine_variables_sliders_rows = 3; diffkine_variables_sliders_ord_list = []
+        for k in range(self.joints_number):
+            diffkine_variables_sliders_ord_list.append(choose_joint_number_diffkine_label_ord+1.5 + 1.5*(k % difffkine_variables_sliders_rows))
+            # fkine_variables_sliders_ord_list.append(choose_joint_number_fkine_label_ord+2.5)
+        # create the options
+        menu_title_x = 1/2; gbl.menu_label(menu_frame, menu_properties['sub_menu_title'], f"Calibri {menu_properties['title_font']} bold underline", "gold", menu_properties['bg_color'], menu_title_x * menu_properties['width'], menu_title_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        menu_info_button_x = 1/20; gbl.menu_button(menu_frame, "ⓘ", f"Calibri {menu_properties['title_font'] - 5} bold", "white", menu_properties['bg_color'], menu_info_button_x * menu_properties['width'], menu_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), lambda event: ms.showinfo(menu_properties['sub_menu_title'], menu_properties['info'], master = self.root)).button
+        joints_configuration_diffkine_label_x = 6/7; gbl.menu_label(menu_frame, "Configuration:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], joints_configuration_diffkine_label_x * menu_properties['width'], joints_configuration_diffkine_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        joints_configuration_diffkine_indicator_x = joints_configuration_diffkine_label_x; self.joints_configuration_diffkine_indicator = gbl.menu_label(menu_frame, self.control_or_kinematics_variables_visualization, f"Calibri {menu_properties['options_font']} bold", menu_properties['indicators_color'], menu_properties['bg_color'], joints_configuration_diffkine_indicator_x * menu_properties['width'], joints_configuration_diffkine_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
+        choose_joint_number_diffkine_label_x = 1/6; gbl.menu_label(menu_frame, "Joint\nnumber:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_joint_number_diffkine_label_x * menu_properties['width'], choose_joint_number_diffkine_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        self.choose_joint_number_diffkine_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "readonly", width = 8, values = [f"joint {joint}" for joint in range(1, self.joints_number + 1)], justify = "center")
+        choose_joint_number_diffkine_combobox_x = 2/6; self.choose_joint_number_diffkine_combobox.place(x = choose_joint_number_diffkine_combobox_x * menu_properties['width'], y = choose_joint_number_diffkine_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
+        self.choose_joint_number_diffkine_combobox.bind("<<ComboboxSelected>>", self.change_chosen_joint_number_diffkine)
+        choose_diffkine_velocity_label_x = 3/6; gbl.menu_label(menu_frame, "Joint velocity:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_diffkine_velocity_label_x * menu_properties['width'], choose_diffkine_velocity_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        diffkine_value_unit_indicator_x = 3/6; self.diffkine_value_unit_indicator = gbl.menu_label(menu_frame, ["(rad/s)", "(m/s)"][self.joints_types_list.index(self.joints_types[self.chosen_joint_number_diffkine - 1])], f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], diffkine_value_unit_indicator_x * menu_properties['width'], diffkine_value_unit_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
+        self.joint_diffkine_velocity_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "normal", width = 8, values = "", justify = "center")
+        joint_diffkine_velocity_combobox_x = 4/6; self.joint_diffkine_velocity_combobox.place(x = joint_diffkine_velocity_combobox_x * menu_properties['width'], y = joint_diffkine_velocity_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
+        self.joint_diffkine_velocity_combobox.bind("<<ComboboxSelected>>", self.change_chosen_joint_number_diffkine_2)
+        self.joint_diffkine_velocity_combobox.bind("<Return>", self.change_chosen_diffkine_velocity)
+        end_effector_linear_vel_label_x = 1/5; gbl.menu_label(menu_frame, "End-effector linear velocity (m/s):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], end_effector_linear_vel_label_x * menu_properties['width'], end_effector_linear_vel_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        end_effector_linear_vel_indicator_x = end_effector_linear_vel_label_x; self.end_effector_linear_vel_indicator = gbl.menu_label(menu_frame, "linear velocity", f"Calibri {menu_properties['options_font']} bold", menu_properties['indicators_color'], menu_properties['bg_color'], end_effector_linear_vel_indicator_x * menu_properties['width'], end_effector_linear_vel_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
+        end_effector_angular_vel_label_x = 11/20; gbl.menu_label(menu_frame, "End-effector angular velocity (°/s):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], end_effector_angular_vel_label_x * menu_properties['width'], end_effector_angular_vel_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        end_effector_angular_vel_indicator_x = end_effector_angular_vel_label_x; self.end_effector_angular_vel_indicator = gbl.menu_label(menu_frame, "angular velocity", f"Calibri {menu_properties['options_font']} bold", menu_properties['indicators_color'], menu_properties['bg_color'], end_effector_angular_vel_indicator_x * menu_properties['width'], end_effector_angular_vel_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
+        diffkine_wrt_frame_label_x = 5/6; gbl.menu_label(menu_frame, "W.r.t. frame:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], diffkine_wrt_frame_label_x * menu_properties['width'], diffkine_wrt_frame_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        diffkine_wrt_frame_button_x = diffkine_wrt_frame_label_x; self.diffkine_wrt_frame_button = gbl.menu_button(menu_frame, self.diffkine_wrt_frame, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], diffkine_wrt_frame_button_x * menu_properties['width'], diffkine_wrt_frame_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_diffkine_wrt_frame).button
+        # show_diffkine_info_button_x = 19/20; self.show_diffkine_info_button = gbl.menu_button(menu_frame, "🕮", f"Calibri {menu_properties['options_font']+5} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_diffkine_info_button_x * menu_properties['width'], show_diffkine_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.show_diffkine_info).button
+        self.diffkine_variables_sliders = []
+        for k in range(self.joints_number):
+            joint_type_index = self.joints_types_list.index(self.joints_types[k])  # the index of the current joint type (0 for revolute and 1 for prismatic) for the forward kinematics analysis
+            diffkine_velocities_limits = self.diffkine_velocities_limits[k][joint_type_index]  # the control variable limits of the current joint
+            self.diffkine_variables_sliders.append(tk.Scale(menu_frame, font = f"Arial {menu_properties['options_font'] - 3}", orient = tk.HORIZONTAL, from_ = diffkine_velocities_limits[0], to = diffkine_velocities_limits[1], resolution = [10**(-self.angles_precision), 10**(-self.distances_precision)][joint_type_index], length = menu_properties['width'] / 7.0, bg = menu_properties['bg_color'], fg = "white", troughcolor = "brown", highlightbackground = menu_properties['bg_color'], highlightcolor = menu_properties['bg_color'], highlightthickness = 2, sliderlength = 25, command = lambda event, slider_num = k: self.change_diffkine_variable_slider(slider_num, event)))
+            # fkine_variables_sliders_x = 1/10 * (k + 1); self.fkine_variables_sliders.append(tk.Scale(menu_frame, font = f"Arial {menu_properties['options_font'] - 3}", orient = tk.VERTICAL, length = menu_properties['width'] / 5.0, bg = menu_properties['bg_color'], fg = "white", troughcolor = "brown", highlightbackground = menu_properties['bg_color'], highlightcolor = menu_properties['bg_color'], highlightthickness = 2, sliderlength = 25, command = lambda event, slider_num = k: self.change_fkine_variable_slider(slider_num, event)))
+            diffkine_variables_sliders_x = 1/(np.ceil(self.joints_number / difffkine_variables_sliders_rows) + 1) * (k // difffkine_variables_sliders_rows + 1); self.diffkine_variables_sliders[k].place(x = diffkine_variables_sliders_x * menu_properties['width'], y = diffkine_variables_sliders_ord_list[k] * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
+            diffkine_variables_labels_x = 1/(np.ceil(self.joints_number / difffkine_variables_sliders_rows) + 1) * (k // difffkine_variables_sliders_rows + 1) - 2/3*1/7; gbl.menu_label(menu_frame, f"{k + 1}\n{['(°/s)', '(m/s)'][joint_type_index]}:", f"Calibri {menu_properties['options_font']-3} bold", menu_properties['labels_color'], menu_properties['bg_color'], diffkine_variables_labels_x * menu_properties['width'], diffkine_variables_sliders_ord_list[k] * menu_properties['height'] / (menu_properties['rows'] + 1) - 0.8)
+        self.update_differential_kinematics_indicators()  # update the indicators of the differential kinematics of the robotic manipulator
+    def generate_inverse_differential_kinematics_menu(self, menu_frame, menu_properties, event = None):  # build the inverse differential kinematics menu
+        # options order
+        menu_title_ord = 1
+        menu_info_button_ord = 1
+        get_diffkine_result_button_ord = 2.5
+        joints_configuration_invkine_label_ord = get_diffkine_result_button_ord-0.4
+        joints_configuration_invkine_indicator_ord = joints_configuration_invkine_label_ord+0.8
+        send_invdiffkine_result_button_ord = get_diffkine_result_button_ord
+        end_effector_linear_velocity_label_ord = get_diffkine_result_button_ord+1.8
+        end_effector_linear_velocity_button_ord = end_effector_linear_velocity_label_ord
+        end_effector_angular_velocity_label_ord = end_effector_linear_velocity_label_ord
+        end_effector_angular_velocity_button_ord = end_effector_angular_velocity_label_ord
+        invdiffkine_wrt_frame_label_ord = end_effector_linear_velocity_label_ord+1.8
+        invdiffkine_wrt_frame_button_ord = invdiffkine_wrt_frame_label_ord
+        joints_velocities_label_ord = end_effector_linear_velocity_label_ord+3.5
+        joints_velocities_indicator_ord = joints_velocities_label_ord
+        show_invdiffkine_info_button_ord = menu_properties['rows']-1.0
+        # create the options
+        menu_title_x = 1/2; gbl.menu_label(menu_frame, menu_properties['sub_menu_title'], f"Calibri {menu_properties['title_font']} bold underline", "gold", menu_properties['bg_color'], menu_title_x * menu_properties['width'], menu_title_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        menu_info_button_x = 1/20; gbl.menu_button(menu_frame, "ⓘ", f"Calibri {menu_properties['title_font'] - 5} bold", "white", menu_properties['bg_color'], menu_info_button_x * menu_properties['width'], menu_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), lambda event: ms.showinfo(menu_properties['sub_menu_title'], menu_properties['info'], master = self.root)).button
+        joints_configuration_invkine_label_x = 6/7; gbl.menu_label(menu_frame, "Configuration:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], joints_configuration_invkine_label_x * menu_properties['width'], joints_configuration_invkine_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        joints_configuration_invkine_indicator_x = joints_configuration_invkine_label_x; self.joints_configuration_invkine_indicator = gbl.menu_label(menu_frame, self.control_or_kinematics_variables_visualization, f"Calibri {menu_properties['options_font']} bold", menu_properties['indicators_color'], menu_properties['bg_color'], joints_configuration_invkine_indicator_x * menu_properties['width'], joints_configuration_invkine_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
+        get_diffkine_result_button_x = 1/4; self.get_diffkine_result_button = gbl.menu_button(menu_frame, "↓ get differential kinematics\nanalysis result", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], get_diffkine_result_button_x * menu_properties['width'], get_diffkine_result_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.get_diffkine_velocities_result).button
+        send_invdiffkine_result_button_x = 3/5; self.send_invdiffkine_result_button = gbl.menu_button(menu_frame, "↑ send inverse differential\nkinematics analysis result", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], send_invdiffkine_result_button_x * menu_properties['width'], send_invdiffkine_result_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.send_invdiffkine_joints_velocities_result).button
+        end_effector_linear_velocity_label_x = 5/35; gbl.menu_label(menu_frame, "End-effector\nlinear velocity (m/s):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], end_effector_linear_velocity_label_x * menu_properties['width'], end_effector_linear_velocity_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        end_effector_linear_velocity_button_x = 13/35; self.end_effector_linear_velocity_button = gbl.menu_button(menu_frame, "linear\nvelocity", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], end_effector_linear_velocity_button_x * menu_properties['width'], end_effector_linear_velocity_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.choose_end_effector_linear_velocity).button
+        end_effector_angular_velocity_label_x = 21/35; gbl.menu_label(menu_frame, "End-effector\nangular velocity (°/s):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], end_effector_angular_velocity_label_x * menu_properties['width'], end_effector_angular_velocity_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        end_effector_angular_velocity_button_x = 29/35; self.end_effector_angular_velocity_button = gbl.menu_button(menu_frame, "angular\nvelocity", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], end_effector_angular_velocity_button_x * menu_properties['width'], end_effector_angular_velocity_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.choose_end_effector_angular_velocity).button
+        invdiffkine_wrt_frame_label_x = 2/5; gbl.menu_label(menu_frame, "Velocities defined w.r.t. frame:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], invdiffkine_wrt_frame_label_x * menu_properties['width'], invdiffkine_wrt_frame_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        invdiffkine_wrt_frame_button_x = 7/10; self.invdiffkine_wrt_frame_button = gbl.menu_button(menu_frame, self.invdiffkine_wrt_frame, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], invdiffkine_wrt_frame_button_x * menu_properties['width'], invdiffkine_wrt_frame_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_invdiffkine_wrt_frame).button
+        joints_velocities_label_x = 1/6; gbl.menu_label(menu_frame, "Joints\nvelocities:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], joints_velocities_label_x * menu_properties['width'], joints_velocities_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        joints_velocities_indicator_x = 3/5; self.joints_velocities_indicator = gbl.menu_label(menu_frame, "joints velocities", f"Calibri {menu_properties['options_font']} bold", menu_properties['indicators_color'], menu_properties['bg_color'], joints_velocities_indicator_x * menu_properties['width'], joints_velocities_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
+        # show_invdiffkine_info_button_x = 19/20; self.show_invdiffkine_info_button = gbl.menu_button(menu_frame, "🕮", f"Calibri {menu_properties['options_font']+5} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_invdiffkine_info_button_x * menu_properties['width'], show_invdiffkine_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.show_invdiffkine_info).button
+        self.update_inverse_differential_kinematics_indicators()  # update the indicators of the inverse differential kinematics of the robotic manipulator
     def build_control_robotic_manipulator_menus(self, event = None):  # build the sub menus for the main menu that controls the robotic manipulator
         self.clear_menus_background()  # clear the menus background
+        connection_menu_info = "--- Establish Communication with Arduino Microcontroller ---\n\
+This submenu allows the user to set up and manage the serial connection between the software and the Arduino microcontroller. The elements include:\n\
+• Serial Port:\n\
+A dropdown menu to select the appropriate serial port that the Arduino is connected to on the computer.\n\
+• Baud Rate:\n\
+This dropdown allows the user to select the baud rate for the serial communication. A baud rate of 115200 bps is a common speed for such communications.\n\
+• Serial Connection State:\n\
+This indicator shows whether the software is currently connected to the Arduino microcontroller, what is the state of the robotic arm etc.\n\
+• Connect Button\n\
+This button is available to establish the connection. Once clicked, the software attempts to initiate communication between the computer and the Arduino."
+        monitor_menu_info = "--- Serial Monitor / Console ---\n\
+The serial monitor or console serves as the interface for sending and receiving data between the computer and the Arduino. This submenu includes:\n\
+• Main Console Area:\n\
+This large text area displays incoming data from the Arduino and any outgoing commands that have been sent. It is useful for debugging and monitoring real-time communication.\n\
+• Command Input:\n\
+This field allows the user to type in specific commands to be sent directly to the Arduino.\n\
+• Status Indicators:\n\
+Indicators labeled as \"OK\" and \"Status\" suggest the presence of a system that confirms successful command execution or displays messages about the current status of the robotic system.\n\
+• Expand submenu:\n\
+The arrow pointing upwards expands the submenu to enlarge the main console area for better visibility.\n\
+• Clear main console area:\n\
+The trash bin clears the main console of all text, providing a clean area for new messages.\n\
+• Command Starting and Ending Text:\n\
+These fields can be used to define a standard starting or ending string for the commands, potentially simplifying the command structure by automatically adding predefined text to each command sent.\n\
+• Send Button:\n\
+After typing a command in the input field, the user can click \"Send\" to transmit it to the Arduino microcontroller."
+        control_menu_info = "--- Control Joints and End-Effector Motors ---\n\
+This submenu is used for controlling the movement of the robot's joints and the end-effector directly:\n\
+• Joint Number and Joint Motors:\n\
+Dropdown menus to select the specific joint to be controlled, as well as the motors names assigned to that joint. This allows for individual control of each joint.\n\
+The type of the joint (revolute or prismatic) is displayed, along with its current value.\n\
+• Motors Factors (for commands):\n\
+This field allows the user to input motors multiplication factors, which can adjust the motors commands outputs (practically, they are scaling factors for movement precision).\n\
+• Joint Variable Control:\n\
+Sliders and buttons in this section allow the user to manually adjust the position of the selected joint by small or large increments.\n\
+The button labeled \"set joints to 0\" enables the user to reset the joints to zero.\n\
+• End-Effector Control:\n\
+Similar to joint control, this section allows direct control of the end-effector, with an option to set its value to zero.\n\
+There are fields to input the motor name and motor factor specifically for controlling the end-effector.\n\
+• Control Mode:\n\
+The user can choose between different control modes, such as \"manual\" control, where the user needs to press additional buttons to execute the movement, or \"automatic\" control, where the movement is executed immediately after the user adjusts the sliders.\n\
+Buttons labeled \"GO joints\", \"GO end-effector\" and \"GO ALL\" are options to move either the joints or the end-effector separately, or to execute all movements simultaneously."
         if not self.expanded_serial_monitor:  # if the user does not choose the expanded serial monitor
             # create the establish connection sub menu
             connection_menu_title = "Establish communication with arduino microcontroller"
-            connection_menu_info = "Here you can define the parameters of the serial communication between the arduino board and your computer, specifically the serial port and the baudrate. You may press the button \"⟲\" to get all the available serial ports. There is also an indicator showing the current state of the serial communication. Open or close the serial connection by pressing the \"Connect \ Disconnect\" button."
             connection_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = connection_menu_title, info = connection_menu_info, row = 1, column = 0, width = self.menus_background_width, height = self.menus_background_height * 1 / 6, \
                                                 rows = 3, bg_color = "black", title_font = 15, options_font = 12, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
             # create the serial monitor menu
             monitor_menu_title = "Serial monitor / Console"
-            monitor_menu_info = "This is the place where you can send commands through the serial connection to the arduino board"
             monitor_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = monitor_menu_title, info = monitor_menu_info, row = 2, column = 0, width = self.menus_background_width, height = self.menus_background_height * 2 / 6, \
                                             rows = 8, bg_color = "black", title_font = 15, options_font = 11, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
             # create the control joints sub menu
             control_menu_title = "Control joints and end-effector motors"
-            control_menu_info = ""
             control_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = control_menu_title, info = control_menu_info, row = 3, column = 0, width = self.menus_background_width, height = self.menus_background_height * 3 / 6, \
                                             rows = 10, bg_color = "black", title_font = 15, options_font = 12, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
             # generate the sub menus
@@ -1271,12 +1617,12 @@ class robotic_manipulators_playground_window():
         else:  # if the user chooses the expanded serial monitor
             # create the serial monitor menu
             monitor_menu_title = "Serial monitor / Console"
-            monitor_menu_info = "This is the place where you can send commands through the serial connection to the arduino board"
-            monitor_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = monitor_menu_title, info = monitor_menu_info, row = 1, column = 0, width = self.menus_background_width, height = self.menus_background_height * 1 / 2, rows = 8, bg_color = "black", title_font = 15, options_font = 11, subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
+            monitor_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = monitor_menu_title, info = monitor_menu_info, row = 1, column = 0, width = self.menus_background_width, height = self.menus_background_height * 1 / 2, \
+                                            rows = 8, bg_color = "black", title_font = 15, options_font = 11, subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
             # create the control joints sub menu
             control_menu_title = "Control joints and end-effector motors"
-            control_menu_info = ""
-            control_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = control_menu_title, info = control_menu_info, row = 2, column = 0, width = self.menus_background_width, height = self.menus_background_height * 1 / 2, rows = 10, bg_color = "black", title_font = 15, options_font = 12, subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
+            control_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = control_menu_title, info = control_menu_info, row = 2, column = 0, width = self.menus_background_width, height = self.menus_background_height * 1 / 2, \
+                                            rows = 10, bg_color = "black", title_font = 15, options_font = 12, subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
             # generate the sub menus
             self.generate_serial_monitor_menu(self.create_static_menu_frame(monitor_menu_properties), monitor_menu_properties)
             self.generate_control_joints_menu(self.create_static_menu_frame(control_menu_properties), control_menu_properties)
@@ -1435,218 +1781,6 @@ class robotic_manipulators_playground_window():
         send_command_end_effector_button_x = 4/6; self.send_command_end_effector_button = gbl.menu_button(menu_frame, "GO\nend-effector", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], send_command_end_effector_button_x * menu_properties['width'], send_command_end_effector_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.send_command_to_end_effector).button
         send_command_all_motors_button_x = 5/6; self.send_command_all_motors_button = gbl.menu_button(menu_frame, "GO ALL", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], send_command_all_motors_button_x * menu_properties['width'], send_command_all_motors_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.send_command_to_all_motors).button
         self.update_control_variables_indicators()  # update the indicators of the control variables of the robotic manipulator
-    def build_robotic_manipulator_forward_kinematics_menus(self, event = None):  # build the sub menus of the main menu that analyzes the forward kinematics (and inverse kinematics) of the robotic manipulator
-        self.clear_menus_background()  # clear the menus background
-        # create the forward kinematics sub menu
-        fkine_menu_title = "Forward kinematics"
-        fkine_menu_info = ""
-        fkine_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = fkine_menu_title, info = fkine_menu_info, row = 1, column = 0, width = self.menus_background_width, height = self.menus_background_height * 11 / 20, 
-                                        rows = 12, bg_color = "black", title_font = 15, options_font = 11, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
-        # create the inverse kinematics sub menu
-        invkine_menu_title = "Inverse kinematics"
-        invkine_menu_info = ""
-        invkine_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = invkine_menu_title, info = invkine_menu_info, row = 2, column = 0, width = self.menus_background_width, height = self.menus_background_height * 9 / 20, \
-                                        rows = 9, bg_color = "black", title_font = 15, options_font = 11, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
-        # generate the sub menus
-        self.generate_forward_kinematics_menu(self.create_static_menu_frame(fkine_menu_properties), fkine_menu_properties)
-        self.generate_inverse_kinematics_menu(self.create_static_menu_frame(invkine_menu_properties), invkine_menu_properties)
-    def generate_forward_kinematics_menu(self, menu_frame, menu_properties, event = None):  # build the forward kinematics menu
-        # options order
-        menu_title_ord = 1
-        menu_info_button_ord = 1
-        choose_joint_number_fkine_label_ord = 2.5
-        choose_joint_number_fkine_combobox_ord = choose_joint_number_fkine_label_ord
-        choose_fkine_variable_value_label_ord = choose_joint_number_fkine_label_ord-0.4
-        fkine_value_unit_indicator_ord = choose_joint_number_fkine_label_ord+0.4
-        joint_fkine_value_combobox_ord = choose_joint_number_fkine_label_ord
-        get_control_values_button_ord = choose_joint_number_fkine_label_ord
-        choose_frame_label_ord = choose_joint_number_fkine_label_ord+6.5
-        choose_frame_combobox_ord = choose_frame_label_ord+0.8
-        frame_position_label_ord = choose_frame_label_ord
-        frame_position_indicator_ord = frame_position_label_ord+0.8
-        frame_orientation_label_ord = choose_frame_label_ord
-        frame_orientation_representation_combobox_ord = frame_orientation_label_ord+0.8
-        frame_orientation_indicator_ord = choose_frame_label_ord+0.5
-        find_reachable_workspace_label_ord = choose_frame_label_ord+2.5
-        joints_range_divisions_label_ord = find_reachable_workspace_label_ord
-        joints_range_divisions_button_ord = find_reachable_workspace_label_ord
-        compute_reachable_workspace_button_ord = find_reachable_workspace_label_ord
-        show_fkine_info_button_ord = menu_properties['rows']-1.0
-        fkine_variables_sliders_rows = 3; fkine_variables_sliders_ord_list = []
-        for k in range(self.joints_number):
-            fkine_variables_sliders_ord_list.append(choose_joint_number_fkine_label_ord+1.7 + 1.5*(k % fkine_variables_sliders_rows))
-            # fkine_variables_sliders_ord_list.append(choose_joint_number_fkine_label_ord+2.5)
-        # create the options
-        menu_title_x = 1/2; gbl.menu_label(menu_frame, menu_properties['sub_menu_title'], f"Calibri {menu_properties['title_font']} bold underline", "gold", menu_properties['bg_color'], menu_title_x * menu_properties['width'], menu_title_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        menu_info_button_x = 1/20; gbl.menu_button(menu_frame, "ⓘ", f"Calibri {menu_properties['title_font'] - 5} bold", "white", menu_properties['bg_color'], menu_info_button_x * menu_properties['width'], menu_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), lambda event: ms.showinfo(menu_properties['sub_menu_title'], menu_properties['info'], master = self.root)).button
-        choose_joint_number_fkine_label_x = 1/6; gbl.menu_label(menu_frame, "Joint\nnumber:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_joint_number_fkine_label_x * menu_properties['width'], choose_joint_number_fkine_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        self.choose_joint_number_fkine_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "readonly", width = 8, values = [f"joint {joint}" for joint in range(1, self.joints_number + 1)], justify = "center")
-        choose_joint_number_fkine_combobox_x = 2/6; self.choose_joint_number_fkine_combobox.place(x = choose_joint_number_fkine_combobox_x * menu_properties['width'], y = choose_joint_number_fkine_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
-        self.choose_joint_number_fkine_combobox.bind("<<ComboboxSelected>>", self.change_chosen_joint_number_fkine)
-        choose_fkine_variable_value_label_x = 3/6; gbl.menu_label(menu_frame, "Joint value:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_fkine_variable_value_label_x * menu_properties['width'], choose_fkine_variable_value_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        fkine_value_unit_indicator_x = 3/6; self.fkine_value_unit_indicator = gbl.menu_label(menu_frame, self.joints_types[self.chosen_joint_number_fkine - 1] + " " + ["(°)", "(m)"][self.joints_types_list.index(self.joints_types[self.chosen_joint_number_fkine - 1])], f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], fkine_value_unit_indicator_x * menu_properties['width'], fkine_value_unit_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
-        self.joint_fkine_value_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "normal", width = 8, values = "", justify = "center")
-        joint_fkine_value_combobox_x = 4/6; self.joint_fkine_value_combobox.place(x = joint_fkine_value_combobox_x * menu_properties['width'], y = joint_fkine_value_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
-        self.joint_fkine_value_combobox.bind("<<ComboboxSelected>>", self.change_chosen_joint_number_fkine_2)
-        self.joint_fkine_value_combobox.bind("<Return>", self.change_chosen_fkine_variable)
-        get_control_values_button_x = 5/6; self.get_control_values_button = gbl.menu_button(menu_frame, "get control\nvalues", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], get_control_values_button_x * menu_properties['width'], get_control_values_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.copy_control_to_fkine_values).button
-        choose_frame_label_x = 1/7; gbl.menu_label(menu_frame, "Frame:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_frame_label_x * menu_properties['width'], choose_frame_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        self.choose_frame_fkine_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "readonly", width = 12, values = ["base"] + [f"frame {frame}" for frame in range(self.links_number)] + ["end-effector"], justify = "center")
-        choose_frame_combobox_x = 1/7; self.choose_frame_fkine_combobox.place(x = choose_frame_combobox_x * menu_properties['width'], y = choose_frame_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
-        self.choose_frame_fkine_combobox.bind("<<ComboboxSelected>>", self.change_chosen_frame_fkine)
-        frame_position_label_x = 2/6; gbl.menu_label(menu_frame, "Position (m):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], frame_position_label_x * menu_properties['width'], frame_position_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        frame_position_indicator_x = 2/6; self.frame_position_indicator = gbl.menu_label(menu_frame, "position", f"Calibri {menu_properties['options_font']} bold", menu_properties['indicators_color'], menu_properties['bg_color'], frame_position_indicator_x * menu_properties['width'], frame_position_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
-        frame_orientation_label_x = 9/16; gbl.menu_label(menu_frame, "Orientation:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], frame_orientation_label_x * menu_properties['width'], frame_orientation_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        self.frame_orientation_representation_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "readonly", width = 12, values = self.orientation_representations_fkine_list, justify = "center")
-        frame_orientation_representation_combobox_x = 9/16; self.frame_orientation_representation_combobox.place(x = frame_orientation_representation_combobox_x * menu_properties['width'], y = frame_orientation_representation_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
-        self.frame_orientation_representation_combobox.bind("<<ComboboxSelected>>", self.change_orientation_representation_fkine)
-        frame_orientation_indicator_x = 31/40; self.frame_orientation_indicator = gbl.menu_label(menu_frame, "orientation", f"Calibri {menu_properties['options_font']} bold", menu_properties['indicators_color'], menu_properties['bg_color'], frame_orientation_indicator_x * menu_properties['width'], frame_orientation_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
-        find_reachable_workspace_label_x = 1/5; gbl.menu_label(menu_frame, "Find reachable workspace:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], find_reachable_workspace_label_x * menu_properties['width'], find_reachable_workspace_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        joints_range_divisions_label_x = 4/9; gbl.menu_label(menu_frame, "Joints range\ndivisions:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], joints_range_divisions_label_x * menu_properties['width'], joints_range_divisions_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        joints_range_divisions_button_x = 5/9; self.joints_range_divisions_button = gbl.menu_button(menu_frame, "set\ndivs", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], joints_range_divisions_button_x * menu_properties['width'], joints_range_divisions_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.set_joints_range_divisions).button
-        compute_reachable_workspace_button_x = 3/4; self.compute_reachable_workspace_button = gbl.menu_button(menu_frame, "compute and plot", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], compute_reachable_workspace_button_x * menu_properties['width'], compute_reachable_workspace_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.compute_plot_reachable_workspace).button
-        # show_fkine_info_button_x = 19/20; self.show_fkine_info_button = gbl.menu_button(menu_frame, "🕮", f"Calibri {menu_properties['options_font']+5} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_fkine_info_button_x * menu_properties['width'], show_fkine_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.show_fkine_info).button
-        self.fkine_variables_sliders = []
-        for k in range(self.joints_number):
-            joint_type_index = self.joints_types_list.index(self.joints_types[k])  # the index of the current joint type (0 for revolute and 1 for prismatic) for the forward kinematics analysis
-            fkine_variables_limits = self.control_joints_variables_limits[k][joint_type_index]  # the control variable limits of the current joint
-            self.fkine_variables_sliders.append(tk.Scale(menu_frame, font = f"Arial {menu_properties['options_font'] - 3}", orient = tk.HORIZONTAL, from_ = fkine_variables_limits[0], to = fkine_variables_limits[1], resolution = [10**(-self.angles_precision), 10**(-self.distances_precision)][joint_type_index], length = menu_properties['width'] / 7.0, bg = menu_properties['bg_color'], fg = "white", troughcolor = "brown", highlightbackground = menu_properties['bg_color'], highlightcolor = menu_properties['bg_color'], highlightthickness = 2, sliderlength = 25, command = lambda event, slider_num = k: self.change_fkine_variable_slider(slider_num, event)))
-            # fkine_variables_sliders_x = 1/10 * (k + 1); self.fkine_variables_sliders.append(tk.Scale(menu_frame, font = f"Arial {menu_properties['options_font'] - 3}", orient = tk.VERTICAL, length = menu_properties['width'] / 5.0, bg = menu_properties['bg_color'], fg = "white", troughcolor = "brown", highlightbackground = menu_properties['bg_color'], highlightcolor = menu_properties['bg_color'], highlightthickness = 2, sliderlength = 25, command = lambda event, slider_num = k: self.change_fkine_variable_slider(slider_num, event)))
-            fkine_variables_sliders_x = 1/(np.ceil(self.joints_number / fkine_variables_sliders_rows) + 1) * (k // fkine_variables_sliders_rows + 1); self.fkine_variables_sliders[k].place(x = fkine_variables_sliders_x * menu_properties['width'], y = fkine_variables_sliders_ord_list[k] * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
-            fkine_variables_labels_x = 1/(np.ceil(self.joints_number / fkine_variables_sliders_rows) + 1) * (k // fkine_variables_sliders_rows + 1) - 2/3*1/7; gbl.menu_label(menu_frame, f"{k + 1}\n{['(°)', '(m)'][joint_type_index]}:", f"Calibri {menu_properties['options_font']-3} bold", menu_properties['labels_color'], menu_properties['bg_color'], fkine_variables_labels_x * menu_properties['width'], fkine_variables_sliders_ord_list[k] * menu_properties['height'] / (menu_properties['rows'] + 1) - 0.8)
-        self.update_forward_kinematics_indicators()  # update the indicators of the forward kinematics of the robotic manipulator
-    def generate_inverse_kinematics_menu(self, menu_frame, menu_properties, event = None):  # build the inverse kinematics menus
-        # options order
-        menu_title_ord = 1
-        menu_info_button_ord = 1
-        get_fkine_result_button_ord = 2.5
-        send_invkine_result_button_ord = get_fkine_result_button_ord
-        choose_end_effector_position_label = get_fkine_result_button_ord+1.8
-        choose_end_effector_position_button = choose_end_effector_position_label
-        choose_end_effector_orientation_label = choose_end_effector_position_label
-        choose_end_effector_orientation_button = choose_end_effector_position_label
-        choose_invkine_tolerance_label_ord = choose_end_effector_position_label+1.8
-        choose_invkine_tolerance_button_ord = choose_invkine_tolerance_label_ord
-        joints_configuration_label_ord = choose_end_effector_position_label+3.5
-        joints_configuration_indicator_ord = joints_configuration_label_ord
-        show_invkine_info_button_ord = menu_properties['rows']-1.0
-        # create the options
-        menu_title_x = 1/2; gbl.menu_label(menu_frame, menu_properties['sub_menu_title'], f"Calibri {menu_properties['title_font']} bold underline", "gold", menu_properties['bg_color'], menu_title_x * menu_properties['width'], menu_title_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        menu_info_button_x = 1/20; gbl.menu_button(menu_frame, "ⓘ", f"Calibri {menu_properties['title_font'] - 5} bold", "white", menu_properties['bg_color'], menu_info_button_x * menu_properties['width'], menu_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), lambda event: ms.showinfo(menu_properties['sub_menu_title'], menu_properties['info'], master = self.root)).button
-        get_fkine_result_button_x = 1/3; self.get_fkine_result_button = gbl.menu_button(menu_frame, "↓ get forward kinematics\nanalysis result", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], get_fkine_result_button_x * menu_properties['width'], get_fkine_result_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.get_fkine_pose_result).button
-        send_invkine_result_button_x = 2/3; self.send_invkine_result_button = gbl.menu_button(menu_frame, "↑ send inverse kinematics\nanalysis result", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], send_invkine_result_button_x * menu_properties['width'], send_invkine_result_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.send_invkine_joints_config_result).button
-        choose_end_effector_position_label_x = 1/5; gbl.menu_label(menu_frame, "End-effector\nposition (m):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_end_effector_position_label_x * menu_properties['width'], choose_end_effector_position_label * menu_properties['height'] / (menu_properties['rows'] + 1))
-        choose_end_effector_position_button_x = 2/5; self.choose_end_effector_position_button = gbl.menu_button(menu_frame, "position", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], choose_end_effector_position_button_x * menu_properties['width'], choose_end_effector_position_button * menu_properties['height'] / (menu_properties['rows'] + 1), self.choose_end_effector_position_invkine).button
-        choose_end_effector_orientation_label_x = 3/5; gbl.menu_label(menu_frame, "End-effector\norientation (°):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_end_effector_orientation_label_x * menu_properties['width'], choose_end_effector_orientation_label * menu_properties['height'] / (menu_properties['rows'] + 1))
-        choose_end_effector_orientation_button_x = 4/5; self.choose_end_effector_orientation_button = gbl.menu_button(menu_frame, "orientation", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], choose_end_effector_orientation_button_x * menu_properties['width'], choose_end_effector_orientation_button * menu_properties['height'] / (menu_properties['rows'] + 1), self.choose_end_effector_orientation_invkine).button
-        choose_invkine_tolerance_label_x = 2/5; gbl.menu_label(menu_frame, "Numerical solver maximum allowed error (tolerance):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_invkine_tolerance_label_x * menu_properties['width'], choose_invkine_tolerance_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        choose_invkine_tolerance_button_x = 3/4; self.choose_invkine_tolerance_button = gbl.menu_button(menu_frame, self.invkine_tolerance, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], choose_invkine_tolerance_button_x * menu_properties['width'], choose_invkine_tolerance_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_invkine_tolerance).button
-        joints_configuration_label_x = 1/6; gbl.menu_label(menu_frame, "Joints\nconfiguration:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], joints_configuration_label_x * menu_properties['width'], joints_configuration_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        joints_configuration_indicator_x = 3/5; self.joints_configuration_indicator = gbl.menu_label(menu_frame, "joints configuration", f"Calibri {menu_properties['options_font']} bold", menu_properties['indicators_color'], menu_properties['bg_color'], joints_configuration_indicator_x * menu_properties['width'], joints_configuration_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
-        # show_invkine_info_button_x = 19/20; self.show_invkine_info_button = gbl.menu_button(menu_frame, "🕮", f"Calibri {menu_properties['options_font']+5} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_invkine_info_button_x * menu_properties['width'], show_invkine_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.show_invkine_info).button
-        self.update_inverse_kinematics_indicators()  # update the indicators of the inverse kinematics of the robotic manipulator
-    def build_robotic_manipulator_differential_kinematics_menus(self, event = None):  # build the sub menus of the main menu that analyzes the differential kinematics of the robotic manipulator
-        self.clear_menus_background()  # clear the menus background
-        # create the differential kinematics sub menu
-        diffkine_menu_title = "Differential kinematics"
-        diffkine_menu_info = ""
-        diffkine_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = diffkine_menu_title, info = diffkine_menu_info, row = 1, column = 0, width = self.menus_background_width, height = self.menus_background_height * 1 / 2, \
-                                        rows = 10, bg_color = "black", title_font = 15, options_font = 11, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
-        # create the inverse differential kinematics sub menu
-        invdiffkine_menu_title = "Inverse differential kinematics"
-        invdiffkine_menu_info = ""
-        invdiffkine_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = invdiffkine_menu_title, info = invdiffkine_menu_info, row = 2, column = 0, width = self.menus_background_width, height = self.menus_background_height * 1 / 2, \
-                                            rows = 9, bg_color = "black", title_font = 15, options_font = 11, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
-        # generate the sub menus
-        self.generate_differential_kinematics_menu(self.create_static_menu_frame(diffkine_menu_properties), diffkine_menu_properties)
-        self.generate_inverse_differential_kinematics_menu(self.create_static_menu_frame(invdiffkine_menu_properties), invdiffkine_menu_properties)
-    def generate_differential_kinematics_menu(self, menu_frame, menu_properties, event = None):  # build the differential kinematics menu
-        # options order
-        menu_title_ord = 1
-        menu_info_button_ord = 1
-        choose_joint_number_diffkine_label_ord = 2.5
-        joints_configuration_diffkine_label_ord = choose_joint_number_diffkine_label_ord-0.4
-        joints_configuration_diffkine_indicator_ord = joints_configuration_diffkine_label_ord+0.8
-        choose_joint_number_diffkine_combobox_ord = choose_joint_number_diffkine_label_ord
-        choose_diffkine_velocity_label_ord = choose_joint_number_diffkine_label_ord-0.3
-        diffkine_value_unit_indicator_ord = choose_joint_number_diffkine_label_ord+0.3
-        joint_diffkine_velocity_combobox_ord = choose_joint_number_diffkine_label_ord
-        end_effector_linear_vel_label_ord = choose_joint_number_diffkine_label_ord+6.5
-        end_effector_linear_vel_indicator_ord = end_effector_linear_vel_label_ord+0.8
-        end_effector_angular_vel_label_ord = end_effector_linear_vel_label_ord
-        end_effector_angular_vel_indicator_ord = end_effector_angular_vel_label_ord+0.8
-        diffkine_wrt_frame_label_ord = end_effector_linear_vel_label_ord
-        diffkine_wrt_frame_button_ord = end_effector_linear_vel_label_ord+0.8
-        show_diffkine_info_button_ord = menu_properties['rows']-1.0
-        difffkine_variables_sliders_rows = 3; diffkine_variables_sliders_ord_list = []
-        for k in range(self.joints_number):
-            diffkine_variables_sliders_ord_list.append(choose_joint_number_diffkine_label_ord+1.5 + 1.5*(k % difffkine_variables_sliders_rows))
-            # fkine_variables_sliders_ord_list.append(choose_joint_number_fkine_label_ord+2.5)
-        # create the options
-        menu_title_x = 1/2; gbl.menu_label(menu_frame, menu_properties['sub_menu_title'], f"Calibri {menu_properties['title_font']} bold underline", "gold", menu_properties['bg_color'], menu_title_x * menu_properties['width'], menu_title_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        menu_info_button_x = 1/20; gbl.menu_button(menu_frame, "ⓘ", f"Calibri {menu_properties['title_font'] - 5} bold", "white", menu_properties['bg_color'], menu_info_button_x * menu_properties['width'], menu_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), lambda event: ms.showinfo(menu_properties['sub_menu_title'], menu_properties['info'], master = self.root)).button
-        joints_configuration_diffkine_label_x = 6/7; gbl.menu_label(menu_frame, "Configuration:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], joints_configuration_diffkine_label_x * menu_properties['width'], joints_configuration_diffkine_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        joints_configuration_diffkine_indicator_x = joints_configuration_diffkine_label_x; self.joints_configuration_diffkine_indicator = gbl.menu_label(menu_frame, self.control_or_kinematics_variables_visualization, f"Calibri {menu_properties['options_font']} bold", menu_properties['indicators_color'], menu_properties['bg_color'], joints_configuration_diffkine_indicator_x * menu_properties['width'], joints_configuration_diffkine_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
-        choose_joint_number_diffkine_label_x = 1/6; gbl.menu_label(menu_frame, "Joint\nnumber:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_joint_number_diffkine_label_x * menu_properties['width'], choose_joint_number_diffkine_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        self.choose_joint_number_diffkine_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "readonly", width = 8, values = [f"joint {joint}" for joint in range(1, self.joints_number + 1)], justify = "center")
-        choose_joint_number_diffkine_combobox_x = 2/6; self.choose_joint_number_diffkine_combobox.place(x = choose_joint_number_diffkine_combobox_x * menu_properties['width'], y = choose_joint_number_diffkine_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
-        self.choose_joint_number_diffkine_combobox.bind("<<ComboboxSelected>>", self.change_chosen_joint_number_diffkine)
-        choose_diffkine_velocity_label_x = 3/6; gbl.menu_label(menu_frame, "Joint velocity:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_diffkine_velocity_label_x * menu_properties['width'], choose_diffkine_velocity_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        diffkine_value_unit_indicator_x = 3/6; self.diffkine_value_unit_indicator = gbl.menu_label(menu_frame, ["(rad/s)", "(m/s)"][self.joints_types_list.index(self.joints_types[self.chosen_joint_number_diffkine - 1])], f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], diffkine_value_unit_indicator_x * menu_properties['width'], diffkine_value_unit_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
-        self.joint_diffkine_velocity_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "normal", width = 8, values = "", justify = "center")
-        joint_diffkine_velocity_combobox_x = 4/6; self.joint_diffkine_velocity_combobox.place(x = joint_diffkine_velocity_combobox_x * menu_properties['width'], y = joint_diffkine_velocity_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
-        self.joint_diffkine_velocity_combobox.bind("<<ComboboxSelected>>", self.change_chosen_joint_number_diffkine_2)
-        self.joint_diffkine_velocity_combobox.bind("<Return>", self.change_chosen_diffkine_velocity)
-        end_effector_linear_vel_label_x = 1/5; gbl.menu_label(menu_frame, "End-effector linear velocity (m/s):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], end_effector_linear_vel_label_x * menu_properties['width'], end_effector_linear_vel_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        end_effector_linear_vel_indicator_x = end_effector_linear_vel_label_x; self.end_effector_linear_vel_indicator = gbl.menu_label(menu_frame, "linear velocity", f"Calibri {menu_properties['options_font']} bold", menu_properties['indicators_color'], menu_properties['bg_color'], end_effector_linear_vel_indicator_x * menu_properties['width'], end_effector_linear_vel_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
-        end_effector_angular_vel_label_x = 11/20; gbl.menu_label(menu_frame, "End-effector angular velocity (°/s):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], end_effector_angular_vel_label_x * menu_properties['width'], end_effector_angular_vel_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        end_effector_angular_vel_indicator_x = end_effector_angular_vel_label_x; self.end_effector_angular_vel_indicator = gbl.menu_label(menu_frame, "angular velocity", f"Calibri {menu_properties['options_font']} bold", menu_properties['indicators_color'], menu_properties['bg_color'], end_effector_angular_vel_indicator_x * menu_properties['width'], end_effector_angular_vel_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
-        diffkine_wrt_frame_label_x = 5/6; gbl.menu_label(menu_frame, "W.r.t. frame:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], diffkine_wrt_frame_label_x * menu_properties['width'], diffkine_wrt_frame_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        diffkine_wrt_frame_button_x = diffkine_wrt_frame_label_x; self.diffkine_wrt_frame_button = gbl.menu_button(menu_frame, self.diffkine_wrt_frame, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], diffkine_wrt_frame_button_x * menu_properties['width'], diffkine_wrt_frame_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_diffkine_wrt_frame).button
-        # show_diffkine_info_button_x = 19/20; self.show_diffkine_info_button = gbl.menu_button(menu_frame, "🕮", f"Calibri {menu_properties['options_font']+5} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_diffkine_info_button_x * menu_properties['width'], show_diffkine_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.show_diffkine_info).button
-        self.diffkine_variables_sliders = []
-        for k in range(self.joints_number):
-            joint_type_index = self.joints_types_list.index(self.joints_types[k])  # the index of the current joint type (0 for revolute and 1 for prismatic) for the forward kinematics analysis
-            diffkine_velocities_limits = self.diffkine_velocities_limits[k][joint_type_index]  # the control variable limits of the current joint
-            self.diffkine_variables_sliders.append(tk.Scale(menu_frame, font = f"Arial {menu_properties['options_font'] - 3}", orient = tk.HORIZONTAL, from_ = diffkine_velocities_limits[0], to = diffkine_velocities_limits[1], resolution = [10**(-self.angles_precision), 10**(-self.distances_precision)][joint_type_index], length = menu_properties['width'] / 7.0, bg = menu_properties['bg_color'], fg = "white", troughcolor = "brown", highlightbackground = menu_properties['bg_color'], highlightcolor = menu_properties['bg_color'], highlightthickness = 2, sliderlength = 25, command = lambda event, slider_num = k: self.change_diffkine_variable_slider(slider_num, event)))
-            # fkine_variables_sliders_x = 1/10 * (k + 1); self.fkine_variables_sliders.append(tk.Scale(menu_frame, font = f"Arial {menu_properties['options_font'] - 3}", orient = tk.VERTICAL, length = menu_properties['width'] / 5.0, bg = menu_properties['bg_color'], fg = "white", troughcolor = "brown", highlightbackground = menu_properties['bg_color'], highlightcolor = menu_properties['bg_color'], highlightthickness = 2, sliderlength = 25, command = lambda event, slider_num = k: self.change_fkine_variable_slider(slider_num, event)))
-            diffkine_variables_sliders_x = 1/(np.ceil(self.joints_number / difffkine_variables_sliders_rows) + 1) * (k // difffkine_variables_sliders_rows + 1); self.diffkine_variables_sliders[k].place(x = diffkine_variables_sliders_x * menu_properties['width'], y = diffkine_variables_sliders_ord_list[k] * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
-            diffkine_variables_labels_x = 1/(np.ceil(self.joints_number / difffkine_variables_sliders_rows) + 1) * (k // difffkine_variables_sliders_rows + 1) - 2/3*1/7; gbl.menu_label(menu_frame, f"{k + 1}\n{['(°/s)', '(m/s)'][joint_type_index]}:", f"Calibri {menu_properties['options_font']-3} bold", menu_properties['labels_color'], menu_properties['bg_color'], diffkine_variables_labels_x * menu_properties['width'], diffkine_variables_sliders_ord_list[k] * menu_properties['height'] / (menu_properties['rows'] + 1) - 0.8)
-        self.update_differential_kinematics_indicators()  # update the indicators of the differential kinematics of the robotic manipulator
-    def generate_inverse_differential_kinematics_menu(self, menu_frame, menu_properties, event = None):  # build the inverse differential kinematics menu
-        # options order
-        menu_title_ord = 1
-        menu_info_button_ord = 1
-        get_diffkine_result_button_ord = 2.5
-        joints_configuration_invkine_label_ord = get_diffkine_result_button_ord-0.4
-        joints_configuration_invkine_indicator_ord = joints_configuration_invkine_label_ord+0.8
-        send_invdiffkine_result_button_ord = get_diffkine_result_button_ord
-        end_effector_linear_velocity_label_ord = get_diffkine_result_button_ord+1.8
-        end_effector_linear_velocity_button_ord = end_effector_linear_velocity_label_ord
-        end_effector_angular_velocity_label_ord = end_effector_linear_velocity_label_ord
-        end_effector_angular_velocity_button_ord = end_effector_angular_velocity_label_ord
-        invdiffkine_wrt_frame_label_ord = end_effector_linear_velocity_label_ord+1.8
-        invdiffkine_wrt_frame_button_ord = invdiffkine_wrt_frame_label_ord
-        joints_velocities_label_ord = end_effector_linear_velocity_label_ord+3.5
-        joints_velocities_indicator_ord = joints_velocities_label_ord
-        show_invdiffkine_info_button_ord = menu_properties['rows']-1.0
-        # create the options
-        menu_title_x = 1/2; gbl.menu_label(menu_frame, menu_properties['sub_menu_title'], f"Calibri {menu_properties['title_font']} bold underline", "gold", menu_properties['bg_color'], menu_title_x * menu_properties['width'], menu_title_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        menu_info_button_x = 1/20; gbl.menu_button(menu_frame, "ⓘ", f"Calibri {menu_properties['title_font'] - 5} bold", "white", menu_properties['bg_color'], menu_info_button_x * menu_properties['width'], menu_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), lambda event: ms.showinfo(menu_properties['sub_menu_title'], menu_properties['info'], master = self.root)).button
-        joints_configuration_invkine_label_x = 6/7; gbl.menu_label(menu_frame, "Configuration:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], joints_configuration_invkine_label_x * menu_properties['width'], joints_configuration_invkine_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        joints_configuration_invkine_indicator_x = joints_configuration_invkine_label_x; self.joints_configuration_invkine_indicator = gbl.menu_label(menu_frame, self.control_or_kinematics_variables_visualization, f"Calibri {menu_properties['options_font']} bold", menu_properties['indicators_color'], menu_properties['bg_color'], joints_configuration_invkine_indicator_x * menu_properties['width'], joints_configuration_invkine_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
-        get_diffkine_result_button_x = 1/4; self.get_diffkine_result_button = gbl.menu_button(menu_frame, "↓ get differential kinematics\nanalysis result", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], get_diffkine_result_button_x * menu_properties['width'], get_diffkine_result_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.get_diffkine_velocities_result).button
-        send_invdiffkine_result_button_x = 3/5; self.send_invdiffkine_result_button = gbl.menu_button(menu_frame, "↑ send inverse differential\nkinematics analysis result", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], send_invdiffkine_result_button_x * menu_properties['width'], send_invdiffkine_result_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.send_invdiffkine_joints_velocities_result).button
-        end_effector_linear_velocity_label_x = 5/35; gbl.menu_label(menu_frame, "End-effector\nlinear velocity (m/s):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], end_effector_linear_velocity_label_x * menu_properties['width'], end_effector_linear_velocity_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        end_effector_linear_velocity_button_x = 13/35; self.end_effector_linear_velocity_button = gbl.menu_button(menu_frame, "linear\nvelocity", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], end_effector_linear_velocity_button_x * menu_properties['width'], end_effector_linear_velocity_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.choose_end_effector_linear_velocity).button
-        end_effector_angular_velocity_label_x = 21/35; gbl.menu_label(menu_frame, "End-effector\nangular velocity (°/s):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], end_effector_angular_velocity_label_x * menu_properties['width'], end_effector_angular_velocity_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        end_effector_angular_velocity_button_x = 29/35; self.end_effector_angular_velocity_button = gbl.menu_button(menu_frame, "angular\nvelocity", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], end_effector_angular_velocity_button_x * menu_properties['width'], end_effector_angular_velocity_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.choose_end_effector_angular_velocity).button
-        invdiffkine_wrt_frame_label_x = 2/5; gbl.menu_label(menu_frame, "Velocities defined w.r.t. frame:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], invdiffkine_wrt_frame_label_x * menu_properties['width'], invdiffkine_wrt_frame_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        invdiffkine_wrt_frame_button_x = 7/10; self.invdiffkine_wrt_frame_button = gbl.menu_button(menu_frame, self.invdiffkine_wrt_frame, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], invdiffkine_wrt_frame_button_x * menu_properties['width'], invdiffkine_wrt_frame_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_invdiffkine_wrt_frame).button
-        joints_velocities_label_x = 1/6; gbl.menu_label(menu_frame, "Joints\nvelocities:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], joints_velocities_label_x * menu_properties['width'], joints_velocities_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        joints_velocities_indicator_x = 3/5; self.joints_velocities_indicator = gbl.menu_label(menu_frame, "joints velocities", f"Calibri {menu_properties['options_font']} bold", menu_properties['indicators_color'], menu_properties['bg_color'], joints_velocities_indicator_x * menu_properties['width'], joints_velocities_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
-        # show_invdiffkine_info_button_x = 19/20; self.show_invdiffkine_info_button = gbl.menu_button(menu_frame, "🕮", f"Calibri {menu_properties['options_font']+5} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_invdiffkine_info_button_x * menu_properties['width'], show_invdiffkine_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.show_invdiffkine_info).button
-        self.update_inverse_differential_kinematics_indicators()  # update the indicators of the inverse differential kinematics of the robotic manipulator
     def build_workspace_obstacles_menus(self, event = None):  # build the sub menus of the main menu that creates the workspace obstacles
         self.clear_menus_background()
         # create the workspace obstacles sub menu
@@ -1764,7 +1898,7 @@ class robotic_manipulators_playground_window():
         load_workspace_image_combobox_x = load_workspace_image_label_x; self.load_workspace_image_combobox.place(x = load_workspace_image_combobox_x * menu_properties['width'], y = load_workspace_image_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
         self.load_workspace_image_combobox.bind("<<ComboboxSelected>>", self.load_workspace_image_for_detection)
         obstacles_height_saved_label_x = load_workspace_image_label_x-1/30; gbl.menu_label(menu_frame, "Obstacles saved\nheight (mm):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], obstacles_height_saved_label_x * menu_properties['width'], obstacles_height_saved_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        obstacles_height_saved_button_x = load_workspace_image_label_x+2/30; self.obstacles_height_saved_button = gbl.menu_button(menu_frame, f"{self.workspace_obstacles_height_saved:.1f}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], obstacles_height_saved_button_x * menu_properties['width'], obstacles_height_saved_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.choose_obstacles_height_saved).button
+        obstacles_height_saved_button_x = load_workspace_image_label_x+2/30; self.obstacles_height_saved_button = gbl.menu_button(menu_frame, f"{1000.0 * self.workspace_obstacles_height_saved:.1f}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], obstacles_height_saved_button_x * menu_properties['width'], obstacles_height_saved_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.choose_obstacles_height_saved).button
         boundaries_precision_label_x = 4/7; gbl.menu_label(menu_frame, "Precision:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], boundaries_precision_label_x * menu_properties['width'], boundaries_precision_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         self.boundaries_precision_slider = tk.Scale(menu_frame, font = f"Arial {menu_properties['options_font']-3}", orient = tk.HORIZONTAL, from_ = 0, to = 10, resolution = 1, length = menu_properties['width'] / 9.0, bg = menu_properties['bg_color'], fg = "white", troughcolor = "brown", highlightbackground = menu_properties['bg_color'], highlightcolor = menu_properties['bg_color'], highlightthickness = 2, sliderlength = 25, command = self.change_boundaries_precision)
         boundaries_precision_slider_x = boundaries_precision_label_x; self.boundaries_precision_slider.place(x = boundaries_precision_slider_x * menu_properties['width'], y = boundaries_precision_slider_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
@@ -1772,7 +1906,7 @@ class robotic_manipulators_playground_window():
         self.boundaries_vertices_lower_limit_slider = tk.Scale(menu_frame, font = f"Arial {menu_properties['options_font']-3}", orient = tk.HORIZONTAL, from_ = 3, to = 100, resolution = 1, length = menu_properties['width'] / 9.0, bg = menu_properties['bg_color'], fg = "white", troughcolor = "brown", highlightbackground = menu_properties['bg_color'], highlightcolor = menu_properties['bg_color'], highlightthickness = 2, sliderlength = 25, command = self.change_boundaries_vertices_lower_limit)
         boundaries_vertices_lower_limit_slider_x = boundaries_vertices_lower_limit_label_x; self.boundaries_vertices_lower_limit_slider.place(x = boundaries_vertices_lower_limit_slider_x * menu_properties['width'], y = boundaries_vertices_lower_limit_slider_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
         obstacles_height_detection_label_x = 17/28; gbl.menu_label(menu_frame, "Obstacles height (mm)\nfor detection:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], obstacles_height_detection_label_x * menu_properties['width'], obstacles_height_detection_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        obstacles_height_detection_button_x = 21/28; self.obstacles_height_detection_button = gbl.menu_button(menu_frame, f"{self.workspace_obstacles_height_detection:.1f}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], obstacles_height_detection_button_x * menu_properties['width'], obstacles_height_detection_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.choose_obstacles_height_detection).button
+        obstacles_height_detection_button_x = 21/28; self.obstacles_height_detection_button = gbl.menu_button(menu_frame, f"{1000.0 * self.workspace_obstacles_height_detection:.1f}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], obstacles_height_detection_button_x * menu_properties['width'], obstacles_height_detection_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.choose_obstacles_height_detection).button
         detect_compute_boundaries_button_x = 7/8; self.detect_compute_boundaries_button = gbl.menu_button(menu_frame, "detect\nboundaries", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], detect_compute_boundaries_button_x * menu_properties['width'], detect_compute_boundaries_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.detect_compute_boundaries_workspace).button
         create_obstacles_meshes_3dprint_label_x = detect_obstacles_boundaries_label_x; gbl.menu_label(menu_frame, "Create STL files\nfor the obstacles:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], create_obstacles_meshes_3dprint_label_x * menu_properties['width'], create_obstacles_meshes_3dprint_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         load_obstacles_data_label_x = 11/30; gbl.menu_label(menu_frame, "Load obstacle data:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], load_obstacles_data_label_x * menu_properties['width'], load_obstacles_data_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
@@ -2035,7 +2169,7 @@ class robotic_manipulators_playground_window():
         choose_solver_dt_label_x = 23/30; gbl.menu_label(menu_frame, "Time step dt (s):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_solver_dt_label_x * menu_properties['width'], choose_solver_dt_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         choose_solver_dt_button_x = 28/30; self.choose_solver_dt_button = gbl.menu_button(menu_frame, self.solver_time_step_dt, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], choose_solver_dt_button_x * menu_properties['width'], choose_solver_dt_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_solver_dt).button 
         choose_solver_error_tol_label_x = choose_solver_dt_label_x; gbl.menu_label(menu_frame, "Error tolerance (mm):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_solver_error_tol_label_x * menu_properties['width'], choose_solver_error_tol_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        choose_solver_error_tol_button_x = choose_solver_dt_button_x; self.choose_solver_error_tol_button = gbl.menu_button(menu_frame, self.solver_error_tolerance, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], choose_solver_error_tol_button_x * menu_properties['width'], choose_solver_error_tol_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_solver_error_tol).button
+        choose_solver_error_tol_button_x = choose_solver_dt_button_x; self.choose_solver_error_tol_button = gbl.menu_button(menu_frame, 1000.0 * self.solver_error_tolerance, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], choose_solver_error_tol_button_x * menu_properties['width'], choose_solver_error_tol_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_solver_error_tol).button
         compute_velocities_control_law_button_x = 1/4; self.compute_velocities_control_law_button = gbl.menu_button(menu_frame, "apply\ncontrol law", f"Calibri {menu_properties['options_font']+2} bold", menu_properties['buttons_color'], menu_properties['bg_color'], compute_velocities_control_law_button_x * menu_properties['width'], compute_velocities_control_law_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.apply_control_law_compute_velocities).button
         apply_vels_to_simulated_robot_button_x = 2/4; self.apply_vels_to_simulated_robot_button = gbl.menu_button(menu_frame, "apply velocities to\nsimulated robot", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], apply_vels_to_simulated_robot_button_x * menu_properties['width'], apply_vels_to_simulated_robot_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.control_simulated_robotic_manipulator).button
         apply_vels_to_real_robot_button_x = 3/4; self.apply_vels_to_real_robot_button = gbl.menu_button(menu_frame, "apply velocities to\nreal robot", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], apply_vels_to_real_robot_button_x * menu_properties['width'], apply_vels_to_real_robot_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.control_real_robotic_manipulator).button
@@ -2864,7 +2998,7 @@ class robotic_manipulators_playground_window():
                 self.diffkine_value_unit_indicator.configure(text = ["(°/s)", "(m/s)"][joint_type_index])  # change the unit of the differential kinematics velocity indicator
                 self.diffkine_wrt_frame_button.configure(text = self.diffkine_wrt_frame)  # change the text of the button that allows the user to change the frame with respect to which the differential kinematics is computed
                 # solve the differential kinematics of the robotic manipulator for the chosen joints velocities
-                end_effector_velocities = kin.compute_differential_kinematics(self.built_robotic_manipulator, self.differential_kinematics_velocities, self.diffkine_wrt_frame)  # compute the differential kinematics of the robotic manipulator
+                end_effector_velocities = kin.compute_differential_kinematics(self.built_robotic_manipulator, self.built_robotic_manipulator.q, self.differential_kinematics_velocities, self.diffkine_wrt_frame)  # compute the differential kinematics of the robotic manipulator
                 self.diffkine_linear_vel = np.array(end_effector_velocities[:3], dtype = float)  # the linear velocity of the end-effector
                 self.diffkine_angular_vel = np.array(end_effector_velocities[3:], dtype = float)  # the angular velocity of the end-effector
                 self.end_effector_linear_vel_indicator.configure(text = str([np.round(self.diffkine_linear_vel[k], self.distances_precision) for k in range(len(self.diffkine_linear_vel))]))  # change the text of the end-effector linear velocity indicator
@@ -3445,14 +3579,14 @@ class robotic_manipulators_playground_window():
         self.boundaries_minimum_vertices = self.boundaries_vertices_lower_limit_slider.get()  # the minimum number of the boundaries vertices
         self.removed_boundaries_list = []  # restore all the removed boundaries
     def choose_obstacles_height_saved(self, event = None):  # choose the obstacles height to be finally saved
-        obst_height = sd.askfloat("Obstacle's height to be saved", "Enter the obstacles' height (in millimeters)\nto be finally saved for the current workspace:", initialvalue = self.workspace_obstacles_height_saved, minvalue = 1.0, maxvalue = self.workspace_obstacles_max_height, parent = self.menus_area)
+        obst_height = sd.askfloat("Obstacle's height to be saved", "Enter the obstacles' height (in millimeters)\nto be finally saved for the current workspace:", initialvalue = 1000.0 * self.workspace_obstacles_height_saved, minvalue = 1.0, maxvalue = 1000.0 * self.workspace_obstacles_max_height, parent = self.menus_area)
         if obst_height != None:  # if the user enters a number
-            self.workspace_obstacles_height_saved = np.round(obst_height, 1)  # change the obstacles height to be finally saved
+            self.workspace_obstacles_height_saved = np.round(obst_height, 1) / 1000.0  # change the obstacles height to be finally saved
         self.update_workspace_obstacles_indicators()  # update the indicators of the workspace obstacles
     def choose_obstacles_height_detection(self, event = None):  # choose the obstacles height used for the obstacles boundaries detection
-        obst_height = sd.askfloat("Obstacle's height for detection", "Enter the obstacles' height (in millimeters)\nfor the boundaries detection:", initialvalue = self.workspace_obstacles_height_detection, minvalue = 0.0, maxvalue = self.workspace_obstacles_max_height, parent = self.menus_area)
+        obst_height = sd.askfloat("Obstacle's height for detection", "Enter the obstacles' height (in millimeters)\nfor the boundaries detection:", initialvalue = 1000.0 * self.workspace_obstacles_height_detection, minvalue = 0.0, maxvalue = 1000.0 * self.workspace_obstacles_max_height, parent = self.menus_area)
         if obst_height != None:  # if the user enters a number
-            self.workspace_obstacles_height_detection = np.round(obst_height, 1)  # change the obstacles height for the boundaries detection
+            self.workspace_obstacles_height_detection = np.round(obst_height, 1) / 1000.0  # change the obstacles height for the boundaries detection
         self.update_workspace_obstacles_indicators()  # update the indicators of the workspace obstacles
     def detect_compute_boundaries_workspace(self, event = None):  # detect and compute the boundaries of the workspace
         if self.chosen_detection_workspace_image_name in self.saved_workspace_images_list:  # if the chosen workspace image exists
@@ -3460,7 +3594,7 @@ class robotic_manipulators_playground_window():
                 self.obstacles_boundaries_are_shown = True  # the boundaries of the workspace obstacles are shown from now on
                 self.open_close_camera()  # open the camera
             ms.showinfo("Boundaries detection instructions", f"Detect the boundaries of the chosen workspace image! You can press \"e\"/\"r\" to decrease/increase the boundaries precision and \"t\"/\"y\" to decrease/increase the boundaries vertices lower limit. \
-You can also press left click on the number of a boundary to remove it and right click to restore the removed boundaries. The current obstacles' heights for saving and for the boundaries detection are {self.workspace_obstacles_height_saved} mm and {self.workspace_obstacles_height_detection} mm respectively \
+You can also press left click on the number of a boundary to remove it and right click to restore the removed boundaries. The current obstacles' heights for saving and for the boundaries detection are {1000.0 * self.workspace_obstacles_height_saved} mm and {1000.0 * self.workspace_obstacles_height_detection} mm respectively \
 (press the proper buttons if you want to change them). When you finish press \"d\" to store the remaining detected boundaries!", parent = self.menus_area)
         else:  # if the chosen workspace image does not exist
             ms.showerror("Error", f"The chosen workspace image \"{self.chosen_detection_workspace_image_name}\" does not exist!", parent = self.menus_area)  # show an error message
@@ -3487,7 +3621,7 @@ You can also press left click on the number of a boundary to remove it and right
         if len(self.chosen_workspace_saved_obstacles_objects_list) != 0:  # if there are saved obstacles objects
             obstacle_object_path = self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_detection_workspace_image_name}/{self.chosen_obstacle_object_name}"  # the path of the chosen obstacle object
             chosen_obstacle_file_lines = open(obstacle_object_path + ".txt", "r", encoding = "utf-8").readlines()  # read the lines of the chosen obstacle object file
-            obstacle_height = float(chosen_obstacle_file_lines[0].split(": ")[1])  # the height of the obstacle mesh
+            obstacle_height = 1000.0 * float(chosen_obstacle_file_lines[0].split(": ")[1])  # the height of the obstacle mesh in millimeters
             obstacle_boundary_points = np.array([[float(k) * 1000.0 for k in line.split(" ")] for line in chosen_obstacle_file_lines[3:]]).reshape(-1, 2)  # the boundary points of the obstacle mesh in millimeters
             points_limits = [[min(obstacle_boundary_points[:, 0]), max(obstacle_boundary_points[:, 0])], [min(obstacle_boundary_points[:, 1]), max(obstacle_boundary_points[:, 1])]]  # the limits of the boundary points in the x and y directions in millimeters
             pbo.convert_boundary_to_3D_mesh_stl(obstacle_boundary_points, obstacle_height, points_limits, [self.xy_res_obstacle_mesh, self.xy_res_obstacle_mesh], self.z_res_obstacle_mesh, obstacle_object_path + ".stl", True)  # convert the boundary points to a 3D shape in STL format
@@ -3498,7 +3632,7 @@ You can also press left click on the number of a boundary to remove it and right
             for k in range(len(self.chosen_workspace_saved_obstacles_objects_list)):  # iterate through all the saved obstacles objects
                 obstacle_object_path = self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_detection_workspace_image_name}/{self.chosen_workspace_saved_obstacles_objects_list[k]}"  # the path of the chosen obstacle object
                 chosen_obstacle_file_lines = open(obstacle_object_path + ".txt", "r", encoding = "utf-8").readlines()  # read the lines of the chosen obstacle object file
-                obstacle_height = float(chosen_obstacle_file_lines[0].split(": ")[1])  # the height of the obstacle mesh
+                obstacle_height = 1000.0 * float(chosen_obstacle_file_lines[0].split(": ")[1])  # the height of the obstacle mesh in millimeters
                 obstacle_boundary_points = np.array([[float(k) * 1000.0 for k in line.split(" ")] for line in chosen_obstacle_file_lines[3:]]).reshape(-1, 2)  # the boundary points of the obstacle mesh in millimeters
                 points_limits = [[min(obstacle_boundary_points[:, 0]), max(obstacle_boundary_points[:, 0])], [min(obstacle_boundary_points[:, 1]), max(obstacle_boundary_points[:, 1])]]  # the limits of the boundary points in the x and y directions in millimeters
                 pbo.convert_boundary_to_3D_mesh_stl(obstacle_boundary_points, obstacle_height, points_limits, [self.xy_res_obstacle_mesh, self.xy_res_obstacle_mesh], self.z_res_obstacle_mesh, obstacle_object_path + ".stl", False)  # convert the boundary points to a 3D shape in STL format
@@ -3528,10 +3662,10 @@ You can also press left click on the number of a boundary to remove it and right
             self.load_workspace_image_combobox.set(self.chosen_detection_workspace_image_name)  # set the combobox to the chosen workspace image
             self.load_obstacles_data_combobox["values"] = self.chosen_workspace_saved_obstacles_objects_list  # set the values of the obstacles data combobox to the chosen workspace saved obstacles objects list
             self.load_obstacles_data_combobox.set(self.chosen_obstacle_object_name)  # set the combobox to the first element of the chosen workspace saved obstacles objects list
-            self.obstacles_height_saved_button.configure(text = f"{self.workspace_obstacles_height_saved:.1f}")  # change the text of the choose obstacles height saved button
+            self.obstacles_height_saved_button.configure(text = f"{1000.0 * self.workspace_obstacles_height_saved:.1f}")  # change the text of the choose obstacles height saved button
             self.boundaries_precision_slider.set(self.boundaries_precision_parameter)  # set the boundaries precision slider to the chosen value
             self.boundaries_vertices_lower_limit_slider.set(self.boundaries_minimum_vertices)  # set the boundaries vertices lower limit slider to the chosen value
-            self.obstacles_height_detection_button.configure(text = f"{self.workspace_obstacles_height_detection:.1f}")  # change the text of the choose obstacles height detection button
+            self.obstacles_height_detection_button.configure(text = f"{1000.0 * self.workspace_obstacles_height_detection:.1f}")  # change the text of the choose obstacles height detection button
             self.xy_axis_res_mesh_button.configure(text = self.xy_res_obstacle_mesh)  # change the text of the choose xy axis res mesh button
             self.z_axis_res_mesh_button.configure(text = self.z_res_obstacle_mesh)  # change the text of the choose z axis res mesh button
         except: pass
@@ -3651,11 +3785,11 @@ You can also press left click on the number of a boundary to remove it and right
         else:  # if the camera has not been calibrated
             ms.showerror("Error", "The camera has not been calibrated! The previous calibration parameters are used.", parent = self.menus_area)  # show an error message
     def show_camera_parameters(self, event = None):  # show the camera parameters
-        ms.showinfo("Camera parameters", f"-Intrinsic matrix (in pixels):\n{self.camera_intrinsic_matrix}\n\n\
--Distortion coefficients (dimensionless):\n\
-Radial distortion coefficients k1, k2, k3: {np.hstack((self.camera_dist_coeffs[:2], self.camera_dist_coeffs[-1]))}\n\
-Tangential distortion coefficients p1, p2: {self.camera_dist_coeffs[2:4]}\n\n\
--Reprojection error (in pixels): {self.reprojection_error}", parent = self.menus_area)  # show the intrinsic matrix and distortion coefficients of the camera
+        ms.showinfo("Camera parameters", f"• Intrinsic matrix (in pixels):\n{self.camera_intrinsic_matrix}\n\n\
+• Distortion coefficients (dimensionless):\n\
+- Radial distortion coefficients k1, k2, k3: {np.hstack((self.camera_dist_coeffs[:2], self.camera_dist_coeffs[-1]))}\n\
+- Tangential distortion coefficients p1, p2: {self.camera_dist_coeffs[2:4]}\n\n\
+• Reprojection error (in pixels): {self.reprojection_error}", parent = self.menus_area)  # show the intrinsic matrix and distortion coefficients of the camera
     def draw_2d_plane_on_image(self, event = None):  # draw the 2D plane on the image
         if not self.draw_2d_plane_on_image_happening:  # if the 2D plane is not being drawn on the image
             self.draw_2d_plane_on_image_happening = True  # the 2D plane is being drawn on the image from now on
@@ -3872,7 +4006,7 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
                     remaining_obstacles_boundaries_detected = [obstacles_boundaries_detected_image_points[k] for k in range(len(obstacles_boundaries_detected_image_points)) if k != outer_boundary_index and k not in self.removed_boundaries_list]  # remove the excluded boundaries and the outer boundary from the detected boundaries
                     remaining_obstacles_boundaries_detected.append(outer_boundary)  # add the outer boundary to the end of the list
                     # convert the obstacles boundaries image points to xy plane world points and save the obstacles objects detected in the workspace image
-                    obstacles_boundaries_detected_xy_world_points = cd.convert_boundaries_image_points_to_world_points(remaining_obstacles_boundaries_detected, self.workspace_image_plane_frame_wrt_world, self.workspace_obstacles_height_detection / 1000.0, \
+                    obstacles_boundaries_detected_xy_world_points = cd.convert_boundaries_image_points_to_world_points(remaining_obstacles_boundaries_detected, self.workspace_image_plane_frame_wrt_world, self.workspace_obstacles_height_detection, \
                                                                                                                         self.workspace_image_camera_frame_wrt_world, self.camera_intrinsic_matrix, self.camera_dist_coeffs)  # convert the obstacles boundaries image points to xy plane world points
                     obstacles_boundaries_to_be_saved = []  # the boundaries of the obstacles to be saved (need to remove the duplicate consecutive points)
                     for boundary in obstacles_boundaries_detected_xy_world_points:  # for each boundary of the obstacles
@@ -3890,7 +4024,7 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
                             inner_boundaries_counter += 1  # increase the counter for the inner boundaries
                             file_name = f"inner_{inner_boundaries_counter}"  # the name of the file to save the inner boundary
                         with open(self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_detection_workspace_image_name}/{file_name}.txt", "w", encoding = "utf-8") as file:  # open the file in write mode 
-                            file.write(f"Boundary height (mm): {self.workspace_obstacles_height_saved:.1f}\n")  # write the height of the boundary to the file
+                            file.write(f"Boundary height (m): {self.workspace_obstacles_height_saved:.4f}\n")  # write the height of the boundary to the file
                             file.write("\nBoundary (x, y) points transformed on the world xy plane (m):\n")  # write the points of the boundary to the file
                             np.savetxt(file, np.array(obstacles_boundaries_to_be_saved[k]).reshape(-1, 2), fmt = "%.4f", delimiter = " ")  # write the points of the boundary to the file
                             file.close()  # close the file
@@ -3914,7 +4048,11 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
             self.positions_on_plane_are_correct = False  # the positions of the obstacles on the plane are not correct
             self.transformations_are_built = False  # the workspace transformations are not built
             self.hntf2d_solver = None  # the solver for the 2D obstacles avoidance problem gets initialized to the default value
-            self.obstacles_boundaries_for_solver = []  # the boundaries of the obstacles for the solver
+            self.obstacles_boundaries_for_solver = []  # initialize the boundaries of the obstacles for the solver
+            self.realws_path_control_law_output = []  # initialize the real workspace path control law output
+            self.unit_disk_path_control_law_output = []  # initialize the unit disk path control law output
+            self.R2_plane_path_control_law_output = []  # initialize the R2 plane path control law output
+            self.robot_joints_control_law_output = []  # initialize the robot joints control law output
             self.chosen_solver_workspace_image_name = self.load_workspace_obstacles_objects_combobox.get()
             self.chosen_workspace_saved_obstacles_objects_list = [file[:-4] for file in os.listdir(self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_solver_workspace_image_name}") if file.endswith(".txt")]  # the list to store the saved obstacles objects for the chosen workspace image
             if len(self.chosen_workspace_saved_obstacles_objects_list) != 0:  # if there are saved obstacles objects for the chosen workspace image
@@ -3926,7 +4064,7 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
                     self.workspace_obstacles_height_saved = float(chosen_obstacle_file_lines[0].split(": ")[1])  # the height of the obstacle mesh
                 inner_boundaries_number = len(self.chosen_workspace_saved_obstacles_objects_list) - 1  # the number of the inner boundaries (total minus the outer boundary)
                 self.boundaries_are_detected = True  # the boundaries of the obstacles are detected
-                self.obstacles_infos_text = f"✓ {inner_boundaries_number} inner and 1 outer boundaries\nObstacles height: {self.workspace_obstacles_height_saved} mm"  # the text to show the obstacles information
+                self.obstacles_infos_text = f"✓ {inner_boundaries_number} inner and 1 outer boundaries\nObstacles height: {1000.0 * self.workspace_obstacles_height_saved} mm"  # the text to show the obstacles information
             else:  # if there are no saved obstacles objects for the chosen workspace image
                 self.boundaries_are_detected = False  # the boundaries of the obstacles are not detected
                 self.obstacles_infos_text = "✗ No obstacles have been detected\nyet for this workspace image!"  # the text to show that no obstacles have been detected for the chosen workspace image
@@ -3947,6 +4085,7 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
             outer_plot, = ax.plot(obstacles_boundaries_for_solver[-1][:, 0] + p_x_length/2, obstacles_boundaries_for_solver[-1][:, 1] + p_y_length/2, "r", linewidth = 1)  # plot the outer obstacle boundary
             for k in range(len(obstacles_boundaries_for_solver) - 1):  # for each inner obstacle boundary
                 inner_plot, = ax.plot(obstacles_boundaries_for_solver[k][:, 0] + p_x_length/2, obstacles_boundaries_for_solver[k][:, 1] + p_y_length/2, "b", linewidth = 1)  # plot the inner obstacles boundaries
+                ax.text(np.mean(obstacles_boundaries_for_solver[k][:, 0]) + p_x_length/2, np.mean(obstacles_boundaries_for_solver[k][:, 1]) + p_y_length/2, f"{k + 1}", fontsize = 7, color = "k")  # write the text of the inner obstacles boundaries
             plane_plot, = ax.plot(np.array([0, p_x_length, p_x_length, 0, 0]), np.array([p_y_length, p_y_length, 0, 0, p_y_length]), "k", linewidth = 2)  # plot the 2D obstacles plane
             self.start_point_plot, = ax.plot(start_pos_workspace_plane[0], start_pos_workspace_plane[1], "mo", markersize = 5)  # plot the start position of the robot's end-effector on the 2D workspace plane
             self.target_point_plot, = ax.plot(target_pos_workspace_plane[0], target_pos_workspace_plane[1], "go", markersize = 5)  # plot the target position of the robot's end-effector on the 2D workspace plane
@@ -4030,30 +4169,32 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             self.positions_on_plane_are_correct = False  # the start and target positions are not set correctly
             self.check_positions_on_plane_text = "✗ No obstacles have been detected\nyet for this workspace image!"  # the text to show that no obstacles have been detected for the chosen workspace image            
     def start_building_workspace_transformations(self, event = None):  # start building the workspace transformations
-        if self.boundaries_are_detected and self.positions_on_plane_are_correct:  # if the boundaries of the obstacles are detected and the start and target positions are set correctly
+        if self.boundaries_are_detected:  # if the boundaries of the obstacles are detected and the start and target positions are set correctly
             start_pos_workspace_plane = self.start_pos_workspace_plane + np.array([-self.workspace_image_plane_x_length/2, -self.workspace_image_plane_y_length/2])  # the start position of the robot's end-effector on the 2D workspace plane
             target_pos_workspace_plane =  self.target_pos_workspace_plane + np.array([-self.workspace_image_plane_x_length/2, -self.workspace_image_plane_y_length/2])  # the target position of the robot's end-effector on the 2D workspace plane
             self.hntf2d_solver = cl.hntf2d_control_law(p_init = start_pos_workspace_plane, p_d = target_pos_workspace_plane, outer_boundary = self.obstacles_boundaries_for_solver[-1], inner_boundaries = self.obstacles_boundaries_for_solver[:-1], \
                                                         k_d = self.k_d, k_i = self.k_i, K = self.K, w_phi = self.w_phi, gamma = self.gamma, e_p = self.e_p, e_v = self.e_v)  # create a new hntf2d control law object
             self.hntf2d_solver.create_new_harmonic_map_object()  # create a new harmonic map object
+            self.realws_path_control_law_output = []  # initialize the real workspace path control law output
+            self.unit_disk_path_control_law_output = []  # initialize the unit disk path control law output
+            self.R2_plane_path_control_law_output = []  # initialize the R2 plane path control law output
+            self.robot_joints_control_law_output = []  # initialize the robot joints control law output
             plt.close('all')  # close all the opened plots
             self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
         else:  # if the boundaries of the obstacles are not detected or the start and target positions are not set correctly
-            ms.showerror("Error", "The workspace transformations cannot be built because the obstacles boundaries are not detected and / or the start and target positions are not set correctly!")
+            ms.showerror("Error", "The workspace transformations cannot be built because no obstacles boundaries are detected!")
     def build_realws_to_unit_disk_transformation(self, event = None):  # build the transformation from the real workspace to the unit disk
         if self.hntf2d_solver != None:  # if the hntf2d control law object has been created
             self.hntf2d_solver.realws_to_disk_transformation()  # calculate the transformation from the real workspace to the unit disk
-            if self.hntf2d_solver.wtd_transformation_is_built:  # if the transformation from the real workspace to the unit disk is built
-                ms.showinfo("Info", "The transformation from the real workspace to the unit disk has been built successfully!")  # show an info message
-            else:  # if the transformation from the real workspace to the unit disk is not built
+            if not self.hntf2d_solver.wtd_transformation_is_built:  # if the transformation from the real workspace to the unit disk is not built correctly
                 ms.showerror("Error", "The transformation from the real workspace to the unit disk could not be built!")  # show an error message
         else:  # if the hntf2d control law object has not been created yet
-            ms.showinfo("Info", "Press the \"start\" button first to begin building the workspace transformations (following the defined order)!")  # show an info message
+            ms.showerror("Error", "Press the \"start\" button first to begin building the workspace transformations (following the defined order)!")  # show an error message
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def realws_to_unit_disk_plot_interact(self, event = None):  # show the details of the transformation from the real workspace to the unit disk
         if self.hntf2d_solver != None:  # if the hntf2d control law object has been created
             if self.hntf2d_solver.wtd_transformation_is_built:  # if the transformation from the real workspace to the unit disk is built
-                text_margin = 0.00; text_fontsize = 8; legend_fontsize = 7; outer_boundaries_linewidth = 1; inner_boundaries_linewidth = 1; positions_fontsize = 5; punctures_fontsize = 4  # some plot parameters
+                text_margin = 0.00; text_fontsize = 8; legend_fontsize = 7; outer_boundaries_linewidth = 1; inner_boundaries_linewidth = 1; control_law_path_linewidth = 2; positions_fontsize = 5; punctures_fontsize = 4  # some plot parameters
                 fig = plt.figure()
                 ax1 = fig.add_subplot(121)
                 outer_plot, = ax1.plot(self.hntf2d_solver.outer_boundary[:, 0], self.hntf2d_solver.outer_boundary[:, 1], "red", linewidth = outer_boundaries_linewidth)
@@ -4062,10 +4203,13 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                     ax1.text(self.hntf2d_solver.inner_boundaries[i][0, 0] + text_margin, self.hntf2d_solver.inner_boundaries[i][0, 1] + text_margin, f"{i+1}", fontsize = text_fontsize)
                 p_init_plot, = ax1.plot(self.hntf2d_solver.p_init[0], self.hntf2d_solver.p_init[1], "magenta", marker = "s", markersize = positions_fontsize)
                 p_d_plot, = ax1.plot(self.hntf2d_solver.p_d[0], self.hntf2d_solver.p_d[1], "green", marker = "s", markersize = positions_fontsize)
-                ax1.legend([outer_plot, inner_plot, p_init_plot, p_d_plot], ["Outer boundary", "Inner boundaries", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
+                if len(self.realws_path_control_law_output) != 0:  # if a path (on the real workspace) has been calculated by the control law
+                    realws_path_plot, = ax1.plot(np.array(self.realws_path_control_law_output)[:, 0], np.array(self.realws_path_control_law_output)[:, 1], "black", linewidth = control_law_path_linewidth)
+                    ax1.legend([outer_plot, inner_plot, p_init_plot, p_d_plot, realws_path_plot], ["Outer boundary", "Inner boundaries", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
+                else:  # if no path (on the real workspace) has been calculated yet by the control law
+                    ax1.legend([outer_plot, inner_plot, p_init_plot, p_d_plot], ["Outer boundary", "Inner boundaries", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
                 ax1.set_title(f"Original real workspace\n(press mouse right click)")
-                ax1.set_xlabel("x (m)"); ax1.set_ylabel("y (m)"); ax1.set_aspect("equal")
-                ax1.grid(True)
+                ax1.set_xlabel("x (m)"); ax1.set_ylabel("y (m)"); ax1.set_aspect("equal"); ax1.grid(True)
                 ax2 = fig.add_subplot(122)
                 unit_disk_plot, = ax2.plot(self.hntf2d_solver.unit_circle[:, 0], self.hntf2d_solver.unit_circle[:, 1], "red", linewidth = outer_boundaries_linewidth)
                 for i in range(len(self.hntf2d_solver.q_i_disk)):
@@ -4073,10 +4217,13 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                     ax2.text(self.hntf2d_solver.q_i_disk[i][0] + text_margin, self.hntf2d_solver.q_i_disk[i][1] + text_margin, f"{i+1}", fontsize = text_fontsize)
                 q_init_plot, = ax2.plot(self.hntf2d_solver.q_init_disk[0], self.hntf2d_solver.q_init_disk[1], "magenta", marker = "s", markersize = positions_fontsize)
                 q_d_plot, = ax2.plot(self.hntf2d_solver.q_d_disk[0], self.hntf2d_solver.q_d_disk[1], "green", marker = "s", markersize = positions_fontsize)
-                ax2.legend([unit_disk_plot, punctures_plot, q_init_plot, q_d_plot], ["Unit disk", "Punctures", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
+                if len(self.unit_disk_path_control_law_output) != 0:  # if a path (on the unit disk) has been calculated by the control law
+                    unit_disk_path_plot, = ax2.plot(np.array(self.unit_disk_path_control_law_output)[:, 0], np.array(self.unit_disk_path_control_law_output)[:, 1], "black", linewidth = control_law_path_linewidth)
+                    ax2.legend([unit_disk_plot, punctures_plot, q_init_plot, q_d_plot, unit_disk_path_plot], ["Unit disk", "Punctures", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
+                else:  # if no path (on the unit disk) has been calculated yet by the control law
+                    ax2.legend([unit_disk_plot, punctures_plot, q_init_plot, q_d_plot], ["Unit disk", "Punctures", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
                 ax2.set_title(f"Real workspace ->\n-> Unit disk transformation")
-                ax2.set_xlabel("u"); ax2.set_ylabel("v"); ax2.set_aspect("equal")
-                ax2.grid(True)
+                ax2.set_xlabel("u"); ax2.set_ylabel("v"); ax2.set_aspect("equal"); ax2.grid(True)
                 fig.canvas.mpl_connect("button_press_event", lambda event: self.mark_transform_points_on_wtd_plot(event, ax1, ax2))  # connect a function to the plot
                 plt.show()
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
@@ -4100,17 +4247,15 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
     def build_unit_disk_to_R2_transformation(self, event = None):  # build the transformation from the unit disk to the R2 plane
         if self.hntf2d_solver != None:  # if the hntf2d control law object has been created
             self.hntf2d_solver.disk_to_R2_transformation()  # calculate the transformation from the unit disk to the R2 plane
-            if self.hntf2d_solver.dtp_transformation_is_built:  # if the transformation from the unit disk to the R2 plane is built
-                ms.showinfo("Info", "The transformation from the unit disk to the R2 plane has been built successfully!")  # show an info message
-            else:  # if the transformation from the unit disk to the R2 plane is not built
+            if not self.hntf2d_solver.dtp_transformation_is_built:  # if the transformation from the unit disk to the R2 plane is not built correctly
                 ms.showerror("Error", "The transformation from the unit disk to the R2 plane could not be built!")  # show an error message
         else:  # if the hntf2d control law object has not been created yet
-            ms.showinfo("Info", "Press the \"start\" button first to begin building the workspace transformations (following the defined order)!")  # show an info message
+            ms.showerror("Error", "Press the \"start\" button first to begin building the workspace transformations (following the defined order)!")  # show an error message
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def unit_disk_to_R2_plot_interact(self, event = None):  # show the details of the transformation from the unit disk to the R2 plane
         if self.hntf2d_solver != None:  # if the hntf2d control law object has been created
             if self.hntf2d_solver.dtp_transformation_is_built:  # if the transformation from the unit disk to the R2 plane is built
-                text_margin = 0.00; text_fontsize = 8; legend_fontsize = 7; unit_circle_linewidth = 1; positions_fontsize = 5; punctures_fontsize = 4  # some plot parameters
+                text_margin = 0.00; text_fontsize = 8; legend_fontsize = 7; unit_circle_linewidth = 1; control_law_path_linewidth = 2; positions_fontsize = 5; punctures_fontsize = 4  # some plot parameters
                 points_max_norm = max([np.linalg.norm(self.hntf2d_solver.q_i[k]) for k in range(len(self.hntf2d_solver.q_i))] + [np.linalg.norm(self.hntf2d_solver.q_init), np.linalg.norm(self.hntf2d_solver.q_d)])  # calculate the maximum norm of the points
                 fig = plt.figure()
                 ax1 = fig.add_subplot(121)
@@ -4120,7 +4265,11 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                     ax1.text(self.hntf2d_solver.q_i_disk[i][0] + text_margin, self.hntf2d_solver.q_i_disk[i][1] + text_margin, f"{i+1}", fontsize = text_fontsize)
                 q_init_disk_plot, = ax1.plot(self.hntf2d_solver.q_init_disk[0], self.hntf2d_solver.q_init_disk[1], "magenta", marker = "s", markersize = positions_fontsize)
                 q_d_disk_plot, = ax1.plot(self.hntf2d_solver.q_d_disk[0], self.hntf2d_solver.q_d_disk[1], "green", marker = "s", markersize = positions_fontsize)
-                ax1.legend([unit_disk_plot, punctures_plot, q_init_disk_plot, q_d_disk_plot], ["Unit disk", "Punctures", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
+                if len(self.unit_disk_path_control_law_output) != 0:  # if a path (on the unit disk) has been calculated by the control law
+                    unit_disk_path_plot, = ax1.plot(np.array(self.unit_disk_path_control_law_output)[:, 0], np.array(self.unit_disk_path_control_law_output)[:, 1], "black", linewidth = control_law_path_linewidth)
+                    ax1.legend([unit_disk_plot, punctures_plot, q_init_disk_plot, q_d_disk_plot, unit_disk_path_plot], ["Unit disk", "Punctures", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
+                else:  # if no path (on the unit disk) has been calculated yet by the control law
+                    ax1.legend([unit_disk_plot, punctures_plot, q_init_disk_plot, q_d_disk_plot], ["Unit disk", "Punctures", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
                 ax1.set_title(f"Real workspace ->\n-> Unit disk transformation\n(press mouse right click)")
                 ax1.set_xlabel("u"); ax1.set_ylabel("v"); ax1.set_aspect("equal")
                 ax1.grid(True)
@@ -4130,7 +4279,11 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                     ax2.text(self.hntf2d_solver.q_i[i][0] + text_margin, self.hntf2d_solver.q_i[i][1] + text_margin, f"{i+1}", fontsize = text_fontsize)
                 q_init_R2_plot, = ax2.plot(self.hntf2d_solver.q_init[0], self.hntf2d_solver.q_init[1], "magenta", marker = "s", markersize = positions_fontsize)
                 q_d_R2_plot, = ax2.plot(self.hntf2d_solver.q_d[0], self.hntf2d_solver.q_d[1], "green", marker = "s", markersize = positions_fontsize)
-                ax2.legend([displayed_punctures_plot, q_init_R2_plot, q_d_R2_plot], ["Punctures", "start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
+                if len(self.R2_plane_path_control_law_output) != 0:  # if a path (on the R2 plane) has been calculated by the control law
+                    R2_plane_path_plot, = ax2.plot(np.array(self.R2_plane_path_control_law_output)[:, 0], np.array(self.R2_plane_path_control_law_output)[:, 1], "black", linewidth = control_law_path_linewidth)
+                    ax2.legend([displayed_punctures_plot, q_init_R2_plot, q_d_R2_plot, R2_plane_path_plot], ["Punctures", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
+                else:  # if no path (on the R2 plane) has been calculated yet by the control law
+                    ax2.legend([displayed_punctures_plot, q_init_R2_plot, q_d_R2_plot], ["Punctures", "start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
                 ax2.set_title(f"Unit disk ->\n-> R2 plane transformation")
                 ax2.set_xlabel("x"); ax2.set_ylabel("y"); ax2.set_aspect("equal")
                 ax2.set_xlim(-1.5 * points_max_norm, 1.5 * points_max_norm); ax2.set_ylim(-1.5 * points_max_norm, 1.5 * points_max_norm)
@@ -4361,25 +4514,52 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             self.solver_time_step_dt = solver_dt  # change the time step for the control law
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def change_solver_error_tol(self, event = None):  # change the error tolerance for the control law
-        solver_error_tol = sd.askfloat("Choose the solver error tolerance", "Enter the error tolerance (in millimeters)\nof the target position convergence for the control law:", initialvalue = self.solver_error_tolerance, minvalue = self.solver_error_tolerance_limits[0], maxvalue = self.solver_error_tolerance_limits[1], parent = self.menus_area)  # ask the user to enter the new value of the solver's error tolerance
+        solver_error_tol = sd.askfloat("Choose the solver error tolerance", "Enter the error tolerance (in millimeters)\nof the target position convergence for the control law:", initialvalue = 1000.0 * self.solver_error_tolerance, minvalue = 1000.0 * self.solver_error_tolerance_limits[0], maxvalue = 1000.0 * self.solver_error_tolerance_limits[1], parent = self.menus_area)  # ask the user to enter the new value of the solver's error tolerance
         if solver_error_tol != None:  # if the user enters a number
-            self.solver_error_tolerance = solver_error_tol  # change the error tolerance for the control law
+            self.solver_error_tolerance = solver_error_tol / 1000.0  # change the error tolerance for the control law
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def apply_control_law_compute_velocities(self, event = None):  # apply the control law and compute the velocities of the robotic manipulator
         if not self.robot_control_thread_flag:  # if the robot control thread is not running
             if self.robotic_manipulator_is_built: # if a robotic manipulator is built
-                # self.realws_path_control_law_output
-                total_steps = 100
-                self.robot_joints_control_law_output = [self.get_robot_joints_variables(self.control_or_kinematics_variables_visualization_list[0])]  # the joints variables time series for the robot control
-                for i in range(total_steps):
-                    self.robot_joints_control_law_output.append(self.robot_joints_control_law_output[-1].copy())  # append the last joints variables
-                    for k in range(self.joints_number):  # for each joint of the robotic manipulator
-                        self.robot_joints_control_law_output[-1][k] += np.pi/2.0/total_steps  # increment the joints variables
+                if self.hntf2d_solver != None and self.transformations_are_built and self.positions_on_plane_are_correct:  # if the workspace transformations are built
+                    p_list, p_dot_list, control_law_success = self.hntf2d_solver.run_control_law(self.solver_time_step_dt, self.solver_error_tolerance, self.solver_maximum_iterations)  # apply the control law and compute the path positions and velocities on the real and transformed workspaces
+                    self.realws_path_control_law_output = p_list  # the path positions on the real workspace generated by the control law
+                    self.unit_disk_path_control_law_output = []  # the path positions on the unit disk generated by the control law
+                    self.R2_plane_path_control_law_output = []  # the path positions on the R2 plane generated by the control law
+                    for i in range(len(p_list)):  # for each path position
+                        self.unit_disk_path_control_law_output.append(self.hntf2d_solver.realws_to_unit_disk_mapping(p_list[i]))  # the path position on the unit disk
+                        self.R2_plane_path_control_law_output.append(self.hntf2d_solver.unit_disk_to_R2_mapping(self.unit_disk_path_control_law_output[i]))  # the path position on the R2 plane
+                    if control_law_success:  # if the control law is successful
+                        ms.showinfo("Control law success", f"The control law has been applied successfully!\n\
+• Convergence error = {1000.0 * (np.linalg.norm(p_list[-1] - self.hntf2d_solver.p_d)):.1f} mm\n\
+• Number of iterations = {len(self.realws_path_control_law_output)}\n\
+• Total time = {len(self.realws_path_control_law_output) * self.solver_time_step_dt}", parent = self.menus_area)  # show an info message
+                    else:  # if the control law is not successful
+                        ms.showinfo("Control law failure", f"The control law has failed to converge within the maximum number of iterations ({self.solver_maximum_iterations})!\n\
+• Convergence error = {1000.0 * (np.linalg.norm(p_list[-1] - self.hntf2d_solver.p_d)):.1f} mm", parent = self.menus_area)  # show an info message
+                else:
+                    ms.showerror("Error", "The workspace transformations have not been built yet and/or the start and target positions are not set correctly!", parent = self.menus_area)  # show an error message
+            else:  # if no robotic manipulator is built yet
+                ms.showerror("Error", "Please build a robotic manipulator first!", parent = self.menus_area)  # show an error message
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def control_simulated_robotic_manipulator(self, event = None):  # control the simulated robotic manipulator
         if not self.robot_control_thread_flag:  # if the robot control thread is not running
             if self.robotic_manipulator_is_built: # if a robotic manipulator is built
                 self.control_or_kinematics_variables_visualization = self.control_or_kinematics_variables_visualization_list[1]  # choose the forward kinematics variables for visualization
+                
+                if len(self.robot_joints_control_law_output) == 0:
+                    self.robot_joints_control_law_output.append(self.forward_kinematics_variables)  # append the forward kinematics variables to the list of the control law output
+                    l = 0.2
+                    v = np.linalg.norm(self.chosen_invdiffkine_linear_vel)
+                    dt = 0.01
+                    steps = int(l/v/dt)
+                    ve_dot = np.zeros(6)
+                    ve_dot[0:3] = self.chosen_invdiffkine_linear_vel.copy()
+                    for k in range(steps):
+                        qr_dot, _ = kin.compute_inverse_differential_kinematics(self.built_robotic_manipulator, self.robot_joints_control_law_output[-1], ve_dot, "end-effector")
+                        q = self.robot_joints_control_law_output[-1] + qr_dot * dt
+                        self.robot_joints_control_law_output.append(q)
+                                
                 self.start_robot_control_thread()  # start the robot control thread
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def control_real_robotic_manipulator(self, event = None):  # control the real robotic manipulator
@@ -4417,9 +4597,10 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             self.choose_gamma_parameter_button.configure(text = f"{self.gamma:.2f}")  # change the text of the button that allows the user to choose the gamma parameter
             self.choose_e_p_parameter_button.configure(text = f"{self.e_p:.2f}")  # change the text of the button that allows the user to choose the e_p parameter
             self.choose_e_v_parameter_button.configure(text = f"{self.e_v:.2f}")  # change the text of the button that allows the user to choose the e_v parameter
+            self.load_control_parameters_combobox["values"] = self.saved_control_law_parameters_list  # update the values of the combobox that allows the user to load the control law parameters
             self.navigation_field_plot_points_divs_button.configure(text = f"{self.navigation_field_plot_points_divs}")  # change the text of the button that allows the user to change the number of points divisions in the navigation field plot
             self.choose_solver_dt_button.configure(text = f"{self.solver_time_step_dt:.3f}")  # change the text of the button that allows the user to choose the time step for the control law
-            self.choose_solver_error_tol_button.configure(text = f"{self.solver_error_tolerance:.1f}")  # change the text of the button that allows the user to choose the error tolerance for the control law
+            self.choose_solver_error_tol_button.configure(text = f"{1000.0 * self.solver_error_tolerance:.1f}")  # change the text of the button that allows the user to choose the error tolerance for the control law
             if self.hntf2d_solver != None:  # if the hntf2d control law object has been created
                 self.hntf2d_solver.p_init = self.start_pos_workspace_plane + np.array([-self.workspace_image_plane_x_length/2, -self.workspace_image_plane_y_length/2])  # change the initial position of the obstacles avoidance solver
                 self.hntf2d_solver.p_d = self.target_pos_workspace_plane + np.array([-self.workspace_image_plane_x_length/2, -self.workspace_image_plane_y_length/2])  # change the target position of the obstacles avoidance solver
