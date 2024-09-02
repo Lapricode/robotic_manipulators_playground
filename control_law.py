@@ -23,19 +23,21 @@ class hntf2d_control_law:
         self.gamma = gamma  # the scalar constant gamma for the function s
         self.e_p = e_p  # the scalar constant e_p for the function sigmap
         self.e_v = e_v  # the scalar constant e_v for the function sigmav
+        self.harmonic_map_object_is_built = False  # the flag to check if the HarmonicMap2D object has been created
         self.wtd_transformation_is_built = False  # the flag to check if the world to disk transformation has been done
         self.dtp_transformation_is_built = False  # the flag to check if the disk to R2 transformation has been done
     def create_new_harmonic_map_object(self):  # create a new HarmonicMap2D object
         try:  # try to create a new HarmonicMap2D object
             ssh_url = "http://127.0.0.1:5000/create_new_harmonic_map_object"  # the SSH URL to communicate with the virtual machine
             ssh_response = requests.post(ssh_url, json = {}).json()  # the SSH response from the virtual machine
+            self.harmonic_map_object_is_built = True  # set the flag to True to indicate that the HarmonicMap2D object has been created
             print(ssh_response["message"])  # print the message from the SSH response
         except:  # if an error occurs
             print("Error: Could not create a new HarmonicMap2D object!")  # print an error message
     def realws_to_disk_transformation(self):  # calculate the harmonic transformation that maps the real workspace to the sphere world
         # the outer boundary goes to the unit circle, the inner boundaries go to discrete punctures
         try:  # try to calculate the transformation that maps the real workspace to the unit disk
-            if not self.wtd_transformation_is_built:  # check if the real workspace to disk transformation has not been done yet
+            if self.harmonic_map_object_is_built and not self.wtd_transformation_is_built:  # check if the real workspace to disk transformation has not been done yet
                 ssh_url = "http://127.0.0.1:5000/calculate_harmonic_transformation"  # the SSH URL to communicate with the virtual machine
                 outer_boundary = self.outer_boundary.tolist()  # make sure the outer boundary is a list
                 inner_boundaries = []  # initialize the inner boundaries
@@ -52,12 +54,14 @@ class hntf2d_control_law:
             print("Error: Could not compute the transformation from the real workspace to the unit disk!")  # print an error message
     def disk_to_R2_transformation(self):  # calculate the transformation that maps the sphere world to the R2 plane
         # the unit circle goes to infinity, the punctures positions have to be recalculated
-        if self.wtd_transformation_is_built:  # check if the real workspace to disk transformation has been done
-            if not self.dtp_transformation_is_built:  # check if the disk to R2 transformation has not been done yet
-                for k in range(len(self.q_i)):  # calculate the punctures positions on the R2 plane
+        try:  # try to calculate the transformation that maps the unit disk to the R2 plane
+            if self.harmonic_map_object_is_built and self.wtd_transformation_is_built and not self.dtp_transformation_is_built:  # check if the real workspace to disk transformation has been done and the disk to R2 transformation has not been done yet
+                for k in range(len(self.q_i)):  # loop through all the punctures positions
                     self.q_i[k] = self.unit_disk_to_R2_mapping(self.q_i[k])  # map the punctures from the unit disk to the R2 plane
                 self.dtp_transformation_is_built = True  # set the flag to True to indicate that the unit disk to R2 transformation has been done
-            print("Transformation from the unit disk to the R2 plane computed successfully!")  # print a message to the console
+                print("Transformation from the unit disk to the R2 plane computed successfully!")  # print a message to the console
+        except:  # if an error occurs
+            print("Error: Could not compute the transformation from the unit disk to the R2 plane!")  # print an error message
     def start_target_positions_transformations(self):  # calculate the mapping of the start and target positions from the real workspace to the R2 plane
         if self.wtd_transformation_is_built:  # check if the real workspace to disk transformation has been done
             self.q_init_disk = self.realws_to_unit_disk_mapping(self.p_init)  # map the start position from the real workspace to the sphere world
@@ -95,14 +99,15 @@ class hntf2d_control_law:
         p_norm = np.linalg.norm(p)  # the norm of the point p
         q = (1.0 / (1.0 - p_norm) * p).flatten()  # the mapped point q on the R2 plane
         # q = (p_norm / (1.0 - p_norm) * p).flatten()  # the mapped point q on the R2 plane
+        # q = (1.0 / np.sqrt(1.0 - p_norm) * p).flatten()  # the mapped point q on the R2 plane
         return q  # return the mapped point q
     def unit_disk_to_R2_jacobian(self, p):  # calculate the jacobian of the transformation from the sphere world to the R2 plane at the given point p
         # p = [px, py] is the point on the sphere world (unit disk)
         p = np.array(p).reshape(-1, 1)  # make sure p is a numpy array
         p_norm = np.linalg.norm(p)  # the norm of the point p
         jacobian = ((1.0 - p_norm) * np.eye(2) + np.outer(p, p) / p_norm) / (1.0 - p_norm)**2.0  # the jacobian matrix of the transformation at the point p
-        # jacobian = ((1.0 - p_norm) * np.eye(2) + (p @ p.T) / p_norm) / (1.0 - p_norm)**2.0  # the jacobian matrix of the transformation at the point p
         # jacobian = ((1.0 - p_norm) * np.eye(2) + np.outer(p, p) / p_norm) / (1.0 - p_norm)**2.0 - np.eye(2)  # the jacobian matrix of the transformation at the point p
+        # jacobian = ((1.0 - p_norm) * np.eye(2) + np.outer(p, p) / p_norm / 2.0) / (1.0 - p_norm) / np.sqrt(1.0 - p_norm)  # the jacobian matrix of the transformation at the point p
         return jacobian  # return the jacobian matrix at the given point p
     def harmonic_field_phi(self, q):  # calculate the harmonic potential field phi
         # kd * np.log(np.linalg.norm(q - qd)) is the target harmonic potential field phi
