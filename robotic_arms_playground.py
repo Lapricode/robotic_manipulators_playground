@@ -129,7 +129,7 @@ class robotic_manipulators_playground_window():
         self.chosen_joint_number_model = 1  # the number of the chosen joint of the robotic manipulator for model changes
         self.joints_types_list = ["revolute", "prismatic"]  # the possible types of the robotic manipulator joints
         self.joints_types = [self.joints_types_list[0] for _ in range(self.joints_number)]  # the types of the robotic manipulator joints
-        self.den_har_parameters_extreme_limits = [[-180, 180], [0.0, 5.0]]  # the extreme limits of the parameters in degrees or meters, depending on the joint's type
+        self.den_har_parameters_extreme_limits = [[-360.0, 360.0], [-5.0, 5.0]]  # the extreme limits of the parameters in degrees or meters, depending on the joint's type
         self.a_den_har_parameters = [0.0 for _ in range(self.joints_number)]  # the a parameters of the Denavit - Hartnemberg convention in meters
         self.a_parameters_limits = copy.deepcopy(self.den_har_parameters_extreme_limits[1])  # the limits of the a parameters in meters
         self.d_den_har_parameters = [0.0 for _ in range(self.joints_number)]  # the d parameters of the Denavit - Hartnemberg convention in meters
@@ -375,11 +375,14 @@ class robotic_manipulators_playground_window():
         self.solver_error_tolerance_limits = [1e-4, 1e-1]  # the limits of the error tolerance of the control law for the obstacles avoidance solver (in meters)
         self.solver_enable_error_correction = False  # the flag to enable the error correction of the control law for the obstacles avoidance solver
         self.solver_maximum_iterations = 1000  # the maximum number of iterations of the control law for the obstacles avoidance solver
-        self.solver_maximum_iterations_list = [100, 200, 500, 1000, 1500, 2000, 3000]  # the possible values of the maximum number of iterations of the control law for the obstacles avoidance solver
+        self.solver_maximum_iterations_limits = [1, 10000]  # the limits of the maximum number of iterations of the control law for the obstacles avoidance solver
         self.realws_path_control_law_output = []  # the path on the real workspace found by the control law for the obstacles avoidance solver
+        self.realws_velocities_control_law_output = []  # the velocities on the real workspace found by the control law for the obstacles avoidance solver
         self.unit_disk_path_control_law_output = []  # the path on the unit disk found by the control law for the obstacles avoidance solver
         self.R2_plane_path_control_law_output = []  # the path on the R2 plane found by the control law for the obstacles avoidance solver
         self.robot_joints_control_law_output = []  # the robot joints found by the control law for the obstacles avoidance solver
+        self.move_real_robot_joints_vel_limits = [[1.0, 0.001], [45.0, 0.200]]  # the minimum and maximum velocities (for the revolute -degrees/sec- and prismatic -meters/sec- joints respectively) of the robotic manipulator joints for the obstacles avoidance solver
+        self.move_real_robot_dt = self.solver_time_step_dt / 10.0  # the time step for the robot motion (in seconds)
         self.robot_control_thread_flag = False  # the flag to run/stop the robot control thread
         # define the variables for the online Swift simulator
         self.swift_simulated_robots_list = [line.strip() for line in open(self.robots_run_by_swift_file_path)]  # the list of the robotic manipulators that can be simulated by the Swift simulator
@@ -833,15 +836,12 @@ class robotic_manipulators_playground_window():
         self.end_effector_frame_edges[0] = [[1, self.workspace_axis_colors[0], frame_axis_size], [2, self.workspace_axis_colors[1], frame_axis_size], [3, self.workspace_axis_colors[2], frame_axis_size]]
         # create the obstacles plane points and edges
         self.obstacles_plane_points = []  # initialize the points of the obstacles
-        self.obstacles_plane_points.append([self.obstacles_2d_plane_x_length / 2, self.obstacles_2d_plane_y_length / 2, 0.0, 1.0])
-        self.obstacles_plane_points.append([-self.obstacles_2d_plane_x_length / 2, self.obstacles_2d_plane_y_length / 2, 0.0, 1.0])
-        self.obstacles_plane_points.append([-self.obstacles_2d_plane_x_length / 2, -self.obstacles_2d_plane_y_length / 2, 0.0, 1.0])
-        self.obstacles_plane_points.append([self.obstacles_2d_plane_x_length / 2, -self.obstacles_2d_plane_y_length / 2, 0.0, 1.0])
-        start_pos_on_plane = np.array([self.start_pos_workspace_plane[0], self.start_pos_workspace_plane[1], 0.0, 1.0])  # the start position on the plane
-        target_pos_on_plane = np.array([self.target_pos_workspace_plane[0], self.target_pos_workspace_plane[1], 0.0, 1.0])  # the final position on the plane
-        positions_on_plane_transformation = np.array([[1.0, 0.0, 0.0, -self.obstacles_2d_plane_x_length / 2], [0.0, 1.0, 0.0, -self.obstacles_2d_plane_y_length / 2], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]])  # the transformation matrix of the positions on the plane
-        start_pos_on_plane = np.dot(positions_on_plane_transformation, start_pos_on_plane)  # the start position on the plane
-        target_pos_on_plane = np.dot(positions_on_plane_transformation, target_pos_on_plane)  # the final position on the plane
+        self.obstacles_plane_points.append([self.obstacles_2d_plane_x_length / 2.0, self.obstacles_2d_plane_y_length / 2.0, 0.0, 1.0])
+        self.obstacles_plane_points.append([-self.obstacles_2d_plane_x_length / 2.0, self.obstacles_2d_plane_y_length / 2.0, 0.0, 1.0])
+        self.obstacles_plane_points.append([-self.obstacles_2d_plane_x_length / 2.0, -self.obstacles_2d_plane_y_length / 2.0, 0.0, 1.0])
+        self.obstacles_plane_points.append([self.obstacles_2d_plane_x_length / 2.0, -self.obstacles_2d_plane_y_length / 2.0, 0.0, 1.0])
+        start_pos_on_plane = np.array([self.start_pos_workspace_plane[0] - self.obstacles_2d_plane_x_length / 2.0, self.start_pos_workspace_plane[1] - self.obstacles_2d_plane_y_length / 2.0, 0.0, 1.0])  # the start position on the plane
+        target_pos_on_plane = np.array([self.target_pos_workspace_plane[0] - self.obstacles_2d_plane_x_length / 2.0, self.target_pos_workspace_plane[1] - self.obstacles_2d_plane_y_length / 2.0, 0.0, 1.0])  # the final position on the plane
         self.obstacles_plane_points.append(start_pos_on_plane.tolist())
         self.obstacles_plane_points.append(target_pos_on_plane.tolist())
         self.obstacles_plane_points = np.array(self.obstacles_plane_points, dtype = float)  # convert the points of the obstacles to a numpy array
@@ -1178,7 +1178,7 @@ Provides options for different simulators to visualize the robotic manipulator:\
         self.model_name_entrybox.bind("<Return>", self.change_robotic_manipulator_model_name)
         joints_number_model_label_x = 1/3; gbl.menu_label(menu_frame, "Joints number (n):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], joints_number_model_label_x * menu_properties['width'], joints_number_model_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         joints_number_button_ord = joints_number_model_label_ord; joints_number_button_x = 2/3; self.joints_number_button = gbl.menu_button(menu_frame, self.joints_number, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], joints_number_button_x * menu_properties['width'], joints_number_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_joints_number).button
-        den_har_parameters_label_x = 1/2; gbl.menu_label(menu_frame, "Denavit - Hartenberg parameters:", f"Calibri {menu_properties['options_font']} bold", menu_properties['subtitles_color'], menu_properties['bg_color'], den_har_parameters_label_x * menu_properties['width'], den_har_parameters_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        den_har_parameters_label_x = 1/2; gbl.menu_label(menu_frame, "Standard Denavit - Hartenberg parameters:", f"Calibri {menu_properties['options_font']} bold", menu_properties['subtitles_color'], menu_properties['bg_color'], den_har_parameters_label_x * menu_properties['width'], den_har_parameters_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         choose_joint_number_model_label_x = 1/3; gbl.menu_label(menu_frame, "Joint number:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_joint_number_model_label_x * menu_properties['width'], choose_joint_number_model_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         self.choose_joint_number_model_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "readonly", width = 8, values = [f"joint {joint}" for joint in range(1, self.joints_number + 1)], justify = "center")
         choose_joint_number_model_combobox_x = 3/4; self.choose_joint_number_model_combobox.place(x = choose_joint_number_model_combobox_x * menu_properties['width'], y = choose_joint_number_model_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
@@ -2812,9 +2812,11 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
                     self.swift_env_load_robot()  # load the robotic manipulator model inside the Swift simulator environment
                     self.swift_env_load_workspace_obstacles()  # load the workspace obstacles inside the Swift simulator environment
                     self.swift_info_label = swift.Label(f"Robotic manipulator name: {self.built_robotic_manipulator_info['name']}. If you want to exit the simulation, do not close the browser tab. Just press again the GUI's button that started the simulation.")
-                    self.swift_robot_configuration_label = swift.Label(f"Robot configuration: {self.built_robotic_manipulator.q}")
+                    self.swift_robot_configuration_label = swift.Label(f"Robot configuration ({self.control_or_kinematics_variables_visualization}): {self.built_robotic_manipulator.q}")
+                    self.swift_robot_control_button = swift.Button(self.move_swift_robot_obstacles_avoidance, "Move the simulated robot, obstacles avoidance")
                     self.swift_sim_env.add(self.swift_info_label)  # add a label with some instructions inside the Swift simulator environment
                     self.swift_sim_env.add(self.swift_robot_configuration_label)  # add a label with the robotic manipulator configuration inside the Swift simulator environment
+                    self.swift_sim_env.add(self.swift_robot_control_button)  # add a button that allows the user to control the robotic manipulator inside the Swift simulator environment
                     self.start_swift_thread()  # start the thread that runs the online Swift simulation
                 else:
                     ms.showerror("Error", f"The Swift simulator is available only for the following robots models! \n{self.swift_simulated_robots_list}", parent = self.menus_area)
@@ -2924,7 +2926,7 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
                         joints_configuration += f"{k + 1}" + [f"(°): {np.rad2deg(self.swift_robotic_manipulator.q[k]):.1f}", f"(m): {self.swift_robotic_manipulator.q[k]:.3f}"][self.joints_types_list.index(self.joints_types[k])]  # the joints configuration indicator of the robotic manipulator
                         if k < self.joints_number - 1: joints_configuration += ",   "
                         if (k + 1) % joints_configuration_columns_indicator == 0 and (k + 1) != self.joints_number: joints_configuration += " "
-                    self.swift_robot_configuration_label.desc = f"Robot configuration: {joints_configuration}"  # update the label with the robotic manipulator configuration inside the Swift simulator environment
+                    self.swift_robot_configuration_label.desc = f"Robot configuration ({self.control_or_kinematics_variables_visualization}): {joints_configuration}"  # update the label with the robotic manipulator configuration inside the Swift simulator environment
                     # make the Swift simulation dt step and render the scene
                     self.swift_sim_env.step(dt = self.swift_sim_dt, render = True)  # run the online Swift simulation
                 except:  # if an error occurs
@@ -3601,13 +3603,13 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
         if self.ArUco_marker_position == "center":  # if the ArUco marker position is the center
             return rotation @ np.eye(4)  # the transformation matrix from the plane to the ArUco marker
         elif self.ArUco_marker_position == "top-left corner":  # if the ArUco marker position is the top-left corner
-            return rotation @ np.array([[1, 0, 0, -self.obstacles_2d_plane_x_length / 2], [0, 1, 0, self.obstacles_2d_plane_y_length / 2], [0, 0, 1, 0], [0, 0, 0, 1]])  # the transformation matrix from the plane to the ArUco marker
+            return rotation @ np.array([[1, 0, 0, -self.obstacles_2d_plane_x_length / 2.0], [0, 1, 0, self.obstacles_2d_plane_y_length / 2.0], [0, 0, 1, 0], [0, 0, 0, 1]])  # the transformation matrix from the plane to the ArUco marker
         elif self.ArUco_marker_position == "top-right corner":  # if the ArUco marker position is the top-right corner
-            return rotation @ np.array([[1, 0, 0, self.obstacles_2d_plane_x_length / 2], [0, 1, 0, self.obstacles_2d_plane_y_length / 2], [0, 0, 1, 0], [0, 0, 0, 1]])  # the transformation matrix from the plane to the ArUco marker
+            return rotation @ np.array([[1, 0, 0, self.obstacles_2d_plane_x_length / 2.0], [0, 1, 0, self.obstacles_2d_plane_y_length / 2.0], [0, 0, 1, 0], [0, 0, 0, 1]])  # the transformation matrix from the plane to the ArUco marker
         elif self.ArUco_marker_position == "bottom-left corner":  # if the ArUco marker position is the bottom-left corner
-            return rotation @ np.array([[1, 0, 0, -self.obstacles_2d_plane_x_length / 2], [0, 1, 0, -self.obstacles_2d_plane_y_length / 2], [0, 0, 1, 0], [0, 0, 0, 1]])  # the transformation matrix from the plane to the ArUco marker
+            return rotation @ np.array([[1, 0, 0, -self.obstacles_2d_plane_x_length / 2.0], [0, 1, 0, -self.obstacles_2d_plane_y_length / 2.0], [0, 0, 1, 0], [0, 0, 0, 1]])  # the transformation matrix from the plane to the ArUco marker
         elif self.ArUco_marker_position == "bottom-right corner":  # if the ArUco marker position is the bottom-right corner
-            return rotation @ np.array([[1, 0, 0, self.obstacles_2d_plane_x_length / 2], [0, 1, 0, -self.obstacles_2d_plane_y_length / 2], [0, 0, 1, 0], [0, 0, 0, 1]])  # the transformation matrix from the plane to the ArUco marker
+            return rotation @ np.array([[1, 0, 0, self.obstacles_2d_plane_x_length / 2.0], [0, 1, 0, -self.obstacles_2d_plane_y_length / 2.0], [0, 0, 1, 0], [0, 0, 0, 1]])  # the transformation matrix from the plane to the ArUco marker
         else:  # if the ArUco marker position is not defined
             return rotation @ np.eye(4)  # the transformation matrix from the plane to the ArUco marker
     def choose_plane_singularities_tolerance(self, event = None):  # choose the tolerance for the singularities of the robotic manipulator on the 2D plane
@@ -3926,10 +3928,12 @@ You can also press left click on the number of a boundary to remove it and right
                 self.saved_workspace_images_list.remove(deleted_image)  # remove the chosen workspace image from the list of the saved workspace images
                 if len(self.saved_workspace_images_list) != 0:  # if there are saved workspace images
                     self.shown_workspace_image_name = self.saved_workspace_images_list[0]  # show the first saved workspace image
-                    self.chosen_detection_workspace_image_name = self.saved_workspace_images_list[0]  # choose the first saved workspace image
+                    self.chosen_detection_workspace_image_name = self.saved_workspace_images_list[0]  # choose the first saved workspace image as the detection workspace image
                 else:  # if there are no saved workspace images
                     self.shown_workspace_image_name = ""  # do not show any workspace image
                     self.chosen_detection_workspace_image_name = ""  # do not choose any workspace image
+                if self.chosen_solver_workspace_image_name == deleted_image:  # if the chosen solver workspace image is the deleted image
+                    self.chosen_solver_workspace_image_name = self.chosen_detection_workspace_image_name  # choose the first saved workspace image as the solver workspace image
                 shutil.rmtree(self.saved_obstacles_objects_infos_folder_path + fr"/{deleted_image}")  # delete the folder of the obstacles objects detected in the workspace image
         self.update_camera_control_indicators()  # update the indicators of the camera control
     def capture_workspace_image(self, event = None):  # capture the workspace image using the camera
@@ -4159,10 +4163,7 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
             self.transformations_are_built = False  # the workspace transformations are not built
             self.hntf2d_solver = None  # the solver for the 2D obstacles avoidance problem gets initialized to the default value
             self.obstacles_boundaries_for_solver = []  # initialize the boundaries of the obstacles for the solver
-            self.realws_path_control_law_output = []  # initialize the real workspace path control law output
-            self.unit_disk_path_control_law_output = []  # initialize the unit disk path control law output
-            self.R2_plane_path_control_law_output = []  # initialize the R2 plane path control law output
-            self.robot_joints_control_law_output = []  # initialize the robot joints control law output
+            self.reset_control_law_outputs()  # reset the control law outputs
             self.chosen_solver_workspace_image_name = self.load_workspace_obstacles_objects_combobox.get()
             self.chosen_workspace_saved_obstacles_objects_list = [file[:-4] for file in os.listdir(self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_solver_workspace_image_name}") if file.endswith(".txt")]  # the list to store the saved obstacles objects for the chosen workspace image
             if len(self.chosen_workspace_saved_obstacles_objects_list) != 0:  # if there are saved obstacles objects for the chosen workspace image
@@ -4220,6 +4221,7 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
                 self.start_point_plot, = fig_ax.plot(x, y, "mo", markersize = 5)  # plot the start position of the robot's end-effector on the 2D workspace plane
                 self.start_point_plot_text = fig_ax.text(x, y, "Start", fontsize = 7, color = "m")  # write the text of the start position of the robot's end-effector on the 2D workspace plane
                 self.start_pos_workspace_plane = np.array([x / 1000.0, y / 1000.0])  # change the start position of the robot's end-effector on the 2D workspace plane
+                self.reset_control_law_outputs()  # reset the control law outputs
             elif event.button == 3:  # if the user presses mouse right click
                 try:
                     self.target_point_plot.remove()  # try to remove the plotted target point
@@ -4228,6 +4230,7 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
                 self.target_point_plot, = fig_ax.plot(x, y, "go", markersize = 5)  # plot the target position of the robot's end-effector on the 2D workspace plane
                 self.target_point_plot_text = fig_ax.text(x, y, "Target", fontsize = 7, color = "g")  # write the text of the target position of the robot's end-effector on the 2D workspace plane
                 self.target_pos_workspace_plane = np.array([x / 1000.0, y / 1000.0])  # change the target position of the robot's end-effector on the 2D workspace plane
+                self.reset_control_law_outputs()  # reset the control law outputs
             elif event.button == 2:  # if the user presses mouse middle click
                 try:
                     self.random_point_plot.remove()  # try to remove the plotted random point
@@ -4241,6 +4244,7 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
         self.workspace_plane_creation_parameter = self.alternate_matrix_elements(self.workspace_plane_creation_parameters_list, self.workspace_plane_creation_parameter)  # change the workspace plane creation parameters
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def set_start_pos_on_plane(self, event = None):  # set the start position of the robot's end-effector on the 2D workspace plane for the obstacles avoidance solver
+        start_pos_previous = np.array(self.start_pos_workspace_plane)  # the previous start position of the robot's end-effector on the 2D workspace plane
         initial_x_pos_on_plane = sd.askfloat("Choose the start position on plane", f"Suppose that the origin of the plane is the bottom-left corner of the plane and the x-axis,\ny-axis are extended to the bottom-right and top-left corners of the plane, respectively.\n\
 Enter the start x coordinate of the robot's end-effector on the 2D workspace plane (in meters).\nThe value must be in the range [0, {self.workspace_image_plane_x_length:.3f}]:", initialvalue = self.start_pos_workspace_plane[0], minvalue = 0, maxvalue = self.workspace_image_plane_x_length, parent = self.menus_area)  # ask the user to enter the start x pos of the robot's end-effector on the 2D workspace plane
         if initial_x_pos_on_plane != None:  # if the user enters a number
@@ -4248,8 +4252,11 @@ Enter the start x coordinate of the robot's end-effector on the 2D workspace pla
         initial_y_pos_on_plane = sd.askfloat("Choose the start position on plane", f"Enter the start y coordinate of the robot's end-effector on the\n2D workspace plane (in meters). The value must be in the range [0, {self.workspace_image_plane_y_length:.3f}]:", initialvalue = self.start_pos_workspace_plane[1], minvalue = 0, maxvalue = self.workspace_image_plane_y_length, parent = self.menus_area)  # ask the user to enter the start y pos of the robot's end-effector on the 2D workspace plane
         if initial_y_pos_on_plane != None:  # if the user enters a number
             self.start_pos_workspace_plane[1] = initial_y_pos_on_plane  # change the start y pos of the robot's end-effector on the 2D workspace plane
+        if not np.linalg.norm(self.start_pos_workspace_plane - start_pos_previous) < 0.0001:  # if the start position of the robot's end-effector on the 2D workspace plane is changed (it is different from the previous one by more than 0.1 mm)
+            self.reset_control_law_outputs()  # reset the control law outputs
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def set_target_pos_on_plane(self, event = None):  # set the final position of the robot's end-effector on the 2D workspace plane for the obstacles avoidance solver
+        target_pos_previous = np.array(self.target_pos_workspace_plane)  # the previous target position of the robot's end-effector on the 2D workspace plane
         final_x_pos_plane = sd.askfloat("Choose the final position on plane", f"Suppose that the origin of the plane is the bottom-left corner of the plane and the x-axis,\ny-axis are extended to the bottom-right and top-left corners of the plane, respectively.\n\
 Enter the final x coordinate of the robot's end-effector on the 2D workspace plane (in meters).\nThe value must be in the range [0, {self.workspace_image_plane_x_length:.3f}]:", initialvalue = self.target_pos_workspace_plane[0], minvalue = 0, maxvalue = self.workspace_image_plane_x_length, parent = self.menus_area)  # ask the user to enter the final x pos of the robot's end-effector on the 2D workspace plane
         if final_x_pos_plane != None:  # if the user enters a number
@@ -4257,12 +4264,14 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
         final_y_pos_plane = sd.askfloat("Choose the final position on plane", f"Enter the final y coordinate of the robot's end-effector on the\n2D workspace plane (in meters). The value must be in the range [0, {self.workspace_image_plane_y_length:.3f}]:", initialvalue = self.target_pos_workspace_plane[1], minvalue = 0, maxvalue = self.workspace_image_plane_y_length, parent = self.menus_area)  # ask the user to enter the final y pos of the robot's end-effector on the 2D workspace plane
         if final_y_pos_plane != None:  # if the user enters a number
             self.target_pos_workspace_plane[1] = final_y_pos_plane  # change the final y pos of the robot's end-effector on the 2D workspace plane
+        if not np.linalg.norm(self.target_pos_workspace_plane - target_pos_previous) < 0.0001:  # if the target position of the robot's end-effector on the 2D workspace plane is changed (it is different from the previous one by more than 0.1 mm)
+            self.reset_control_law_outputs()  # reset the control law outputs
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def check_start_target_pos_on_plane(self, event = None):  # check the start and target positions of the robot's end-effector on the 2D workspace plane
         initial_target_pos_inside_outer_boundary = True  # the flag that indicates if the start and target positions are inside the outer boundary
         initial_target_pos_outside_inner_boundaries = True  # the flag that indicates if the start and target positions are outside the inner boundaries
-        start_pos_plane = np.array(self.start_pos_workspace_plane) + np.array([-self.obstacles_2d_plane_x_length/2, -self.obstacles_2d_plane_y_length/2])  # the start position of the robot's end-effector on the 2D workspace plane
-        target_pos_plane = np.array(self.target_pos_workspace_plane) + np.array([-self.obstacles_2d_plane_x_length/2, -self.obstacles_2d_plane_y_length/2])  # the target position of the robot's end-effector on the 2D workspace plane
+        start_pos_plane = np.array(self.start_pos_workspace_plane) + np.array([-self.obstacles_2d_plane_x_length / 2.0, -self.obstacles_2d_plane_y_length / 2.0])  # the start position of the robot's end-effector on the 2D workspace plane
+        target_pos_plane = np.array(self.target_pos_workspace_plane) + np.array([-self.obstacles_2d_plane_x_length / 2.0, -self.obstacles_2d_plane_y_length / 2.0])  # the target position of the robot's end-effector on the 2D workspace plane
         if len(self.obstacles_boundaries_for_solver) != 0:  # if there are obstacles boundaries
             if not pbo.points_in_polygon_detection(self.obstacles_boundaries_for_solver[-1], [start_pos_plane, target_pos_plane]).all():  # if the start and target positions are not inside the outer boundary
                 initial_target_pos_inside_outer_boundary = False  # change the flag to indicate that the start and target positions are not inside the outer boundary
@@ -4280,15 +4289,12 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             self.check_positions_on_plane_text = "✗ No obstacles have been detected\nyet for this workspace image!"  # the text to show that no obstacles have been detected for the chosen workspace image            
     def start_building_workspace_transformations(self, event = None):  # start building the workspace transformations
         if self.boundaries_are_detected:  # if the boundaries of the obstacles are detected and the start and target positions are set correctly
-            start_pos_workspace_plane = self.start_pos_workspace_plane + np.array([-self.workspace_image_plane_x_length/2, -self.workspace_image_plane_y_length/2])  # the start position of the robot's end-effector on the 2D workspace plane
-            target_pos_workspace_plane =  self.target_pos_workspace_plane + np.array([-self.workspace_image_plane_x_length/2, -self.workspace_image_plane_y_length/2])  # the target position of the robot's end-effector on the 2D workspace plane
+            start_pos_workspace_plane = self.start_pos_workspace_plane + np.array([-self.workspace_image_plane_x_length / 2.0, -self.workspace_image_plane_y_length / 2.0])  # the start position of the robot's end-effector on the 2D workspace plane
+            target_pos_workspace_plane =  self.target_pos_workspace_plane + np.array([-self.workspace_image_plane_x_length / 2.0, -self.workspace_image_plane_y_length / 2.0])  # the target position of the robot's end-effector on the 2D workspace plane
             self.hntf2d_solver = cl.hntf2d_control_law(p_init = start_pos_workspace_plane, p_d = target_pos_workspace_plane, outer_boundary = self.obstacles_boundaries_for_solver[-1], inner_boundaries = self.obstacles_boundaries_for_solver[:-1], \
                                                         k_d = self.k_d, k_i = self.k_i, K = self.K, w_phi = self.w_phi, gamma = self.gamma, e_p = self.e_p, e_v = self.e_v)  # create a new hntf2d control law object
             self.hntf2d_solver.create_new_harmonic_map_object()  # create a new harmonic map object
-            self.realws_path_control_law_output = []  # initialize the real workspace path control law output
-            self.unit_disk_path_control_law_output = []  # initialize the unit disk path control law output
-            self.R2_plane_path_control_law_output = []  # initialize the R2 plane path control law output
-            self.robot_joints_control_law_output = []  # initialize the robot joints control law output
+            self.reset_control_law_outputs()  # reset the control law outputs
             plt.close('all')  # close all the opened plots
             if not self.hntf2d_solver.harmonic_map_object_is_built:  # if the harmonic map object is not built
                 ms.showerror("Error", "The harmonic map object to start the transformations process could not be built!")  # show an error message
@@ -4395,7 +4401,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                     R2_plane_path_plot, = ax2.plot(np.array(self.R2_plane_path_control_law_output)[:, 0], np.array(self.R2_plane_path_control_law_output)[:, 1], "black", linewidth = control_law_path_linewidth)
                     ax2.legend([displayed_punctures_plot, q_init_R2_plot, q_d_R2_plot, R2_plane_path_plot], ["Punctures", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
                 else:  # if no path (on the R2 plane) has been calculated yet by the control law
-                    ax2.legend([displayed_punctures_plot, q_init_R2_plot, q_d_R2_plot], ["Punctures", "start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
+                    ax2.legend([displayed_punctures_plot, q_init_R2_plot, q_d_R2_plot], ["Punctures", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
                 ax2.set_title(f"Unit disk ->\n-> R2 plane transformation")
                 ax2.set_xlabel("x"); ax2.set_ylabel("y"); ax2.set_aspect("equal")
                 ax2.set_xlim(-1.5 * points_max_norm, 1.5 * points_max_norm); ax2.set_ylim(-1.5 * points_max_norm, 1.5 * points_max_norm)
@@ -4638,7 +4644,9 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             self.solver_time_step_dt = solver_dt  # change the time step for the control law
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def change_solver_max_iter(self, event = None):  # change the maximum number of iterations for the control law
-        self.solver_maximum_iterations = self.alternate_matrix_elements(self.solver_maximum_iterations_list, self.solver_maximum_iterations)  # change the maximum number of iterations for the control law
+        solver_max_iter = sd.askinteger("Choose the solver maximum iterations", "Enter the maximum number of iterations\nfor the control law:", initialvalue = self.solver_maximum_iterations, minvalue = self.solver_maximum_iterations_limits[0], maxvalue = self.solver_maximum_iterations_limits[1], parent = self.menus_area)  # ask the user to enter the new value of the solver's maximum number of iterations
+        if solver_max_iter != None:  # if the user enters a number
+            self.solver_maximum_iterations = solver_max_iter  # change the maximum number of iterations for the control law
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def change_solver_error_tol(self, event = None):  # change the error tolerance for the control law
         solver_error_tol = sd.askfloat("Choose the solver error tolerance", "Enter the error tolerance (in millimeters)\nof the target position convergence for the control law:", initialvalue = 1000.0 * self.solver_error_tolerance, minvalue = 1000.0 * self.solver_error_tolerance_limits[0], maxvalue = 1000.0 * self.solver_error_tolerance_limits[1], parent = self.menus_area)  # ask the user to enter the new value of the solver's error tolerance
@@ -4654,6 +4662,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                 p_list, p_dot_list, control_law_success = self.hntf2d_solver.run_control_law(self.solver_time_step_dt, self.solver_error_tolerance, self.solver_maximum_iterations)  # apply the control law and compute the path positions and velocities on the real and transformed workspaces
                 print("The control process has been completed!")  # print a message
                 self.realws_path_control_law_output = p_list  # the path positions on the real workspace generated by the control law
+                self.realws_velocities_control_law_output = p_dot_list  # the velocities on the real workspace generated by the control law
                 self.unit_disk_path_control_law_output = []  # the path positions on the unit disk generated by the control law
                 self.R2_plane_path_control_law_output = []  # the path positions on the R2 plane generated by the control law
                 for i in range(len(p_list)):  # for each path position
@@ -4671,25 +4680,47 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                     self.realws_path_control_law_output.append(self.hntf2d_solver.p_d)  # append the target position to the proper list of the control law output
                     self.unit_disk_path_control_law_output.append(self.hntf2d_solver.q_d_disk)  # append the target position on the unit disk to the proper list of the control law output
                     self.R2_plane_path_control_law_output.append(self.hntf2d_solver.q_d)  # append the target position on the R2 plane to the proper list of the control law output
+                self.move_real_robot_dt = self.solver_time_step_dt / 10.0  # the time step for the robot motion
             else:
                 ms.showerror("Error", "The workspace transformations have not been built yet and/or the start and target positions are not set correctly!", parent = self.menus_area)  # show an error message
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
+    def reset_control_law_outputs(self, event = None):  # reset the control law outputs
+        self.realws_path_control_law_output = []  # reset the real workspace path control law output
+        self.realws_velocities_control_law_output = []  # reset the real workspace velocities control law output
+        self.unit_disk_path_control_law_output = []  # reset the unit disk path control law output
+        self.R2_plane_path_control_law_output = []  # reset the R2 plane path control law output
+        self.robot_joints_control_law_output = []  # reset the robot joints control law output
     def compute_robot_velocities_obstacles_avoidance(self, event = None):  # compute the velocities of the robotic manipulator for the obstacles avoidance
         if not self.robot_control_thread_flag:  # if the robot control thread is not running
             if self.robotic_manipulator_is_built: # if a robotic manipulator is built
-                self.control_or_kinematics_variables_visualization = self.control_or_kinematics_variables_visualization_list[1]  # choose the forward kinematics variables for visualization
-                if len(self.robot_joints_control_law_output) == 0:
-                    self.robot_joints_control_law_output.append(self.forward_kinematics_variables)  # append the forward kinematics variables to the list of the control law output
-                    l = 0.4
-                    v = np.linalg.norm(self.chosen_invdiffkine_linear_vel)
-                    dt = 0.01
-                    steps = int(l/v/dt)
-                    ve_dot = np.zeros(6)
-                    ve_dot[0:3] = self.chosen_invdiffkine_linear_vel.copy()
-                    for k in range(steps):
-                        qr_dot, _ = kin.compute_inverse_differential_kinematics(self.built_robotic_manipulator, self.robot_joints_control_law_output[-1], ve_dot, "end-effector")
-                        q = self.robot_joints_control_law_output[-1] + qr_dot * dt
-                        self.robot_joints_control_law_output.append(q)
+                self.control_or_kinematics_variables_visualization = self.control_or_kinematics_variables_visualization_list[0]  # choose the control variables for visualization
+                if len(self.realws_velocities_control_law_output) != 0 and len(self.robot_joints_control_law_output) == 0:  # if the control law has been applied but the robot joints for the robot's motion have not been computed yet
+                    self.robot_joints_control_law_output.append(self.control_joints_variables)  # append the forward kinematics variables to the list of the control law output
+                    # compute the start configuration of the end-effector on the workspace plane
+                    obstacles_2d_plane_normal_vector, obstacles_2d_plane_orientation, obstacles_2d_plane_translation = gf.get_components_from_xy_plane_transformation(self.obst_plane_wrt_world_transformation_matrix)  # get the components of the obstacles 2D plane transformation
+                    end_effector_start_configuration = gf.xy_plane_transformation(-obstacles_2d_plane_normal_vector, obstacles_2d_plane_orientation, obstacles_2d_plane_translation)  # initialize the transformation matrix of the end-effector on the workspace plane
+                    end_effector_start_position = self.obst_plane_wrt_world_transformation_matrix @ np.array([self.start_pos_workspace_plane[0] - self.obstacles_2d_plane_x_length / 2.0, self.start_pos_workspace_plane[1] - self.obstacles_2d_plane_y_length / 2.0, 0.0, 1.0])  # the start position of the end-effector on the workspace plane
+                    end_effector_start_configuration[:, 3] = end_effector_start_position  # the transformation matrix of the end-effector on the workspace plane
+                    # compute the start configuration of the joints
+                    q_joints_start_configuration, invkine_success = kin.compute_inverse_kinematics(self.built_robotic_manipulator, end_effector_start_configuration, self.invkine_tolerance)
+                    self.robot_joints_control_law_output.append(q_joints_start_configuration)  # append the start configuration of the joints to the list of the control law output
+                    
+                    R_plane = self.obst_plane_wrt_world_transformation_matrix[0:3, 0:3]  # the rotation matrix of the workspace plane with respect to the world frame
+                                        
+                    # self.move_real_robot_dt
+                    # check_robot_joints_limits, joints_limits_distance = kin.check_joints_limits(self.built_robotic_manipulator, self.built_robotic_manipulator.q)  # check the joints limits
+                
+                # if len(self.robot_joints_control_law_output) == 0:
+                    # l = 0.4
+                    # v = np.linalg.norm(self.chosen_invdiffkine_linear_vel)
+                    # dt = 0.01
+                    # steps = int(l/v/dt)
+                    # ve_dot = np.zeros(6)
+                    # ve_dot[0:3] = self.chosen_invdiffkine_linear_vel.copy()
+                    # for k in range(steps):
+                    #     qr_dot, _ = kin.compute_inverse_differential_kinematics(self.built_robotic_manipulator, self.robot_joints_control_law_output[-1], ve_dot, "end-effector")
+                    #     q = self.robot_joints_control_law_output[-1] + qr_dot * dt
+                    #     self.robot_joints_control_law_output.append(q)
             else:  # if no robotic manipulator is built yet
                 ms.showerror("Error", "Please build a robotic manipulator first!", parent = self.menus_area)  # show an error message
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
@@ -4705,6 +4736,10 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                 self.control_or_kinematics_variables_visualization = self.control_or_kinematics_variables_visualization_list[0]  # choose the control variables for visualization
                 self.start_robot_control_thread()  # start the robot control thread
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
+    def move_swift_robot_obstacles_avoidance(self, event = None):  # control the Swift robotic manipulator for the obstacles avoidance
+        if not self.robot_control_thread_flag:  # if the robot control thread is not running
+            if self.robotic_manipulator_is_built:  # if a robotic manipulator is built
+                print("yes")
     def update_obstacles_avoidance_solver_indicators(self, event = None):  # update the indicators of the obstacles avoidance solver
         try:
             self.check_start_target_pos_on_plane()  # check the start and target positions of the robot's end-effector on the 2D plane
@@ -4741,8 +4776,8 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             self.choose_solver_error_tol_button.configure(text = f"{1000.0 * self.solver_error_tolerance:.1f}")  # change the text of the button that allows the user to choose the error tolerance for the control law
             self.enable_error_correction_button.configure(text = ["no", "yes"][[False, True].index(self.solver_enable_error_correction)])  # change the text of the button that allows the user to enable/disable the error correction for the control law
             if self.hntf2d_solver != None:  # if the hntf2d control law object has been created
-                self.hntf2d_solver.p_init = self.start_pos_workspace_plane + np.array([-self.workspace_image_plane_x_length/2, -self.workspace_image_plane_y_length/2])  # change the initial position of the obstacles avoidance solver
-                self.hntf2d_solver.p_d = self.target_pos_workspace_plane + np.array([-self.workspace_image_plane_x_length/2, -self.workspace_image_plane_y_length/2])  # change the target position of the obstacles avoidance solver
+                self.hntf2d_solver.p_init = self.start_pos_workspace_plane + np.array([-self.workspace_image_plane_x_length / 2.0, -self.workspace_image_plane_y_length / 2.0])  # change the initial position of the obstacles avoidance solver
+                self.hntf2d_solver.p_d = self.target_pos_workspace_plane + np.array([-self.workspace_image_plane_x_length / 2.0, -self.workspace_image_plane_y_length / 2.0])  # change the target position of the obstacles avoidance solver
                 self.hntf2d_solver.k_d = self.k_d  # change the k_d parameter of the obstacles avoidance solver
                 self.hntf2d_solver.k_i = self.k_i  # change the k_i parameters of the obstacles avoidance solver
                 self.hntf2d_solver.K = self.K  # change the K parameter of the obstacles avoidance solver
