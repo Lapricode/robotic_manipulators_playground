@@ -95,19 +95,21 @@ class hntf2d_control_law:
             return None  # return None
     def unit_disk_to_R2_mapping(self, p):  # map the point p from the sphere world to the R2 plane
         # p = [px, py] is the point on the sphere world (unit disk)
+        # 1e-7 is added to the denominator to avoid division by zero
         p = np.array(p).reshape(-1, 1)  # make sure p is a numpy array
         p_norm = np.linalg.norm(p)  # the norm of the point p
-        q = (1.0 / (1.0 - p_norm) * p).flatten()  # the mapped point q on the R2 plane
-        # q = (p_norm / (1.0 - p_norm) * p).flatten()  # the mapped point q on the R2 plane
-        # q = (1.0 / np.sqrt(1.0 - p_norm) * p).flatten()  # the mapped point q on the R2 plane
+        q = (1.0 / (1.0 - p_norm + 1e-7) * p).flatten()  # the mapped point q on the R2 plane
+        # q = (p_norm / (1.0 - p_norm + 1e-7) * p).flatten()  # the mapped point q on the R2 plane
+        # q = (1.0 / (np.sqrt(1.0 - p_norm) + 1e-7) * p).flatten()  # the mapped point q on the R2 plane
         return q  # return the mapped point q
     def unit_disk_to_R2_jacobian(self, p):  # calculate the jacobian of the transformation from the sphere world to the R2 plane at the given point p
         # p = [px, py] is the point on the sphere world (unit disk)
+        # 1e-7 is added to the denominator to avoid division by zero
         p = np.array(p).reshape(-1, 1)  # make sure p is a numpy array
         p_norm = np.linalg.norm(p)  # the norm of the point p
-        jacobian = ((1.0 - p_norm) * np.eye(2) + np.outer(p, p) / p_norm) / (1.0 - p_norm)**2.0  # the jacobian matrix of the transformation at the point p
-        # jacobian = ((1.0 - p_norm) * np.eye(2) + np.outer(p, p) / p_norm) / (1.0 - p_norm)**2.0 - np.eye(2)  # the jacobian matrix of the transformation at the point p
-        # jacobian = ((1.0 - p_norm) * np.eye(2) + np.outer(p, p) / p_norm / 2.0) / (1.0 - p_norm) / np.sqrt(1.0 - p_norm)  # the jacobian matrix of the transformation at the point p
+        jacobian = (p_norm * (1.0 - p_norm) * np.eye(2) + np.outer(p, p)) / (p_norm * (1.0 - p_norm)**2.0 + 1e-7)  # the jacobian matrix of the transformation at the point p
+        # jacobian = (p_norm * (1.0 - p_norm) * np.eye(2) + np.outer(p, p)) / (p_norm * (1.0 - p_norm)**2.0 + 1e-7) - np.eye(2)  # the jacobian matrix of the transformation at the point p
+        # jacobian = (p_norm * (1.0 - p_norm) * np.eye(2) + np.outer(p, p) / 2.0) / (p_norm * (1.0 - p_norm) * np.sqrt(1.0 - p_norm) + 1e-7)  # the jacobian matrix of the transformation at the point p
         return jacobian  # return the jacobian matrix at the given point p
     def harmonic_field_phi(self, q):  # calculate the harmonic potential field phi
         # kd * np.log(np.linalg.norm(q - qd)) is the target harmonic potential field phi
@@ -116,7 +118,8 @@ class hntf2d_control_law:
     def harmonic_field_phi_gradient(self, q):  # calculate the gradient of the harmonic potential field phi
         # kd * (q - qd) / np.linalg.norm(q - qd)**2 is the gradient of the target harmonic potential field phi
         # sum(ki * (q - qi) / np.linalg.norm(q - qi)**2) is the gradient of the obstacles harmonic potential field phi
-        return self.k_d * (q - self.q_d) / (np.linalg.norm(q - self.q_d))**2.0 - sum([self.k_i[i] * (q - self.q_i[i]) / np.linalg.norm(q - self.q_i[i])**2.0 for i in range(len(self.q_i))])  # return the gradient of the harmonic potential field phi
+        # 1e-7 is added to the denominator to avoid division by zero
+        return self.k_d * (q - self.q_d) / (np.linalg.norm(q - self.q_d)**2.0 + 1e-7) - sum([self.k_i[i] * (q - self.q_i[i]) / (np.linalg.norm(q - self.q_i[i])**2.0 + 1e-7) for i in range(len(self.q_i))])  # return the gradient of the harmonic potential field phi
     def navigation_psi(self, q):  # calculate the navigation function psi
         return (1.0 + np.tanh(self.harmonic_field_phi(q) / self.w_phi)) / 2.0  # return the navigation function psi
     def navigation_psi_gradient(self, q):  # calculate the gradient of the navigation function psi
@@ -148,14 +151,12 @@ class hntf2d_control_law:
             psi_grad = self.navigation_psi_gradient(q)  # calculate the gradient of the navigation function psi at the point q
             q_dot = -s * psi_grad  # calculate the control law on the transformed workspace
             # q_dot_list.append(q_dot)  # append the control law on the transformed workspace to the list
-            
             p_dot_new = self.convert_q_dot_to_p_dot(p, q_dot)  # convert the control law from the transformed workspace to the real workspace
             if np.linalg.norm(p_dot_new) != 0.0: p_dot = p_dot_new  # update the control law on the real workspace if it is not zero
             # p_dot_list.append(p_dot)  # append the control law on the real workspace to the list
             p = self.euler(p, p_dot, dt)  # update the point p on the real workspace
             # p = self.runge_kutta_4th_order(p, q_dot, self.convert_q_dot_to_p_dot, dt)  # update the point p on the real workspace
             p_list.append(p)  # append the point p to the list
-            
             q_disk = self.realws_to_unit_disk_mapping(p)  # calculate the mapping of the point p from the real workspace to the unit disk
             q = self.unit_disk_to_R2_mapping(q_disk)  # calculate the mapping of the point q from the unit disk to the R2 plane
             # q = self.euler(q, q_dot, dt)  # update the point q on the transformed workspace
@@ -184,8 +185,8 @@ class hntf2d_control_law:
         return p  # return the next position p
     def runge_kutta_4th_order(self, pk, uk, dynamics, dt):  # implement the runge-kutta 4th order numerical integration
         f1 = dynamics(pk, uk)
-        f2 = dynamics(pk + f1 * dt / 2, uk)
-        f3 = dynamics(pk + f2 * dt / 2, uk)
+        f2 = dynamics(pk + f1 * dt / 2.0, uk)
+        f3 = dynamics(pk + f2 * dt / 2.0, uk)
         f4 = dynamics(pk + f3 * dt, uk)
         p = pk + (f1 + 2*f2 + 2*f3 + f4) / 6.0 * dt  # calculate the next position p
         return p  # return the next position p

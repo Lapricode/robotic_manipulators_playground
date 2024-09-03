@@ -68,7 +68,7 @@ def min_distance_from_camera(plane_width, plane_height, frame_width, frame_heigh
     else:
         side_length_factor = plane_height / frame_height
     diag_length = side_length_factor * np.sqrt(frame_width ** 2 + frame_height ** 2)
-    min_distance = diag_length / (2 * np.tan(np.deg2rad(dFoV) / 2))  # calculate the minimum allowed distance from the camera to the plane
+    min_distance = diag_length / (2.0 * np.tan(np.deg2rad(dFoV) / 2.0))  # calculate the minimum allowed distance from the camera to the plane
     return min_distance  # return the minimum allowed distance from the camera to the plane (in meters)
 
 def create_image_window(window_name, width, height):  # create the image window

@@ -95,6 +95,18 @@ def compute_inverse_differential_kinematics(robot, q_joints, end_effector_veloci
     else:  # if the Jacobian matrix is not full rank
         return np.zeros(len(q_joints)), J0_is_full_rank  # return zero joints velocities
 
+def check_joint_limits(robot, q_joints):  # check if the joints configuration is within the joints limits and compute a metric that indicates how far the joints configuration is from the joints limits
+    q_joints = np.array(q_joints).reshape(-1, 1)  # convert the joints configuration to a numpy array
+    joints_num = len(q_joints)  # get the number of joints of the robotic arm
+    q_min = np.array([robot.qlim[0][:joints_num]]).reshape(-1, 1)  # get the minimum joints values
+    q_max = np.array([robot.qlim[1][:joints_num]]).reshape(-1, 1)  # get the maximum joints values
+    q_range = q_max - q_min  # calculate the range of the joints
+    q_min_diff = q_joints - q_min  # calculate the difference between the joints configuration and the minimum joints values
+    q_max_diff = q_max - q_joints  # calculate the difference between the joints configuration and the maximum joints values
+    check_joints_limits = np.all(q_min_diff >= 0) and np.all(q_max_diff >= 0)  # check if the joints configuration is within the joints limits
+    joints_limits_distance = (q_min_diff * q_max_diff) / (q_range + 1e-7)  # compute a metric that indicates how far the joints configuration is from the joints limits
+    return check_joints_limits  # return the flag that indicates if the joints configuration is within the joints limits
+
 def find_reachable_workspace(robot, divs = 5, show_plots = False):  # find the reachable workspace of the robotic arm, i.e. the positions that the end-effector can reach in the 3D space no matter the orientation of the end-effector frame
     joints_num = len(robot.q)  # get the number of joints of the robotic arm
     q_range = [(robot.qlim[1][k] - robot.qlim[0][k]) for k in range(joints_num)]  # calculate the range of the joints
@@ -236,34 +248,3 @@ def convert_xy_plane_to_end_effector_velocities(robot, xy_velocities, plane_T, w
     elif wrt_frame == "end-effector":  # if the Jacobian is calculated wrt the end-effector frame
         Je = np.array(robot.jacobe(robot.q))  # calculate the geometric Jacobian matrix of the robotic arm wrt the end-effector frame
         return (Je @ np.vstack((pe_dot, np.zeros((3, len(xy_velocities)))))).reshape(-1, len(xy_velocities))  # return the end-effector velocities in the end-effector frame
-
-
-# import os
-# import roboticstoolbox as rtb
-# import spatialmath as sm
-
-# thor_file = os.getcwd() + r"/robots_models_descriptions/thor_description/urdf/thor.urdf"
-# robot = rtb.Robot.URDF(thor_file)
-# robot.base = sm.SE3(0.0, 0.0, 0.0) #* sm.SE3.Rz(np.pi/2)
-
-# find_reachable_workspace(robot, divs = 10, show_plots = True)
-# # find_kinematic_singularities_3d_space(robot, divs = 7, singul_bound = 1e-3, show_plots = True)
-
-# phi_orient = 0
-# normal_vector = np.array([-1, 0, -1])
-# theta = np.rad2deg(np.arctan2(normal_vector[2], normal_vector[0])) % 180
-# normal_vector = -normal_vector / np.linalg.norm(normal_vector)
-# h1 = 0.50; x1 = 0.30
-# origin_pos = np.array([x1, 0.0, h1])
-# h2 = 0.47; x2 = x1 + (h1 - h2) / np.tan(np.deg2rad(theta))
-# origin_pos = np.array([x2, 0.0, h2])
-# print(origin_pos)
-# plane_T_rev = gf.xy_plane_transformation(normal_vector, phi_orient, origin_pos)
-# # origin_pos = np.array([0.30, 0.0, 0.5])
-# # origin_pos = np.array([0.34, 0.0, 0.46])
-
-# singul_bound = 1e-3
-# invkine_tol = 1e-7
-# divs_x, divs_y = 50, 50
-# plane_x_range, plane_y_range = 0.3, 0.3
-# find_kinematic_singularities_on_plane(robot, plane_x_range, plane_y_range, plane_T_rev, divs_x, divs_y, singul_bound, invkine_tol, show_plots = True)

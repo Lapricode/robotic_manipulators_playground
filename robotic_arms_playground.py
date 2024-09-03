@@ -373,7 +373,7 @@ class robotic_manipulators_playground_window():
         self.solver_time_step_dt_limits = [1e-3, 1e-2]  # the limits of the time step for the obstacles avoidance solver (in seconds)
         self.solver_error_tolerance = 0.010  # the error tolerance of the control law for the obstacles avoidance solver (in meters)
         self.solver_error_tolerance_limits = [1e-4, 1e-1]  # the limits of the error tolerance of the control law for the obstacles avoidance solver (in meters)
-        self.solver_enable_error_correction = True  # the flag to enable the error correction of the control law for the obstacles avoidance solver
+        self.solver_enable_error_correction = False  # the flag to enable the error correction of the control law for the obstacles avoidance solver
         self.solver_maximum_iterations = 1000  # the maximum number of iterations of the control law for the obstacles avoidance solver
         self.solver_maximum_iterations_list = [100, 200, 500, 1000, 1500, 2000, 3000]  # the possible values of the maximum number of iterations of the control law for the obstacles avoidance solver
         self.realws_path_control_law_output = []  # the path on the real workspace found by the control law for the obstacles avoidance solver
@@ -2185,19 +2185,19 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
         save_control_parameters_button_ord = define_control_parameters_label_ord-0.7
         load_control_parameters_label_ord = save_control_parameters_button_ord+0.7
         load_control_parameters_combobox_ord = load_control_parameters_label_ord+0.7
-        navigation_field_label_ord = compute_control_law_for_robot_label_ord+3.4
+        navigation_field_label_ord = compute_control_law_for_robot_label_ord+3.2
         show_field_values_button_ord = navigation_field_label_ord-0.3
         show_field_gradients_button_ord = navigation_field_label_ord+0.3
         field_plot_points_divs_label_ord = navigation_field_label_ord
         field_plot_points_divs_slider_ord = navigation_field_label_ord
-        choose_solver_dt_label_ord = navigation_field_label_ord-0.3
-        choose_solver_dt_button_ord = navigation_field_label_ord-0.3
-        choose_solver_max_iter_label_ord = navigation_field_label_ord+0.5
-        choose_solver_max_iter_button_ord = navigation_field_label_ord+0.5
-        choose_solver_error_tol_label_ord = navigation_field_label_ord+1.3
-        choose_solver_error_tol_button_ord = navigation_field_label_ord+1.3
-        enable_error_correction_label_ord = navigation_field_label_ord+2.1
-        enable_error_correction_button_ord = navigation_field_label_ord+2.1
+        choose_solver_dt_label_ord = navigation_field_label_ord
+        choose_solver_dt_button_ord = choose_solver_dt_label_ord
+        choose_solver_max_iter_label_ord = choose_solver_dt_label_ord+0.8
+        choose_solver_max_iter_button_ord = choose_solver_max_iter_label_ord
+        choose_solver_error_tol_label_ord = choose_solver_max_iter_label_ord+0.8
+        choose_solver_error_tol_button_ord = choose_solver_error_tol_label_ord
+        enable_error_correction_label_ord = choose_solver_error_tol_label_ord+0.8
+        enable_error_correction_button_ord = enable_error_correction_label_ord
         apply_control_law_button_ord = compute_control_law_for_robot_label_ord+4.5
         compute_robot_velocities_button_ord = compute_control_law_for_robot_label_ord+5.2
         move_simulated_robot_button_ord = compute_control_law_for_robot_label_ord+4.5
@@ -4538,27 +4538,28 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             for k in range(len(P)):  # for each point p
                 Z[k] = self.hntf2d_solver.navigation_psi(P[k])  # the values of the navigation function
             # plot the navigation function
+            general_fontsize = 7; text_margin = 0.02
             fig = plt.figure()
             ax = fig.add_subplot(111, projection = "3d")
             values_map = mcolors.Normalize(vmin = np.min(Z), vmax = np.max(Z))
             color_map = plt.get_cmap("viridis")
             ax.plot_surface(X, Y, Z.reshape(X.shape), cmap = color_map, edgecolor = "none")
             cbar = plt.colorbar(mappable = plt.cm.ScalarMappable(norm = values_map, cmap = color_map), ax = ax)
-            cbar.set_label("True gradients\nnorm")
-            q_init_plot, = ax.plot([self.hntf2d_solver.q_init[0]], [self.hntf2d_solver.q_init[1]], [self.hntf2d_solver.navigation_psi(self.hntf2d_solver.q_init)], "mo", markersize = 5)
-            q_d_plot, = ax.plot([self.hntf2d_solver.q_d[0]], [self.hntf2d_solver.q_d[1]], [self.hntf2d_solver.navigation_psi(self.hntf2d_solver.q_d)], "go", markersize = 5)
+            cbar.set_label("True values of the navigation field", fontsize = general_fontsize+2)
+            q_init_plot, = ax.plot([self.hntf2d_solver.q_init[0]], [self.hntf2d_solver.q_init[1]], [self.hntf2d_solver.navigation_psi(self.hntf2d_solver.q_init)], "ms", markersize = 5)
+            q_d_plot, = ax.plot([self.hntf2d_solver.q_d[0]], [self.hntf2d_solver.q_d[1]], [self.hntf2d_solver.navigation_psi(self.hntf2d_solver.q_d)], "gs", markersize = 5)
             for i in range(len(self.hntf2d_solver.q_i)):
                 q_i_plot, = ax.plot([self.hntf2d_solver.q_i[i][0]], [self.hntf2d_solver.q_i[i][1]], [self.hntf2d_solver.navigation_psi(self.hntf2d_solver.q_i[i])], "bo", markersize = 5)
-                ax.text(self.hntf2d_solver.q_i[i][0], self.hntf2d_solver.q_i[i][1], self.hntf2d_solver.navigation_psi(self.hntf2d_solver.q_i[i]), f"{i+1}", fontsize = 7)
+                ax.text(self.hntf2d_solver.q_i[i][0] + text_margin, self.hntf2d_solver.q_i[i][1] + text_margin, self.hntf2d_solver.navigation_psi(self.hntf2d_solver.q_i[i]) + text_margin, f"{i+1}", fontsize = general_fontsize)
             if len(self.R2_plane_path_control_law_output) != 0:  # if a path (on the transformed R2 plane) has been calculated by the control law
-                path_navigation_field_values = np.zeros((len(self.R2_plane_path_control_law_output), 2))  # the values of the navigation function on the control law transformed path points
+                path_navigation_field_values = np.zeros(len(self.R2_plane_path_control_law_output))  # the values of the navigation function on the control law transformed path points
                 for k in range(len(self.R2_plane_path_control_law_output)):  # loop over the control law transformed path points
-                    path_navigation_field_values[k] = self.hntf2d_solver.navigation_psi(self.R2_plane_path_control_law_output[k])
+                    path_navigation_field_values[k] = self.hntf2d_solver.navigation_psi(self.R2_plane_path_control_law_output[k])  # the values of the navigation function on the control law transformed path points
                 R2planews_path_plot, = ax.plot(np.array(self.R2_plane_path_control_law_output)[:, 0], np.array(self.R2_plane_path_control_law_output)[:, 1], path_navigation_field_values, "black", linewidth = 2)
-                ax.legend([q_init_plot, q_d_plot, q_i_plot, R2planews_path_plot], ["Start", "Target", "Obstacles", "Path found"], fontsize = 7, loc = "upper right")
+                ax.legend([q_init_plot, q_d_plot, q_i_plot, R2planews_path_plot], ["Start", "Target", "Obstacles", "Path found"], fontsize = general_fontsize, loc = "upper right")
             else:  # if no path (on the transformed R2 plane) has been calculated yet by the control law
-                ax.legend([q_init_plot, q_d_plot, q_i_plot], ["Start", "Target", "Obstacles"], fontsize = 7, loc = "upper right")
-            ax.set_title("Navigation function for the obstacles avoidance solver\n")
+                ax.legend([q_init_plot, q_d_plot, q_i_plot], ["Start", "Target", "Obstacles"], fontsize = general_fontsize, loc = "upper right")
+            ax.set_title(f"Navigation function psi\nk_d = {self.k_d:.2f}, k_i = {self.k_i}, w_phi = {self.w_phi:.2f}")
             ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_zlabel("psi(x, y)")
             plt.show()
         else:  # if the workspace transformations are not built
@@ -4585,10 +4586,10 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                 if not reject_point:  # if the point p is not near an obstacle
                     gradients[k] = self.hntf2d_solver.navigation_psi_gradient(P[k])  # the gradient of the navigation function at point p
                     gradient_norm = np.sqrt(gradients[k, 0]**2 + gradients[k, 1]**2)  # the norm of the current gradient
-                    if gradient_norm != 0:  # if the norm of the current gradient is not zero
-                        gradients_scaled[k] = gradients[k] / gradient_norm * gradients_desired_norm  # the normalized and rescaled gradient of the navigation function at point p
+                    gradients_scaled[k] = (gradients[k] / (gradient_norm + 1e-7)) * gradients_desired_norm  # the normalized and rescaled gradient of the navigation function at point p
                 reject_point = False  # reset the flag to reject the point
             # plot the gradients
+            general_fontsize = 7; text_margin = 0.02
             fig = plt.figure()
             ax = fig.add_subplot(111)
             norms_cap_value = 100  # the cap value of the norms of the gradients
@@ -4598,18 +4599,18 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             color_map = plt.get_cmap("turbo")
             ax.quiver(X, Y, -gradients_scaled[:, 0], -gradients_scaled[:, 1], color = color_map(norms_map(gradients_capped_norms)), angles = "xy", scale_units = "xy", scale = 1)
             cbar = plt.colorbar(mappable = plt.cm.ScalarMappable(norm = norms_map, cmap = color_map), ax = ax)
-            cbar.set_label("True gradients\nnorm")
-            q_init_plot, = ax.plot([self.hntf2d_solver.q_init[0]], [self.hntf2d_solver.q_init[1]], "mo", markersize = 5)
-            q_d_plot, = ax.plot([self.hntf2d_solver.q_d[0]], [self.hntf2d_solver.q_d[1]], "go", markersize = 5)
+            cbar.set_label("True values of the gradients norms", fontsize = general_fontsize+2)
+            q_init_plot, = ax.plot([self.hntf2d_solver.q_init[0]], [self.hntf2d_solver.q_init[1]], "ms", markersize = 5)
+            q_d_plot, = ax.plot([self.hntf2d_solver.q_d[0]], [self.hntf2d_solver.q_d[1]], "gs", markersize = 5)
             for i in range(len(self.hntf2d_solver.q_i)):
                 q_i_plot, = ax.plot([self.hntf2d_solver.q_i[i][0]], [self.hntf2d_solver.q_i[i][1]], "bo", markersize = 5)
-                ax.text(self.hntf2d_solver.q_i[i][0], self.hntf2d_solver.q_i[i][1], f"{i+1}", fontsize = 7)
+                ax.text(self.hntf2d_solver.q_i[i][0] + text_margin, self.hntf2d_solver.q_i[i][1] + text_margin, f"{i+1}", fontsize = general_fontsize)
             if len(self.R2_plane_path_control_law_output) != 0:  # if a path (on the transformed R2 plane) has been calculated by the control law
                 R2planews_path_plot, = ax.plot(np.array(self.R2_plane_path_control_law_output)[:, 0], np.array(self.R2_plane_path_control_law_output)[:, 1], "black", linewidth = 2)
-                ax.legend([q_init_plot, q_d_plot, q_i_plot, R2planews_path_plot], ["Start", "Target", "Obstacles", "Path found"], fontsize = 7, loc = "upper right")
+                ax.legend([q_init_plot, q_d_plot, q_i_plot, R2planews_path_plot], ["Start", "Target", "Obstacles", "Path found"], fontsize = general_fontsize, loc = "upper right")
             else:  # if no path (on the transformed R2 plane) has been calculated yet by the control law
-                ax.legend([q_init_plot, q_d_plot, q_i_plot], ["Start", "Target", "Obstacles"], fontsize = 7, loc = "upper right")
-            ax.set_title("Negative gradient of the navigation function for the obstacles avoidance solver\n(press mouse right click)")
+                ax.legend([q_init_plot, q_d_plot, q_i_plot], ["Start", "Target", "Obstacles"], fontsize = general_fontsize, loc = "upper right")
+            ax.set_title(f"Negative gradients of the navigation function\nk_d = {self.k_d:.2f}, k_i = {self.k_i}, w_phi = {self.w_phi:.2f}\n(press mouse right click on the plot to view the gradients)")
             ax.set_xlabel("x"); ax.set_ylabel("y"); ax.set_aspect("equal")
             fig.canvas.mpl_connect("button_press_event", lambda event: self.mark_navigation_field_gradients(event, ax))  # connect a function to the plot
             plt.show()
@@ -4649,32 +4650,29 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def apply_control_law_obstacles_avoidance(self, event = None):  # apply the control law for the obstacles avoidance
         if not self.robot_control_thread_flag:  # if the robot control thread is not running
-            if self.robotic_manipulator_is_built: # if a robotic manipulator is built
-                if self.hntf2d_solver != None and self.transformations_are_built and self.positions_on_plane_are_correct:  # if the workspace transformations are built
-                    p_list, p_dot_list, control_law_success = self.hntf2d_solver.run_control_law(self.solver_time_step_dt, self.solver_error_tolerance, self.solver_maximum_iterations)  # apply the control law and compute the path positions and velocities on the real and transformed workspaces
-                    print("The control process has been completed!")  # print a message
-                    self.realws_path_control_law_output = p_list  # the path positions on the real workspace generated by the control law
-                    self.unit_disk_path_control_law_output = []  # the path positions on the unit disk generated by the control law
-                    self.R2_plane_path_control_law_output = []  # the path positions on the R2 plane generated by the control law
-                    for i in range(len(p_list)):  # for each path position
-                        self.unit_disk_path_control_law_output.append(self.hntf2d_solver.realws_to_unit_disk_mapping(p_list[i]))  # the path position on the unit disk
-                        self.R2_plane_path_control_law_output.append(self.hntf2d_solver.unit_disk_to_R2_mapping(self.unit_disk_path_control_law_output[i]))  # the path position on the R2 plane
-                    if control_law_success:  # if the control law is successful
-                        ms.showinfo("Control law success", f"The control law has been applied successfully!\n\
+            if self.hntf2d_solver != None and self.transformations_are_built and self.positions_on_plane_are_correct:  # if the workspace transformations are built
+                p_list, p_dot_list, control_law_success = self.hntf2d_solver.run_control_law(self.solver_time_step_dt, self.solver_error_tolerance, self.solver_maximum_iterations)  # apply the control law and compute the path positions and velocities on the real and transformed workspaces
+                print("The control process has been completed!")  # print a message
+                self.realws_path_control_law_output = p_list  # the path positions on the real workspace generated by the control law
+                self.unit_disk_path_control_law_output = []  # the path positions on the unit disk generated by the control law
+                self.R2_plane_path_control_law_output = []  # the path positions on the R2 plane generated by the control law
+                for i in range(len(p_list)):  # for each path position
+                    self.unit_disk_path_control_law_output.append(self.hntf2d_solver.realws_to_unit_disk_mapping(p_list[i]))  # the path position on the unit disk
+                    self.R2_plane_path_control_law_output.append(self.hntf2d_solver.unit_disk_to_R2_mapping(self.unit_disk_path_control_law_output[i]))  # the path position on the R2 plane
+                if control_law_success:  # if the control law is successful
+                    ms.showinfo("Control law success", f"The control law has been applied successfully!\n\
 • Convergence error = {1000.0 * (np.linalg.norm(p_list[-1] - self.hntf2d_solver.p_d)):.1f} mm\n\
 • Number of iterations = {len(self.realws_path_control_law_output)}\n\
-• Total time (seconds) = {np.round(len(self.realws_path_control_law_output) * self.solver_time_step_dt, 3)}", parent = self.menus_area)  # show an info message
-                    else:  # if the control law is not successful
-                        ms.showinfo("Control law failure", f"The control law has failed to converge within the maximum number of iterations ({self.solver_maximum_iterations})!\n\
+• Total time = {np.round(len(self.realws_path_control_law_output) * self.solver_time_step_dt, 3)} sec", parent = self.menus_area)  # show an info message
+                else:  # if the control law is not successful
+                    ms.showinfo("Control law failure", f"The control law has failed to converge within the maximum number of iterations ({self.solver_maximum_iterations})!\n\
 • Convergence error = {1000.0 * (np.linalg.norm(p_list[-1] - self.hntf2d_solver.p_d)):.1f} mm", parent = self.menus_area)  # show an info message
-                    if self.solver_enable_error_correction:  # if the error correction is enabled
-                        self.realws_path_control_law_output.append(self.hntf2d_solver.p_d)  # append the target position to the proper list of the control law output
-                        self.unit_disk_path_control_law_output.append(self.hntf2d_solver.q_d_disk)  # append the target position on the unit disk to the proper list of the control law output
-                        self.R2_plane_path_control_law_output.append(self.hntf2d_solver.q_d)  # append the target position on the R2 plane to the proper list of the control law output
-                else:
-                    ms.showerror("Error", "The workspace transformations have not been built yet and/or the start and target positions are not set correctly!", parent = self.menus_area)  # show an error message
-            else:  # if no robotic manipulator is built yet
-                ms.showerror("Error", "Please build a robotic manipulator first!", parent = self.menus_area)  # show an error message
+                if self.solver_enable_error_correction:  # if the error correction is enabled
+                    self.realws_path_control_law_output.append(self.hntf2d_solver.p_d)  # append the target position to the proper list of the control law output
+                    self.unit_disk_path_control_law_output.append(self.hntf2d_solver.q_d_disk)  # append the target position on the unit disk to the proper list of the control law output
+                    self.R2_plane_path_control_law_output.append(self.hntf2d_solver.q_d)  # append the target position on the R2 plane to the proper list of the control law output
+            else:
+                ms.showerror("Error", "The workspace transformations have not been built yet and/or the start and target positions are not set correctly!", parent = self.menus_area)  # show an error message
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def compute_robot_velocities_obstacles_avoidance(self, event = None):  # compute the velocities of the robotic manipulator for the obstacles avoidance
         if not self.robot_control_thread_flag:  # if the robot control thread is not running
@@ -4692,6 +4690,8 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                         qr_dot, _ = kin.compute_inverse_differential_kinematics(self.built_robotic_manipulator, self.robot_joints_control_law_output[-1], ve_dot, "end-effector")
                         q = self.robot_joints_control_law_output[-1] + qr_dot * dt
                         self.robot_joints_control_law_output.append(q)
+            else:  # if no robotic manipulator is built yet
+                ms.showerror("Error", "Please build a robotic manipulator first!", parent = self.menus_area)  # show an error message
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def move_simulated_robot_obstacles_avoidance(self, event = None):  # control the simulated robotic manipulator for the obstacles avoidance
         if not self.robot_control_thread_flag:  # if the robot control thread is not running
