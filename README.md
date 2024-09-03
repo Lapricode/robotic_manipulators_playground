@@ -1,6 +1,7 @@
 # robotic_manipulators_playground
 
 The classic Denavit - Hartenberg convention is followed.
+
 This is a python tkinter GUI for designing, simulating and controlling serial robotic manipulators (with open kinematic chains), that also gives a solution to the obstacles avoidance problem.
 
 The program can be run both in windows and linux.
