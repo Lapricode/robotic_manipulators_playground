@@ -124,7 +124,8 @@ class robotic_manipulators_playground_window():
         self.control_or_kinematics_variables_visualization = self.control_or_kinematics_variables_visualization_list[0]  # determine which variables (control or forward kinematics) to visualize
         # define the robotic manipulator model technical parameters
         self.robotic_manipulator_model_name = ""  # the name of the current robotic manipulator model
-        self.joints_number, self.frames_number, self.links_number = self.set_joints_frames_links_number(joints_number = 6)  # set the total number of joints, frames, and links of the robotic manipulator
+        self.joints_number = 6  # set the total number of joints of the robotic manipulator
+        self.frames_number, self.links_number = self.set_frames_links_number(joints_number = self.joints_number)  # set the total number of frames and links of the robotic manipulator
         self.max_joints_number = 12  # the maximum possible number of joints of the robotic manipulator
         self.chosen_joint_number_model = 1  # the number of the chosen joint of the robotic manipulator for model changes
         self.joints_types_list = ["revolute", "prismatic"]  # the possible types of the robotic manipulator joints
@@ -277,9 +278,9 @@ class robotic_manipulators_playground_window():
         self.camera_wrt_world_transformation_matrix = np.eye(4)  # the transformation matrix of the camera
         self.camera_intrinsic_matrix, self.camera_dist_coeffs, self.reprojection_error = cd.load_intrinsic_parameters(self.camera_intrinsic_parameters_file_path)  # the intrinsic parameters of the camera
         self.apply_moving_average_poses_estimation = True  # the flag to apply the moving average filter for the poses estimation
-        self.ArUco_markers_list = [line.strip() for line in open(self.aruco_dictionaries_file_path)]  # the list of the ArUco markers
-        self.chosen_ArUco_marker = self.ArUco_markers_list[1]  # the chosen ArUco markers
-        self.ArUco_marker_positions_list = ["center", "top-left corner", "top-right corner", "bottom-left corner", "bottom-right corner"]  # the possible positions of the ArUco markers on the obstacles 2D plane
+        self.saved_ArUco_markers_list = [line.strip() for line in open(self.aruco_dictionaries_file_path)]  # the list of the ArUco markers
+        self.chosen_ArUco_marker = self.saved_ArUco_markers_list[1]  # the chosen ArUco markers
+        self.ArUco_marker_positions_list = ["center", "top-left corner", "up-middle edge", "top-right corner", "right-middle edge", "bottom-right corner", "down-middle edge", "bottom-left corner", "left-middle edge"]  # the possible positions of the ArUco markers on the obstacles 2D plane
         self.ArUco_marker_position = self.ArUco_marker_positions_list[0]  # the position of the ArUco marker on the obstacles 2D plane
         self.ArUco_marker_orientations_list = [0, 45, 90, 135, 180, 225, 270, 315]  # the possible orientations of the ArUco markers on the obstacles 2D plane
         self.ArUco_marker_orientation = self.ArUco_marker_orientations_list[0]  # the orientation of the ArUco marker on the obstacles 2D plane
@@ -305,9 +306,9 @@ class robotic_manipulators_playground_window():
         self.plane_singularities_samples = 25  # the number of points samples for the singularities of the 2D plane
         self.saved_obstacles_transformations_list = [file[:-4] for file in os.listdir(self.saved_obstacles_transformations_folder_path) if file.endswith(".txt")]  # the list of the saved obstacles transformations
         if len(self.saved_obstacles_transformations_list) != 0:  # if there are saved obstacles transformations
-            self.chosen_plane_obstacles_transformation = self.saved_obstacles_transformations_list[0]  # the chosen obstacles transformation
+            self.chosen_plane_obstacles_transformation_name = self.saved_obstacles_transformations_list[0]  # the chosen obstacles transformation name
         else:  # if there are no saved obstacles transformations
-            self.chosen_plane_obstacles_transformation = ""  # the chosen obstacles transformation
+            self.chosen_plane_obstacles_transformation_name = ""  # the chosen obstacles transformation name
         if len(self.saved_workspace_images_list) != 0:  # if there are saved workspace images
             self.chosen_detection_workspace_image_name = self.saved_workspace_images_list[0]  # the chosen workspace image for the obstacles detection
         else:  # if there are no saved workspace images
@@ -352,30 +353,26 @@ class robotic_manipulators_playground_window():
         self.k_i = [1.0]  # the obstacles gains kis for the obstacles positions qis on the transformed workspace
         self.k_i_limits = [1e-2, 1e3]  # the limits of the obstacles gains kis for the obstacles positions qis on the transformed workspace
         self.k_i_chosen_num = 1  # the currently chosen obstacle gain ki for the obstacle position qi on the transformed workspace
-        self.K = 100.0  # the scalar gain K for the control law
-        self.K_limits = [1e-1, 1e6]  # the limits of the scalar gain K for the control law
         self.w_phi = 10.0  # the scalar constant w_phi for the navigation function psi
         self.w_phi_limits = [1e-2, 1e3]  # the limits of the scalar constant w_phi for the navigation function psi
-        self.gamma = 0.5  # the scalar constant gamma for the function s
-        self.gamma_limits = [0.0, 1.0]  # the limits of the scalar constant gamma for the function s
-        self.e_p = 0.1  # the scalar constant e_p for the function sigmap
-        self.e_p_limits = [1e-2, 1e1]  # the limits of the scalar constant e_p for the function sigmap
-        self.e_v = 0.1  # the scalar constant e_v for the function sigmav
-        self.e_v_limits = [1e-2, 1e1]  # the limits of the scalar constant e_v for the function sigmav
+        self.vp_max = 0.05  # the maximum value of the velocity p_dot (in m/sec) of the end-effector on the real workspace
+        self.vp_max_limits = [1e-3, 1.0]  # the limits of the maximum value of the velocity p_dot (in m/sec) of the end-effector on the real workspace
+        self.dp_min = 0.01  # the distance dp_min (in m) of the end-effector from the target position on the real workspace, where the velocity p_dot starts to decrease
+        self.dp_min_limits = [1e-3, 1.0]  # the limits of the distance dp_min (in m) of the end-effector from the target position on the real workspace, where the velocity p_dot starts to decrease
         self.saved_control_law_parameters_list = [file[:-4] for file in os.listdir(self.saved_control_law_parameters_folder_path)]  # the list of the saved control law parameters
         if len(self.saved_control_law_parameters_list) != 0:  # if there are saved control law parameters
-            self.chosen_control_law_parameters = self.saved_control_law_parameters_list[0]  # the chosen control law parameters
+            self.chosen_control_law_parameters_name = self.saved_control_law_parameters_list[0]  # the chosen control law parameters
         else:  # if there are no saved control law parameters
-            self.chosen_control_law_parameters = ""  # the chosen control law parameters
+            self.chosen_control_law_parameters_name = ""  # the chosen control law parameters
         self.navigation_field_plot_points_divs_list = [25, 50, 100, 200, 300, 400, 500, 750, 1000]  # the possible divisions of the plot points for the navigation field
         self.navigation_field_plot_points_divs = 200  # the divisions of the plot points for the navigation field
-        self.solver_time_step_dt = 0.001  # the time step for the obstacles avoidance solver (in seconds)
-        self.solver_time_step_dt_limits = [1e-3, 1e-2]  # the limits of the time step for the obstacles avoidance solver (in seconds)
-        self.solver_error_tolerance = 0.010  # the error tolerance of the control law for the obstacles avoidance solver (in meters)
-        self.solver_error_tolerance_limits = [1e-4, 1e-1]  # the limits of the error tolerance of the control law for the obstacles avoidance solver (in meters)
+        self.solver_time_step_dt = 0.010  # the time step for the obstacles avoidance solver (in seconds)
+        self.solver_time_step_dt_limits = [1e-3, 1e-1]  # the limits of the time step for the obstacles avoidance solver (in seconds)
+        self.solver_error_tolerance = 0.01  # the error tolerance of the control law for the obstacles avoidance solver (in meters)
+        self.solver_error_tolerance_limits = [1e-3, 1.0]  # the limits of the error tolerance of the control law for the obstacles avoidance solver (in meters)
         self.solver_enable_error_correction = False  # the flag to enable the error correction of the control law for the obstacles avoidance solver
-        self.solver_maximum_iterations = 1000  # the maximum number of iterations of the control law for the obstacles avoidance solver
-        self.solver_maximum_iterations_limits = [1, 10000]  # the limits of the maximum number of iterations of the control law for the obstacles avoidance solver
+        self.solver_maximum_iterations = 500  # the maximum number of iterations of the control law for the obstacles avoidance solver
+        self.solver_maximum_iterations_limits = [1.0, 1e4]  # the limits of the maximum number of iterations of the control law for the obstacles avoidance solver
         self.realws_path_control_law_output = []  # the path on the real workspace found by the control law for the obstacles avoidance solver
         self.realws_velocities_control_law_output = []  # the velocities on the real workspace found by the control law for the obstacles avoidance solver
         self.unit_disk_path_control_law_output = []  # the path on the unit disk found by the control law for the obstacles avoidance solver
@@ -570,7 +567,7 @@ class robotic_manipulators_playground_window():
             self.visualized_variables_values_indicator.destroy()
         except: pass
         self.choose_visualized_variables_button = gbl.menu_button(self.workspace_canvas, self.control_or_kinematics_variables_visualization, f"Calibri {int(1.0*self.workspace_borders_font)} bold", "black", self.workspace_canvas_color, 50, 50, self.visualize_control_or_kinematics_variables).button
-        self.visualized_variables_values_indicator = gbl.menu_label(self.workspace_canvas, "", f"Calibri {int(1.0*self.workspace_borders_font)} bold", "black", self.workspace_canvas_color, 300, 50).label
+        self.visualized_variables_values_indicator = gbl.menu_label(self.workspace_canvas, "", f"Calibri {int(1.0*self.workspace_borders_font)} bold", "black", self.workspace_canvas_color, 50, self.workspace_canvas_height / 2).label
         # create the necessary bindings for the robotic manipulator workspace visualization
         self.workspace_canvas.bind("<Button-3>", lambda event: self.transfer_workspace_start(event))
         self.workspace_canvas.bind("<B3-Motion>", lambda event: self.transfer_workspace(event))
@@ -724,6 +721,7 @@ class robotic_manipulators_playground_window():
             self.workspace_2d_plane_color = self.back_side_2d_plane_color  # the color of the back side of the 2D plane
     def apply_robotic_manipulator_transformation(self, event = None):  # apply the transformation defined by the proper transfer and rotation matrices to the points of the robotic manipulator
         if self.robotic_manipulator_is_built:  # if a robotic manipulator is built
+            # q_joints = self.get_robot_joints_variables(self.control_or_kinematics_variables_visualization)
             self.built_robotic_manipulator.q = self.get_robot_joints_variables(self.control_or_kinematics_variables_visualization)  # get the proper values for the joints variables (control or fkine)
             frames_origins, frames_orientations = self.get_all_frames_positions_orientations(self.built_robotic_manipulator.q)  # get the positions and the orientations of the frames of the robotic manipulator
             robotic_manipulator_points = [frames_origins[k].tolist() + [1.0] for k in range(len(frames_origins))]  # add the homogeneous coordinate to the points of the robotic manipulator
@@ -738,8 +736,8 @@ class robotic_manipulators_playground_window():
             return [[0.0, 0.0, 0.0, 1.0] for k in range(self.robotic_manipulator_points_num)]  # return the default points of the robotic manipulator
     def apply_end_effector_transformation(self, end_effector_frame_points, event = None):  # apply the transformation defined by the proper transfer and rotation matrices to the points of the end-effector
         if self.robotic_manipulator_is_built:  # if a robotic manipulator is built
-            self.built_robotic_manipulator.q = self.get_robot_joints_variables(self.control_or_kinematics_variables_visualization)  # get the proper values for the joints variables (control or fkine)
-            end_effector_frame_origin, end_effector_frame_orientation = self.get_fkine_frame_position_orientation(self.built_robotic_manipulator.q, "end-effector")  # get the position and the orientation of the end-effector frame
+            q_joints = self.get_robot_joints_variables(self.control_or_kinematics_variables_visualization)  # get the proper values for the joints variables (control or fkine)
+            end_effector_frame_origin, end_effector_frame_orientation = self.get_fkine_frame_position_orientation(q_joints, "end-effector")  # get the position and the orientation of the end-effector frame
             end_effector_T = np.eye(4)  # the transformation matrix of the end-effector frame
             end_effector_T[:3, :3] = end_effector_frame_orientation  # update the rotation matrix of the end-effector frame
             end_effector_T[:3, 3] = end_effector_frame_origin  # update the translation vector of the end-effector frame
@@ -954,7 +952,7 @@ class robotic_manipulators_playground_window():
             obstacles_plane_moved_points_properties = [[self.obstacles_plane_moved_points[k], "black", self.workspace_2d_plane_size+5] for k in range(4)]  # the points of the obstacles plane with their properties
             obstacles_plane_moved_points_properties.append([self.obstacles_plane_moved_points[4], "magenta", [1, 7][[False, True].index(self.obst_avoid_solver_menu_is_enabled)]])  # the start position of the workspace plane
             obstacles_plane_moved_points_properties.append([self.obstacles_plane_moved_points[5], "green", [1, 7][[False, True].index(self.obst_avoid_solver_menu_is_enabled)]])  # the final position of the workspace plane
-            obstacles_plane_moved_points_properties += [[self.obstacles_plane_moved_points[k], "brown", [1, 4][[False, True].index(self.obst_avoid_solver_menu_is_enabled)]] for k in range(6, len(self.obstacles_plane_moved_points))]  # the points of the path of the workspace plane
+            obstacles_plane_moved_points_properties += [[self.obstacles_plane_moved_points[k], "brown", [1, 3][[False, True].index(self.obst_avoid_solver_menu_is_enabled)]] for k in range(6, len(self.obstacles_plane_moved_points))]  # the points of the path of the workspace plane
             obstacles_plane_moved_points_properties.append(points_counter)  # add the count of the points of the workspace
         points_counter += self.obstacles_plane_points_num  # update the count of the points of the workspace
         # prepare the points of the obstacles frame object
@@ -1031,12 +1029,12 @@ class robotic_manipulators_playground_window():
                 self.workspace_canvas.create_text(self.workspace_canvas_width / 2, 20, text = f"Pending:   {self.robotic_manipulator_model_name}", font = "Calibri 12 bold", fill = "red")  # write the name of the pending robotic manipulator model on the workspace canvas
         # write the values of the visualized variables on the workspace canvas
         self.choose_visualized_variables_button.configure(text = self.control_or_kinematics_variables_visualization)  # update the text of the button that allows the user to choose the visualized variables
-        joints_configuration_columns_indicator = 6  # the number of rows of the joints configuration indicator
+        joints_configuration_columns_indicator = 1  # the number of rows of the joints configuration indicator
         joints_configuration = ""  # the configuration of the joints of the robotic manipulator
         visualized_joints_values = [self.control_joints_variables, self.forward_kinematics_variables][[False, True].index(self.control_or_kinematics_variables_visualization == "kinematics")]  # the values of the visualized joints
         for k in range(self.joints_number):
             joints_configuration += f"{k + 1}" + [f"(°): {np.rad2deg(visualized_joints_values[k]):.1f}", f"(m): {visualized_joints_values[k]:.3f}"][self.joints_types_list.index(self.joints_types[k])]  # the joints configuration indicator of the robotic manipulator
-            if k < self.joints_number - 1: joints_configuration += "   "
+            if k <= self.joints_number - 1: joints_configuration += "   "
             if (k + 1) % joints_configuration_columns_indicator == 0 and (k + 1) != self.joints_number: joints_configuration += "\n"
         self.visualized_variables_values_indicator.configure(text = joints_configuration)  # update the text of the indicator that shows the values of the visualized variables
         # bind the points of the workspace to show their coordinates when the user's cursor is pointing to them
@@ -1221,9 +1219,10 @@ Provides options for different simulators to visualize the robotic manipulator:\
         build_robot_button_x = 11/16; self.build_robot_button = gbl.menu_button(menu_frame, "build robot", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], build_robot_button_x * menu_properties['width'], build_robot_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.build_robotic_manipulator_model).button
         destroy_robot_button_x = 11/16; self.destroy_robot_button = gbl.menu_button(menu_frame, "destroy robot", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], destroy_robot_button_x * menu_properties['width'], destroy_robot_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.destroy_robotic_manipulator_model).button
         load_model_label_x = 11/16; gbl.menu_label(menu_frame, "Load robot model:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], load_model_label_x * menu_properties['width'], load_model_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        self.load_model_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "readonly", width = 15, values = self.saved_robots_models_files_list, justify = "center")
+        self.load_model_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "normal", width = 15, values = self.saved_robots_models_files_list, justify = "center")
         load_model_combobox_x = load_model_label_x; self.load_model_combobox.place(x = load_model_combobox_x * menu_properties['width'], y = (load_model_label_ord + 0.8) * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
         self.load_model_combobox.bind("<<ComboboxSelected>>", lambda event: self.load_robotic_manipulator_model("", event))
+        self.load_model_combobox.bind("<Return>", lambda event: self.load_robotic_manipulator_model("", event))
     def generate_adjust_visualization_menu(self, menu_frame, menu_properties, event = None):  # build the adjust visualization menu
         # options order
         menu_title_ord = 1
@@ -1323,7 +1322,7 @@ Sliders are provided to adjust the values of multiple joints, giving a visual wa
 • Frame:\n\
 This dropdown allows you to select the frame on which to perform the forward kinematics analysis. It can be the base, the end-effector, or any intermediate frame.\n\
 • Position and Orientation:\n\
-Displays the current position (in meters) and orientation (in Euler angles, quaternions or in the form of a rotation matrix) of the selected frame, which is updated based on the joints values.\n\
+Displays the current position (in meters) and orientation (in Euler angles, quaternions or in the form of a rotation matrix) of the selected frame wrt the world, which is updated based on the joints values.\n\
 • Find Reachable Workspace:\n\
 A feature to determine the space that the end-effector can reach given the current joints limits. The reachable workspace is the volume of space where the robot can position its end-effector, regardless of orientation.\n\
 • Joints Range Divisions:\n\
@@ -1341,7 +1340,7 @@ This option allows you to retrieve the results from the forward kinematics analy
 • Send Inverse Kinematics Analysis Result:\n\
 It submits the currently found inverse kinematics result (joints configuration) to the forward kinematics submenu.\n\
 • End-Effector Position and Orientation:\n\
-Input fields where you can specify the desired position and orientation of the end-effector.\n\
+Input fields where you can specify the desired position and orientation of the end-effector wrt the world.\n\
 • Numerical Solver Maximum Allowed Error (Tolerance):\n\
 This field allows you to specify the tolerance level for the numerical solver, which impacts the precision of the inverse kinematics solution. Lower tolerance values yield more precise results but may require more computation time.\n\
 • Joints Configuration:\n\
@@ -1930,15 +1929,17 @@ This submenu allows the user to create the workspace obstacles and the 2D plane 
         find_plane_singularities_button_x = 4/7; self.find_plane_singularities_button = gbl.menu_button(menu_frame, "find\nkinematic\nsingularities", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], find_plane_singularities_button_x * menu_properties['width'], find_plane_singularities_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.find_plane_singularities).button
         save_obstacles_transformation_button_x = 5/7; self.save_obstacles_transformation_button = gbl.menu_button(menu_frame, "save\nplane", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], save_obstacles_transformation_button_x * menu_properties['width'], save_obstacles_transformation_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.save_obstacles_transformation).button
         load_obstacles_transformation_label_x = 7/8; gbl.menu_label(menu_frame, "Load plane:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], load_obstacles_transformation_label_x * menu_properties['width'], load_obstacles_transformation_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        self.load_obstacles_transformation_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']} bold", state = "readonly", width = 13, values = self.saved_obstacles_transformations_list, justify = "center")
+        self.load_obstacles_transformation_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']} bold", state = "normal", width = 13, values = self.saved_obstacles_transformations_list, justify = "center")
         load_obstacles_transformation_combobox_x = load_obstacles_transformation_label_x; self.load_obstacles_transformation_combobox.place(x = load_obstacles_transformation_combobox_x * menu_properties['width'], y = load_obstacles_transformation_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
         self.load_obstacles_transformation_combobox.bind("<<ComboboxSelected>>", self.load_obstacles_transformation)
+        self.load_obstacles_transformation_combobox.bind("<Return>", self.load_obstacles_transformation)
         build_obstacles_objects_label_x = 1/2; gbl.menu_label(menu_frame, "Build workspace obstacles:", f"Calibri {menu_properties['options_font']} bold", menu_properties['subtitles_color'], menu_properties['bg_color'], build_obstacles_objects_label_x * menu_properties['width'], build_obstacles_objects_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         detect_obstacles_boundaries_label_x = 1/8; gbl.menu_label(menu_frame, "Detect obstacles\nboundaries:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], detect_obstacles_boundaries_label_x * menu_properties['width'], detect_obstacles_boundaries_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         load_workspace_image_label_x = 11/30; gbl.menu_label(menu_frame, "Load workspace image:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], load_workspace_image_label_x * menu_properties['width'], load_workspace_image_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        self.load_workspace_image_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']} bold", state = "readonly", width = 13, values = self.saved_workspace_images_list, justify = "center")
+        self.load_workspace_image_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']} bold", state = "normal", width = 13, values = self.saved_workspace_images_list, justify = "center")
         load_workspace_image_combobox_x = load_workspace_image_label_x; self.load_workspace_image_combobox.place(x = load_workspace_image_combobox_x * menu_properties['width'], y = load_workspace_image_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
         self.load_workspace_image_combobox.bind("<<ComboboxSelected>>", self.load_workspace_image_for_detection)
+        self.load_workspace_image_combobox.bind("<Return>", self.load_workspace_image_for_detection)
         obstacles_height_saved_label_x = load_workspace_image_label_x-1/30; gbl.menu_label(menu_frame, "Obstacles saved\nheight (mm):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], obstacles_height_saved_label_x * menu_properties['width'], obstacles_height_saved_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         obstacles_height_saved_button_x = load_workspace_image_label_x+2/30; self.obstacles_height_saved_button = gbl.menu_button(menu_frame, f"{1000.0 * self.workspace_obstacles_height_saved:.1f}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], obstacles_height_saved_button_x * menu_properties['width'], obstacles_height_saved_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.choose_obstacles_height_saved).button
         boundaries_precision_label_x = 4/7; gbl.menu_label(menu_frame, "Precision:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], boundaries_precision_label_x * menu_properties['width'], boundaries_precision_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
@@ -1952,9 +1953,10 @@ This submenu allows the user to create the workspace obstacles and the 2D plane 
         detect_compute_boundaries_button_x = 7/8; self.detect_compute_boundaries_button = gbl.menu_button(menu_frame, "detect\nboundaries", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], detect_compute_boundaries_button_x * menu_properties['width'], detect_compute_boundaries_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.detect_compute_boundaries_workspace).button
         create_obstacles_meshes_3dprint_label_x = detect_obstacles_boundaries_label_x; gbl.menu_label(menu_frame, "Create STL files\nfor the obstacles:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], create_obstacles_meshes_3dprint_label_x * menu_properties['width'], create_obstacles_meshes_3dprint_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         load_obstacles_data_label_x = 11/30; gbl.menu_label(menu_frame, "Load obstacle data:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], load_obstacles_data_label_x * menu_properties['width'], load_obstacles_data_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        self.load_obstacles_data_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']} bold", state = "readonly", width = 13, values = self.chosen_workspace_saved_obstacles_objects_list, justify = "center")
+        self.load_obstacles_data_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']} bold", state = "normal", width = 13, values = self.chosen_workspace_saved_obstacles_objects_list, justify = "center")
         load_obstacles_data_combobox_x = load_obstacles_data_label_x; self.load_obstacles_data_combobox.place(x = load_obstacles_data_combobox_x * menu_properties['width'], y = load_obstacles_data_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
         self.load_obstacles_data_combobox.bind("<<ComboboxSelected>>", self.load_chosen_obstacle_boundary_data)
+        self.load_obstacles_data_combobox.bind("<Return>", self.load_chosen_obstacle_boundary_data)
         xy_axis_res_mesh_label_x = 4/7; gbl.menu_label(menu_frame, "xy-axis resolution:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], xy_axis_res_mesh_label_x * menu_properties['width'], xy_axis_res_mesh_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         xy_axis_res_mesh_button_x = 5/7; self.xy_axis_res_mesh_button = gbl.menu_button(menu_frame, self.xy_res_obstacle_mesh, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], xy_axis_res_mesh_button_x * menu_properties['width'], xy_axis_res_mesh_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.choose_xy_axis_res_mesh).button
         z_axis_res_mesh_label_x = xy_axis_res_mesh_label_x; gbl.menu_label(menu_frame, "z-axis resolution:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], z_axis_res_mesh_label_x * menu_properties['width'], z_axis_res_mesh_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
@@ -2079,9 +2081,10 @@ This submenu allows the user to configure the camera device, calibrate it, and c
         show_grayscale_image_button_x = 4/5; self.show_grayscale_image_button = gbl.menu_button(menu_frame, "show\ngrayscale image", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_grayscale_image_button_x * menu_properties['width'], show_grayscale_image_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.show_grayscale_image).button
         define_camera_pose_label_x = 1/2; gbl.menu_label(menu_frame, "Define the camera pose:", f"Calibri {menu_properties['options_font']} bold", menu_properties['subtitles_color'], menu_properties['bg_color'], define_camera_pose_label_x * menu_properties['width'], define_camera_pose_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         choose_ArUco_marker_label_x = 7/16; gbl.menu_label(menu_frame, "ArUco marker:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_ArUco_marker_label_x * menu_properties['width'], choose_ArUco_marker_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        self.choose_ArUco_marker_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", values = self.ArUco_markers_list, state = "readonly", width = 15, justify = "center")
+        self.choose_ArUco_marker_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", values = self.saved_ArUco_markers_list, state = "normal", width = 15, justify = "center")
         choose_ArUco_marker_combobox_x = choose_ArUco_marker_label_x; self.choose_ArUco_marker_combobox.place(x = choose_ArUco_marker_combobox_x * menu_properties['width'], y = choose_ArUco_marker_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
         self.choose_ArUco_marker_combobox.bind("<<ComboboxSelected>>", self.change_ArUco_marker)
+        self.choose_ArUco_marker_combobox.bind("<Return>", self.change_ArUco_marker)
         estimate_camera_pose_button_x = 1/9; self.camera_estimate_pose_button = gbl.menu_button(menu_frame, "estimate\ncamera pose", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], estimate_camera_pose_button_x * menu_properties['width'], estimate_camera_pose_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.estimate_camera_pose).button
         estimate_obst_plane_pose_button_x = 1/4; self.estimate_obst_plane_pose_button = gbl.menu_button(menu_frame, "estimate\nplane pose", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], estimate_obst_plane_pose_button_x * menu_properties['width'], estimate_obst_plane_pose_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.estimate_obstacles_plane_pose).button
         apply_moving_average_filter_label_x = 1/9; gbl.menu_label(menu_frame, "Apply moving\naverage filter:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], apply_moving_average_filter_label_x * menu_properties['width'], apply_moving_average_filter_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
@@ -2109,9 +2112,10 @@ This submenu allows the user to configure the camera device, calibrate it, and c
         draw_2d_plane_button_x = 5/11; self.draw_2d_plane_button = gbl.menu_button(menu_frame, "draw 2D plane\non frame", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], draw_2d_plane_button_x * menu_properties['width'], draw_2d_plane_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.draw_2d_plane_on_image).button
         capture_workspace_image_button_x = draw_2d_plane_button_x; self.capture_workspace_image_button = gbl.menu_button(menu_frame, "capture image", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], capture_workspace_image_button_x * menu_properties['width'], capture_workspace_image_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.capture_workspace_image).button
         show_workspace_image_label_x = 7/10; gbl.menu_label(menu_frame, "Workspace images:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], show_workspace_image_label_x * menu_properties['width'], show_workspace_image_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        self.show_workspace_image_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "readonly", width = 12, values = self.saved_workspace_images_list, justify = "center")
+        self.show_workspace_image_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "normal", width = 12, values = self.saved_workspace_images_list, justify = "center")
         show_workspace_image_combobox_x = show_workspace_image_label_x; self.show_workspace_image_combobox.place(x = show_workspace_image_combobox_x * menu_properties['width'], y = show_workspace_image_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
         self.show_workspace_image_combobox.bind("<<ComboboxSelected>>", self.change_shown_workspace_image)
+        self.show_workspace_image_combobox.bind("<Return>", self.change_shown_workspace_image)
         show_workspace_image_button_x = 8/9; self.show_workspace_image_button = gbl.menu_button(menu_frame, "show image", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_workspace_image_button_x * menu_properties['width'], show_workspace_image_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.show_workspace_image).button
         delete_workspace_image_button_x = show_workspace_image_button_x; self.delete_workspace_image_button = gbl.menu_button(menu_frame, "delete image", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], delete_workspace_image_button_x * menu_properties['width'], delete_workspace_image_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.delete_workspace_image).button
         self.update_camera_control_indicators()  # update the indicators of the camera control
@@ -2182,13 +2186,16 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
         show_transformations_built_indicator_ord = start_transforming_button_ord+0.8
         compute_control_law_for_robot_label_ord = 11.5
         define_control_parameters_label_ord = compute_control_law_for_robot_label_ord+1.5
-        k_d_parameter_label_ord = define_control_parameters_label_ord-0.4
-        k_i_parameter_label_ord = define_control_parameters_label_ord+0.4
-        K_parameter_label_ord = define_control_parameters_label_ord-0.4
-        w_phi_parameter_label_ord = define_control_parameters_label_ord+0.4
-        gamma_parameter_label_ord = define_control_parameters_label_ord-0.7
-        e_p_parameter_label_ord = define_control_parameters_label_ord
-        e_v_parameter_label_ord = define_control_parameters_label_ord+0.7
+        k_d_parameter_label_ord = define_control_parameters_label_ord-0.8
+        k_d_parameter_button_ord = k_d_parameter_label_ord
+        k_i_parameter_label_ord = define_control_parameters_label_ord
+        k_i_parameter_combobox_ord = k_i_parameter_label_ord
+        w_phi_parameter_label_ord = define_control_parameters_label_ord+0.8
+        w_phi_parameter_button_ord = w_phi_parameter_label_ord
+        vp_max_parameter_label_ord = define_control_parameters_label_ord-0.8
+        vp_max_parameter_button_ord = vp_max_parameter_label_ord
+        dp_min_parameter_label_ord = define_control_parameters_label_ord+0.8
+        dp_min_parameter_button_ord = dp_min_parameter_label_ord
         save_control_parameters_button_ord = define_control_parameters_label_ord-0.7
         load_control_parameters_label_ord = save_control_parameters_button_ord+0.7
         load_control_parameters_combobox_ord = load_control_parameters_label_ord+0.7
@@ -2214,9 +2221,10 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
         menu_info_button_x = 1/20; gbl.menu_button(menu_frame, "ⓘ", f"Calibri {menu_properties['title_font'] - 5} bold", "white", menu_properties['bg_color'], menu_info_button_x * menu_properties['width'], menu_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), lambda event: ms.showinfo(menu_properties['sub_menu_title'], menu_properties['info'], master = self.root)).button
         load_workspace_image_obstacles_label_x = 1/2; gbl.menu_label(menu_frame, "Load the desired workspace image with all the built obstacles:", f"Calibri {menu_properties['options_font']} bold", menu_properties['subtitles_color'], menu_properties['bg_color'], load_workspace_image_obstacles_label_x * menu_properties['width'], load_workspace_image_obstacles_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         load_workspace_image_label_x = 1/5; gbl.menu_label(menu_frame, "Workspace image:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], load_workspace_image_label_x * menu_properties['width'], load_workspace_image_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        self.load_workspace_obstacles_objects_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "readonly", width = 12, values = self.saved_workspace_images_list, justify = "center")
+        self.load_workspace_obstacles_objects_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "normal", width = 12, values = self.saved_workspace_images_list, justify = "center")
         load_workspace_obstacles_combobox_x = load_workspace_image_label_x; self.load_workspace_obstacles_objects_combobox.place(x = load_workspace_obstacles_combobox_x * menu_properties['width'], y = load_workspace_obstacles_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
         self.load_workspace_obstacles_objects_combobox.bind("<<ComboboxSelected>>", self.load_workspace_obstacles_infos_for_solver)
+        self.load_workspace_obstacles_objects_combobox.bind("<Return>", self.load_workspace_obstacles_infos_for_solver)
         plot_obstacles_objects_button_x = 2/5; self.plot_obstacles_objects_button = gbl.menu_button(menu_frame, "plot obstacles\nboundaries", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], plot_obstacles_objects_button_x * menu_properties['width'], plot_obstacles_objects_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.plot_obstacles_objects).button
         define_workspace_plane_label_x = 4/6; gbl.menu_label(menu_frame, "Workspace plane\ntransformation:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], define_workspace_plane_label_x * menu_properties['width'], define_workspace_plane_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         define_workspace_plane_button_x = 5/6; self.define_workspace_plane_button = gbl.menu_button(menu_frame, self.workspace_plane_creation_parameter, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], define_workspace_plane_button_x * menu_properties['width'], define_workspace_plane_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.define_workspace_plane).button
@@ -2241,38 +2249,35 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
         compute_control_law_for_robot_label_x = 1/2; gbl.menu_label(menu_frame, "Apply the control law to compute the trajectory of the robotic manipulator", f"Calibri {menu_properties['options_font']} bold", menu_properties['subtitles_color'], menu_properties['bg_color'], compute_control_law_for_robot_label_x * menu_properties['width'], compute_control_law_for_robot_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         define_control_parameters_label_x = 3/30; gbl.menu_label(menu_frame, "Control law\nparameters:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], define_control_parameters_label_x * menu_properties['width'], define_control_parameters_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         k_d_parameter_label_x = 7/30; gbl.menu_label(menu_frame, "k_d:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], k_d_parameter_label_x * menu_properties['width'], k_d_parameter_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        k_d_parameter_button_x = k_d_parameter_label_x+2/30; self.choose_k_d_parameter_button = gbl.menu_button(menu_frame, f"{self.k_d:.2f}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], k_d_parameter_button_x * menu_properties['width'], k_d_parameter_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_k_d_parameter).button
+        k_d_parameter_button_x = k_d_parameter_label_x+3/30; self.choose_k_d_parameter_button = gbl.menu_button(menu_frame, f"{self.k_d:.2f}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], k_d_parameter_button_x * menu_properties['width'], k_d_parameter_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_k_d_parameter).button
         k_i_parameters_label_x = k_d_parameter_label_x; gbl.menu_label(menu_frame, "k_i:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], k_i_parameters_label_x * menu_properties['width'], k_i_parameter_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         self.choose_k_i_parameters_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "normal", width = 6, values = [f"{self.k_i[k]:.2f}" for k in range(len(self.k_i))], justify = "center")
-        k_i_parameters_combobox_x = k_d_parameter_button_x; self.choose_k_i_parameters_combobox.place(x = k_i_parameters_combobox_x * menu_properties['width'], y = k_i_parameter_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
+        k_i_parameters_combobox_x = k_d_parameter_button_x; self.choose_k_i_parameters_combobox.place(x = k_i_parameters_combobox_x * menu_properties['width'], y = k_i_parameter_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
         self.choose_k_i_parameters_combobox.bind("<<ComboboxSelected>>", self.change_chosen_k_i_number)
         self.choose_k_i_parameters_combobox.bind("<Return>", self.change_chosen_k_i_value)
-        K_parameter_label_x = 13/30; gbl.menu_label(menu_frame, "K:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], K_parameter_label_x * menu_properties['width'], K_parameter_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        K_parameter_button_x = K_parameter_label_x+2/30; self.choose_K_parameter_button = gbl.menu_button(menu_frame, f"{self.K:.2f}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], K_parameter_button_x * menu_properties['width'], K_parameter_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_K_parameter).button
-        w_phi_parameter_label_x = K_parameter_label_x; gbl.menu_label(menu_frame, "w_phi:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], w_phi_parameter_label_x * menu_properties['width'], w_phi_parameter_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        w_phi_parameter_button_x = K_parameter_button_x; self.choose_w_phi_parameter_button = gbl.menu_button(menu_frame, f"{self.w_phi:.2f}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], w_phi_parameter_button_x * menu_properties['width'], w_phi_parameter_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_w_phi_parameter).button
-        gamma_parameter_label_x = 19/30; gbl.menu_label(menu_frame, "gamma:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], gamma_parameter_label_x * menu_properties['width'], gamma_parameter_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        gamma_parameter_button_x = gamma_parameter_label_x+2/30; self.choose_gamma_parameter_button = gbl.menu_button(menu_frame, f"{self.gamma:.2f}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], gamma_parameter_button_x * menu_properties['width'], gamma_parameter_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_gamma_parameter).button
-        e_p_parameter_label_x = gamma_parameter_label_x; gbl.menu_label(menu_frame, "e_p:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], e_p_parameter_label_x * menu_properties['width'], e_p_parameter_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        e_p_parameter_button_x = gamma_parameter_button_x; self.choose_e_p_parameter_button = gbl.menu_button(menu_frame, f"{self.e_p:.2f}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], e_p_parameter_button_x * menu_properties['width'], e_p_parameter_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_e_p_parameter).button
-        e_v_parameter_label_x = gamma_parameter_label_x; gbl.menu_label(menu_frame, "e_v:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], e_v_parameter_label_x * menu_properties['width'], e_v_parameter_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        e_v_parameter_button_x = gamma_parameter_button_x; self.choose_e_v_parameter_button = gbl.menu_button(menu_frame, f"{self.e_v:.2f}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], e_v_parameter_button_x * menu_properties['width'], e_v_parameter_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_e_v_parameter).button
+        w_phi_parameter_label_x = k_d_parameter_label_x; gbl.menu_label(menu_frame, "w_phi:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], w_phi_parameter_label_x * menu_properties['width'], w_phi_parameter_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        w_phi_parameter_button_x = k_d_parameter_button_x; self.choose_w_phi_parameter_button = gbl.menu_button(menu_frame, f"{self.w_phi:.2f}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], w_phi_parameter_button_x * menu_properties['width'], w_phi_parameter_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_w_phi_parameter).button
+        vp_max_parameter_label_x = 13/30; gbl.menu_label(menu_frame, "vp_max (cm/sec):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], vp_max_parameter_label_x * menu_properties['width'], vp_max_parameter_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        vp_max_parameter_button_x = vp_max_parameter_label_x+2/30; self.choose_vp_max_parameter_button = gbl.menu_button(menu_frame, f"{self.vp_max:.1f}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], vp_max_parameter_button_x * menu_properties['width'], vp_max_parameter_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_vp_max_parameter).button
+        dp_min_parameter_label_x = vp_max_parameter_label_x; gbl.menu_label(menu_frame, "dp_min (cm):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], dp_min_parameter_label_x * menu_properties['width'], dp_min_parameter_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        dp_min_parameter_button_x = vp_max_parameter_button_x; self.choose_dp_min_parameter_button = gbl.menu_button(menu_frame, f"{self.dp_min:.1f}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], dp_min_parameter_button_x * menu_properties['width'], dp_min_parameter_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_dp_min_parameter).button
         save_control_parameters_button_x = 26/30; self.save_control_parameters_button = gbl.menu_button(menu_frame, "save parameters", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], save_control_parameters_button_x * menu_properties['width'], save_control_parameters_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.save_control_law_parameters).button
         load_control_parameters_label_x = save_control_parameters_button_x; gbl.menu_label(menu_frame, "Load parameters:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], load_control_parameters_label_x * menu_properties['width'], load_control_parameters_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        self.load_control_parameters_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "readonly", width = 13, values = self.saved_control_law_parameters_list, justify = "center")
+        self.load_control_parameters_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "normal", width = 13, values = self.saved_control_law_parameters_list, justify = "center")
         load_control_parameters_combobox_x = load_control_parameters_label_x; self.load_control_parameters_combobox.place(x = load_control_parameters_combobox_x * menu_properties['width'], y = load_control_parameters_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
         self.load_control_parameters_combobox.bind("<<ComboboxSelected>>", self.load_control_law_parameters)
+        self.load_control_parameters_combobox.bind("<Return>", self.load_control_law_parameters)
         navigation_field_label_x = 3/30; gbl.menu_label(menu_frame, "Navigation\npotential field:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], navigation_field_label_x * menu_properties['width'], navigation_field_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         show_field_values_button_x = 8/30; self.show_field_values_button = gbl.menu_button(menu_frame, "plot function", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_field_values_button_x * menu_properties['width'], show_field_values_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.plot_navigation_potential_field_values).button
         show_field_gradients_button_x = show_field_values_button_x; self.show_field_gradients_button = gbl.menu_button(menu_frame, "plot gradients", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_field_gradients_button_x * menu_properties['width'], show_field_gradients_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.plot_navigation_potential_field_gradients).button
         field_plot_points_divs_label_x = 14/30; gbl.menu_label(menu_frame, "Points divisions\nto plot:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], field_plot_points_divs_label_x * menu_properties['width'], field_plot_points_divs_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         field_plot_points_divs_button_x = 18/30; self.navigation_field_plot_points_divs_button = gbl.menu_button(menu_frame, self.navigation_field_plot_points_divs, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], field_plot_points_divs_button_x * menu_properties['width'], field_plot_points_divs_slider_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_field_plot_points_divs).button
-        choose_solver_dt_label_x = 23/30; gbl.menu_label(menu_frame, "Time step dt (s):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_solver_dt_label_x * menu_properties['width'], choose_solver_dt_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        choose_solver_dt_label_x = 23/30; gbl.menu_label(menu_frame, "dt (s):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_solver_dt_label_x * menu_properties['width'], choose_solver_dt_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         choose_solver_dt_button_x = 28/30; self.choose_solver_dt_button = gbl.menu_button(menu_frame, self.solver_time_step_dt, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], choose_solver_dt_button_x * menu_properties['width'], choose_solver_dt_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_solver_dt).button 
-        choose_solver_max_iter_label_x = choose_solver_dt_label_x; gbl.menu_label(menu_frame, "Maximum iterations:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_solver_max_iter_label_x * menu_properties['width'], choose_solver_max_iter_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        choose_solver_max_iter_label_x = choose_solver_dt_label_x; gbl.menu_label(menu_frame, "Max iter.:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_solver_max_iter_label_x * menu_properties['width'], choose_solver_max_iter_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         choose_solver_max_iter_button_x = choose_solver_dt_button_x; self.choose_solver_max_iter_button = gbl.menu_button(menu_frame, self.solver_maximum_iterations, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], choose_solver_max_iter_button_x * menu_properties['width'], choose_solver_max_iter_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_solver_max_iter).button
-        choose_solver_error_tol_label_x = choose_solver_dt_label_x; gbl.menu_label(menu_frame, "Error tolerance (mm):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_solver_error_tol_label_x * menu_properties['width'], choose_solver_error_tol_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        choose_solver_error_tol_button_x = choose_solver_dt_button_x; self.choose_solver_error_tol_button = gbl.menu_button(menu_frame, 1000.0 * self.solver_error_tolerance, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], choose_solver_error_tol_button_x * menu_properties['width'], choose_solver_error_tol_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_solver_error_tol).button
+        choose_solver_error_tol_label_x = choose_solver_dt_label_x; gbl.menu_label(menu_frame, "Error tol. (cm):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_solver_error_tol_label_x * menu_properties['width'], choose_solver_error_tol_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        choose_solver_error_tol_button_x = choose_solver_dt_button_x; self.choose_solver_error_tol_button = gbl.menu_button(menu_frame, f"{self.solver_error_tolerance:.1f}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], choose_solver_error_tol_button_x * menu_properties['width'], choose_solver_error_tol_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_solver_error_tol).button
         enable_error_correction_label_x = choose_solver_dt_label_x; gbl.menu_label(menu_frame, "Error correction:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], enable_error_correction_label_x * menu_properties['width'], enable_error_correction_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         enable_error_correction_button_x = choose_solver_dt_button_x; self.enable_error_correction_button = gbl.menu_button(menu_frame, "yes", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], enable_error_correction_button_x * menu_properties['width'], enable_error_correction_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_solver_error_correction).button
         apply_control_law_button_x = 1/4; self.apply_control_law_button = gbl.menu_button(menu_frame, "apply control law", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], apply_control_law_button_x * menu_properties['width'], apply_control_law_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.apply_control_law_obstacles_avoidance).button
@@ -2286,16 +2291,17 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
     # functions for the main menu where the robotic manipulator model is built
     def change_robotic_manipulator_model_name(self, event = None):  # change the name of the robotic manipulator model
         self.robotic_manipulator_model_name = self.model_name_entrybox.get()  # change the name of the robotic manipulator model
-    def set_joints_frames_links_number(self, joints_number, event = None):  # set the joints, frames and links number of the robotic manipulator
+    def set_frames_links_number(self, joints_number, event = None):  # set the total frames and links number of the robotic manipulator
         frames_number = joints_number + 3  # set the frames number of the robotic manipulator
         links_number = joints_number + 1  # set the links number of the robotic manipulator
-        return joints_number, frames_number, links_number
+        return frames_number, links_number  # return the frames and links number
     def change_joints_number(self, event = None):  # change the joints number of the robotic manipulator
         if not self.robotic_manipulator_is_built:  # if there is no robotic manipulator model built
             ask_joints_number = sd.askinteger("Joints number", f"Enter the number of the robotic manipulator joints ({self.max_joints_number} maximum):", initialvalue = self.joints_number, minvalue = 1, maxvalue = self.max_joints_number, parent = self.menus_area)  # ask the user to enter the number of the robotic manipulator joints
             if ask_joints_number != None:  # if the user enters a number
                 previous_joints_number = self.joints_number  # remember the previous joints number of the robotic manipulator
-                self.joints_number, self.frames_number, self.links_number = self.set_joints_frames_links_number(joints_number = ask_joints_number)  # set the total number of joints, frames, and links of the robotic manipulator
+                self.joints_number = ask_joints_number  # set the total number of joints of the robotic manipulator
+                self.frames_number, self.links_number = self.set_frames_links_number(joints_number = self.joints_number)  # set the total number of frames and links of the robotic manipulator
                 if self.joints_number < previous_joints_number:  # if the new joints number is less than the previous joints number
                     self.chosen_joint_number_model = 1  # set the chosen joint number for the model to the last joint
                     self.chosen_frame_visualization = "frame 0"  # set the chosen frame for the visualization to the "frame 0" ("joint 1") frame
@@ -2513,12 +2519,14 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
             self.built_robotic_manipulator_info["control_joints_variables_limits"] = control_joints_variables_limits  # set the limits of the control variables of the joints of the robotic manipulator model
             self.robotic_manipulator_is_built = True  # the robotic manipulator model has been built
             print(f"\nRobotic manipulator name: {self.robotic_manipulator_model_name}\n", self.built_robotic_manipulator)  # print the robotic manipulator model
+            self.reset_control_law_outputs()  # reset the control law outputs, because a new robotic manipulator has been built
             ms.showinfo("Robotic manipulator model built", f"The \"{self.robotic_manipulator_model_name}\" robotic manipulator model has been built successfully!", parent = self.menus_area)  # show an information message
             self.update_model_visualization_indicators()  # update the model and visualization indicators
     def reload_built_robotic_manipulator_info_data(self, event = None):  # reload the data of the built robotic manipulator model, if any
         if self.robotic_manipulator_is_built:  # if a robotic manipulator model is built
             self.robotic_manipulator_model_name = self.built_robotic_manipulator_info["name"]  # set the name of the robotic manipulator model
-            self.joints_number, self.frames_number, self.links_number = self.set_joints_frames_links_number(joints_number = self.built_robotic_manipulator_info["joints_number"])  # set the total number of joints, frames, and links of the robotic manipulator
+            self.joints_number = self.built_robotic_manipulator_info["joints_number"]  # set the total number of joints of the robotic manipulator
+            self.frames_number, self.links_number = self.set_frames_links_number(joints_number = self.joints_number)  # set the total number of frames and links of the robotic manipulator
             self.joints_types = copy.deepcopy(self.built_robotic_manipulator_info["joints_types"])  # set the types of the joints of the robotic manipulator model
             self.base_position_wrt_world = np.copy(self.built_robotic_manipulator_info["base_position_wrt_world"])  # set the position of the robotic manipulator base wrt the world frame
             self.base_orientation_wrt_world = np.copy(self.built_robotic_manipulator_info["base_orientation_wrt_world"])  # set the orientation of the robotic manipulator base wrt the world frame
@@ -2545,12 +2553,11 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
             self.control_joints_variables_limits = control_joints_variables_limits  # set the limits of the control variables of the joints of the robotic manipulator model
     def destroy_robotic_manipulator_model(self, event = None):  # destroy the current loaded and built robotic manipulator model
         if self.robotic_manipulator_is_built:  # if a robotic manipulator model is built
-            ms.showinfo("Robotic manipulator model destroyed", f"The \"{self.built_robotic_manipulator_info['name']}\" robotic manipulator model has been destroyed successfully!", parent = self.menus_area)  # show an information message
+            previous_robotic_manipulator_name = self.built_robotic_manipulator_info['name']
             self.built_robotic_manipulator = None  # destroy the robotic manipulator model
             self.built_robotic_manipulator_info = {}  # clear the robotic manipulator model info
             self.robotic_manipulator_is_built = False  # no robotic manipulator model has been built
-        else:  # if there is no built robotic manipulator model
-            ms.showerror("Error", "There is no robotic manipulator model built yet!", parent = self.menus_area)  # show an error message
+            ms.showinfo("Robotic manipulator model destroyed", f"The \"{previous_robotic_manipulator_name}\" robotic manipulator model has been destroyed successfully!", parent = self.menus_area)  # show an information message
     def show_robotic_manipulator_model_info(self, event = None):  # show to the user the current robotic manipulator model
         if self.robotic_manipulator_is_built:  # if a robotic manipulator model is built
             ms.showinfo("Robotic manipulator model info (in SI units where is needed)", \
@@ -2642,21 +2649,23 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
     def load_robotic_manipulator_model(self, robot_model_name, event = None):  # load a saved robotic manipulator model
         load_file_accept = False  # the user's choice to load the file
         if event != None:  # if the function is called by an event
-            loaded_file = self.load_model_combobox.get()  # the name of the chosen loaded file that contains the robotic manipulator model
+            loaded_robot_file = self.load_model_combobox.get()  # the name of the chosen loaded file that contains the robotic manipulator model
         else:
-            loaded_file = robot_model_name  # the name of the chosen loaded file that contains the robotic manipulator model
-        if loaded_file in self.saved_robots_models_files_list:  # if the chosen file exists
+            loaded_robot_file = robot_model_name  # the name of the chosen loaded file that contains the robotic manipulator model
+        if loaded_robot_file in self.saved_robots_models_files_list:  # if the chosen file exists
             if event != None:  # if the function is called by an event
-                load_file_accept = ms.askyesno("Confirm loading", f"Are you sure you want to load the file \"{loaded_file}.txt\"?")  # ask the user if they want to load the chosen file
+                load_file_accept = ms.askyesno("Confirm loading", f"Are you sure you want to load the file \"{loaded_robot_file}.txt\"?")  # ask the user if they want to load the chosen file
             else:
                 load_file_accept = True  # the file is loaded automatically
             if load_file_accept:  # if the user wants to load the chosen file
-                model_file = open(self.saved_robotic_manipulators_folder_path + fr"/{loaded_file}.txt", "r", encoding = "utf-8")  # open the file that contains the robotic manipulator model
+                self.destroy_robotic_manipulator_model()  # destroy the current built robotic manipulator model
+                model_file = open(self.saved_robotic_manipulators_folder_path + fr"/{loaded_robot_file}.txt", "r", encoding = "utf-8")  # open the file that contains the robotic manipulator model
                 model_file_lines = model_file.readlines()  # read all the lines of the file
                 model_file.close()  # close the file
-                systems_first_line_index = 2  # the index of the first line of the base and end-effector systems in the file
                 self.robotic_manipulator_model_name = model_file_lines[0].split(": ")[1].strip()  # the name of the robotic manipulator model
-                self.joints_number, self.frames_number, self.links_number = self.set_joints_frames_links_number(joints_number = int(model_file_lines[1].split(": ")[1].strip()))  # set the total number of joints, frames, and links of the robotic manipulator
+                self.joints_number = int(model_file_lines[1].split(": ")[1].strip())  # set the total number of joints
+                systems_first_line_index = 2  # the index of the first line of the base and end-effector systems in the file
+                self.frames_number, self.links_number = self.set_frames_links_number(joints_number = self.joints_number)  # set the total number of frames and links of the robotic manipulator
                 self.base_position_wrt_world = np.array([float(value) for value in model_file_lines[systems_first_line_index].split(": ")[1].strip().split(" ")])  # the position of the robotic manipulator base
                 self.base_orientation_wrt_world = np.array([np.deg2rad(float(value)) for value in model_file_lines[systems_first_line_index + 1].split(": ")[1].strip().split(" ")])  # the orientation of the robotic manipulator base
                 self.zero_frame_position_wrt_base = np.array([float(value) for value in model_file_lines[systems_first_line_index + 2].split(": ")[1].strip().split(" ")])  # the position of the robotic manipulator zero frame
@@ -2711,7 +2720,7 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
                 self.model_name_entrybox.insert(0, self.robotic_manipulator_model_name)  # insert the name of the robotic manipulator model
                 self.build_robotic_manipulator_model()  # build the robotic manipulator model
         else:  # if the chosen file does not exist
-            ms.showerror("Error", f"The file {loaded_file}.txt does not exist!", parent = self.menus_area)  # show an error message
+            ms.showerror("Error", f"The chosen robot model \"{loaded_robot_file}.txt\" does not exist!", parent = self.menus_area)  # show an error message
     # functions for the main menu where the robotic manipulator is visualized
     def get_number_from_frame_visualization(self, frame_visualization):  # get the number from the frame visualization
         if frame_visualization == "base": return 0  # if the chosen frame is the base frame
@@ -2920,7 +2929,7 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
                     # for the robotic manipulator
                     self.swift_robotic_manipulator.base = self.get_transformation_matrix(self.built_robotic_manipulator_info["base_position_wrt_world"], self.built_robotic_manipulator_info["base_orientation_wrt_world"])  # set the base pose of the robotic manipulator model
                     self.swift_robotic_manipulator.tool = self.get_transformation_matrix(self.built_robotic_manipulator_info["end_effector_position_wrt_last_frame"], self.built_robotic_manipulator_info["end_effector_orientation_wrt_last_frame"])  # set the end-effector pose of the robotic manipulator model
-                    self.swift_robotic_manipulator.q = self.built_robotic_manipulator.q  # set the joints angles of the robotic manipulator model
+                    self.swift_robotic_manipulator.q = np.copy(self.built_robotic_manipulator.q)  # set the joints angles of the robotic manipulator model
                     # for the camera object
                     self.swift_sim_camera._T = self.camera_wrt_world_transformation_matrix  # set the camera object transformation
                     # for the 2D plane where the obstacles are located
@@ -2968,8 +2977,7 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
         except:  # if the entered value is not a number
             ms.showerror("Error", "Please enter a number!", parent = self.menus_area)  # show an error message
     def copy_control_to_fkine_values(self, event = None):  # copy the control variables to the forward kinematics variables
-        for k in range(self.joints_number):  # iterate through all joints of the robotic manipulator
-            self.forward_kinematics_variables[k] = self.control_joints_variables[k]  # copy the control variables to the forward kinematics variables
+        self.forward_kinematics_variables = self.control_joints_variables.copy()  # copy the control variables to the forward kinematics variables
         self.update_forward_kinematics_indicators()  # update the forward kinematics indicators
     def change_fkine_variable_slider(self, slider_num, event = None):  # change the value of the chosen joint variable (changing the corresponding slider) for the forward kinematics analysis
         joint_fkine_value = self.fkine_variables_sliders[slider_num].get()  # the fkine variable of the chosen joint
@@ -3031,7 +3039,7 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
         self.update_inverse_kinematics_indicators()  # update the inverse kinematics indicators
     def send_invkine_joints_config_result(self, event = None):  # send the inverse kinematics joints configuration result to the forward kinematics analysis
         self.chosen_frame_fkine = "end-effector"  # change the chosen frame for the forward kinematics analysis
-        self.forward_kinematics_variables = np.copy(self.invkine_joints_configuration)  # change the joints configuration for the forward kinematics analysis
+        self.forward_kinematics_variables = np.copy(self.invkine_joints_configuration).tolist()  # change the joints configuration for the forward kinematics analysis
         self.update_forward_kinematics_indicators()  # update the forward kinematics indicators
     def choose_end_effector_position_invkine(self, event = None):  # choose the end-effector position for the inverse kinematics analysis
         end_effector_pos_x = sd.askfloat("Choose the end-effector x position", "Enter the x position of the end-effector (in meters):", initialvalue = self.chosen_invkine_3d_position[0], parent = self.menus_area)  # ask the user to enter the x position of the end-effector
@@ -3610,17 +3618,25 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
         angle = np.deg2rad(self.ArUco_marker_orientation)  # the angle of the ArUco marker orientation around the plane normal vector
         rotation = np.array([[np.cos(angle), -np.sin(angle), 0, 0], [np.sin(angle), np.cos(angle), 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])  # the rotation matrix of the ArUco marker
         if self.ArUco_marker_position == "center":  # if the ArUco marker position is the center
-            return rotation @ np.eye(4)  # the transformation matrix from the plane to the ArUco marker
+            return np.eye(4) @ rotation  # the transformation matrix from the plane to the ArUco marker
         elif self.ArUco_marker_position == "top-left corner":  # if the ArUco marker position is the top-left corner
-            return rotation @ np.array([[1, 0, 0, -self.obstacles_2d_plane_x_length / 2.0], [0, 1, 0, self.obstacles_2d_plane_y_length / 2.0], [0, 0, 1, 0], [0, 0, 0, 1]])  # the transformation matrix from the plane to the ArUco marker
+            return np.array([[1, 0, 0, -self.obstacles_2d_plane_x_length / 2.0], [0, 1, 0, self.obstacles_2d_plane_y_length / 2.0], [0, 0, 1, 0], [0, 0, 0, 1]]) @ rotation  # the transformation matrix from the plane to the ArUco marker
+        elif self.ArUco_marker_position == "up-middle edge":  # if the ArUco marker position is the up-middle edge
+            return np.array([[1, 0, 0, 0], [0, 1, 0, self.obstacles_2d_plane_y_length / 2.0], [0, 0, 1, 0], [0, 0, 0, 1]]) @ rotation  # the transformation matrix from the plane to the ArUco marker
         elif self.ArUco_marker_position == "top-right corner":  # if the ArUco marker position is the top-right corner
-            return rotation @ np.array([[1, 0, 0, self.obstacles_2d_plane_x_length / 2.0], [0, 1, 0, self.obstacles_2d_plane_y_length / 2.0], [0, 0, 1, 0], [0, 0, 0, 1]])  # the transformation matrix from the plane to the ArUco marker
-        elif self.ArUco_marker_position == "bottom-left corner":  # if the ArUco marker position is the bottom-left corner
-            return rotation @ np.array([[1, 0, 0, -self.obstacles_2d_plane_x_length / 2.0], [0, 1, 0, -self.obstacles_2d_plane_y_length / 2.0], [0, 0, 1, 0], [0, 0, 0, 1]])  # the transformation matrix from the plane to the ArUco marker
+            return np.array([[1, 0, 0, self.obstacles_2d_plane_x_length / 2.0], [0, 1, 0, self.obstacles_2d_plane_y_length / 2.0], [0, 0, 1, 0], [0, 0, 0, 1]]) @ rotation  # the transformation matrix from the plane to the ArUco marker
+        elif self.ArUco_marker_position == "right-middle edge":  # if the ArUco marker position is the right-middle edge
+            return np.array([[1, 0, 0, self.obstacles_2d_plane_x_length / 2.0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]) @ rotation  # the transformation matrix from the plane to the ArUco marker
         elif self.ArUco_marker_position == "bottom-right corner":  # if the ArUco marker position is the bottom-right corner
-            return rotation @ np.array([[1, 0, 0, self.obstacles_2d_plane_x_length / 2.0], [0, 1, 0, -self.obstacles_2d_plane_y_length / 2.0], [0, 0, 1, 0], [0, 0, 0, 1]])  # the transformation matrix from the plane to the ArUco marker
+            return np.array([[1, 0, 0, self.obstacles_2d_plane_x_length / 2.0], [0, 1, 0, -self.obstacles_2d_plane_y_length / 2.0], [0, 0, 1, 0], [0, 0, 0, 1]]) @ rotation  # the transformation matrix from the plane to the ArUco marker
+        elif self.ArUco_marker_position == "down-middle edge":  # if the ArUco marker position is the down-middle edge
+            return np.array([[1, 0, 0, 0], [0, 1, 0, -self.obstacles_2d_plane_y_length / 2.0], [0, 0, 1, 0], [0, 0, 0, 1]]) @ rotation  # the transformation matrix from the plane to the ArUco marker
+        elif self.ArUco_marker_position == "bottom-left corner":  # if the ArUco marker position is the bottom-left corner
+            return np.array([[1, 0, 0, -self.obstacles_2d_plane_x_length / 2.0], [0, 1, 0, -self.obstacles_2d_plane_y_length / 2.0], [0, 0, 1, 0], [0, 0, 0, 1]]) @ rotation  # the transformation matrix from the plane to the ArUco marker
+        elif self.ArUco_marker_position == "left-middle edge":  # if the ArUco marker position is the left-middle edge
+            return np.array([[1, 0, 0, -self.obstacles_2d_plane_x_length / 2.0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]) @ rotation  # the transformation matrix from the plane to the ArUco marker
         else:  # if the ArUco marker position is not defined
-            return rotation @ np.eye(4)  # the transformation matrix from the plane to the ArUco marker
+            return np.eye(4) @ rotation  # the transformation matrix from the plane to the ArUco marker
     def choose_plane_singularities_tolerance(self, event = None):  # choose the tolerance for the singularities of the robotic manipulator on the 2D plane
         singularities_tolerance = sd.askfloat("Tolerance for singularities", "Enter the tolerance for searching the robotic\nmanipulator singularities on the 2D plane:", initialvalue = self.plane_singularities_tolerance, minvalue = 0.0, maxvalue = 1e-1, parent = self.menus_area)
         if singularities_tolerance != None:  # if the user enters a number
@@ -3662,14 +3678,15 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
         self.update_workspace_obstacles_indicators()  # update the indicators of the workspace obstacles
     def load_obstacles_transformation(self, event = None):  # load the specified transformation of the obstacles
         load_file_accept = False  # the user's choice to load the file
-        self.chosen_plane_obstacles_transformation = self.load_obstacles_transformation_combobox.get()  # the name of the chosen loaded file that contains the obstacles transformation
-        if self.chosen_plane_obstacles_transformation in self.saved_obstacles_transformations_list:  # if the chosen file exists
+        chosen_plane_obstacles_transformation_name = self.load_obstacles_transformation_combobox.get()  # the name of the chosen loaded file that contains the obstacles transformation
+        if chosen_plane_obstacles_transformation_name in self.saved_obstacles_transformations_list:  # if the chosen file exists
             if event != None:  # if the function is called by an event
-                load_file_accept = ms.askyesno("Confirm loading", f"Are you sure you want to load the file \"{self.chosen_plane_obstacles_transformation}.txt\"?")  # ask the user if they want to load the chosen file
+                load_file_accept = ms.askyesno("Confirm loading", f"Are you sure you want to load the file \"{chosen_plane_obstacles_transformation_name}.txt\"?")  # ask the user if they want to load the chosen file
             else:
                 load_file_accept = True  # the file is loaded automatically
             if load_file_accept:  # if the user wants to load the chosen file
-                transformation_file = open(self.saved_obstacles_transformations_folder_path + fr"/{self.chosen_plane_obstacles_transformation}.txt", "r", encoding = "utf-8")  # open the chosen file in read mode
+                self.chosen_plane_obstacles_transformation_name = chosen_plane_obstacles_transformation_name  # change the plane and obstacles transformation name
+                transformation_file = open(self.saved_obstacles_transformations_folder_path + fr"/{self.chosen_plane_obstacles_transformation_name}.txt", "r", encoding = "utf-8")  # open the chosen file in read mode
                 transformation_file_lines = transformation_file.readlines()  # read all the lines of the file
                 transformation_file.close()  # close the file
                 self.obstacles_2d_plane_x_length = float(transformation_file_lines[0].split(": ")[1])  # the x length of the 2D plane
@@ -3679,19 +3696,25 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
                 self.obstacles_2d_plane_orientation = float(transformation_file_lines[4].split(": ")[1])  # the orientation of the 2D plane
                 self.reset_2d_plane_sliders()  # initialize the sliders variables for the 2D plane
         else:  # if the chosen file does not exist
-            ms.showerror("Error", f"The file {self.chosen_plane_obstacles_transformation}.txt does not exist!", parent = self.menus_area)  # show an error message
+            ms.showerror("Error", f"The chosen plane / obstacles transformation \"{chosen_plane_obstacles_transformation_name}.txt\" does not exist!", parent = self.menus_area)  # show an error message
+        self.update_workspace_obstacles_indicators()  # update the indicators of the workspace obstacles
     def load_workspace_image_for_detection(self, event = None):  # change the chosen workspace image for the obstacles detection
-        self.chosen_detection_workspace_image_name = self.load_workspace_image_combobox.get()  # the name of the chosen workspace image
-        self.chosen_workspace_saved_obstacles_objects_list = [file[:-4] for file in os.listdir(self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_detection_workspace_image_name}") if file.endswith(".txt")]  # the list to store the saved obstacles objects for the chosen workspace image
-        if len(self.chosen_workspace_saved_obstacles_objects_list) != 0:  # if there are saved obstacles objects for the chosen workspace image
-            if self.chosen_obstacle_object_name not in self.chosen_workspace_saved_obstacles_objects_list:  # if the chosen obstacle object name is not in the saved obstacles objects for the chosen workspace image
-                self.chosen_obstacle_object_name = self.chosen_workspace_saved_obstacles_objects_list[0]  # the chosen obstacle name from the saved obstacles objects, if there are saved obstacles objects for the chosen workspace image
-            chosen_obstacle_file_lines = open(self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_detection_workspace_image_name}/{self.chosen_obstacle_object_name}.txt", "r", encoding = "utf-8").readlines()  # read the lines of the chosen obstacle object file
-            self.workspace_obstacles_height_saved = float(chosen_obstacle_file_lines[0].split(": ")[1])  # the saved height of the obstacles for the chosen workspace image
-        else:  # if there are no saved obstacles objects for the chosen workspace image
-            self.chosen_obstacle_object_name = ""  # reset the chosen obstacle object name, if there are no saved obstacles objects for the chosen workspace image
-        self.workspace_image_plane_frame_wrt_world, self.workspace_image_plane_x_length, self.workspace_image_plane_y_length, self.workspace_image_plane_image_points, self.workspace_image_camera_frame_wrt_world = self.load_workspace_image_infos(self.chosen_detection_workspace_image_name)  # load the information of the chosen workspace image
-        self.removed_boundaries_list = []  # initialize the list to store the removed boundaries of the workspace obstacles
+        chosen_detection_workspace_image_name = self.load_workspace_image_combobox.get()  # the name of the chosen workspace image
+        if chosen_detection_workspace_image_name in self.saved_workspace_images_list:  # if the chosen workspace image exists
+            self.chosen_detection_workspace_image_name = chosen_detection_workspace_image_name  # change the chosen workspace image for the obstacles detection
+            self.chosen_workspace_saved_obstacles_objects_list = [file[:-4] for file in os.listdir(self.saved_obstacles_objects_infos_folder_path + fr"/{chosen_detection_workspace_image_name}") if file.endswith(".txt")]  # the list to store the saved obstacles objects for the chosen workspace image
+            if len(self.chosen_workspace_saved_obstacles_objects_list) != 0:  # if there are saved obstacles objects for the chosen workspace image
+                if self.chosen_obstacle_object_name not in self.chosen_workspace_saved_obstacles_objects_list:  # if the chosen obstacle object name is not in the saved obstacles objects for the chosen workspace image
+                    self.chosen_obstacle_object_name = self.chosen_workspace_saved_obstacles_objects_list[0]  # the chosen obstacle name from the saved obstacles objects, if there are saved obstacles objects for the chosen workspace image
+                chosen_obstacle_file_lines = open(self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_detection_workspace_image_name}/{self.chosen_obstacle_object_name}.txt", "r", encoding = "utf-8").readlines()  # read the lines of the chosen obstacle object file
+                self.workspace_obstacles_height_saved = float(chosen_obstacle_file_lines[0].split(": ")[1])  # the saved height of the obstacles for the chosen workspace image
+            else:  # if there are no saved obstacles objects for the chosen workspace image
+                self.chosen_obstacle_object_name = ""  # reset the chosen obstacle object name, if there are no saved obstacles objects for the chosen workspace image
+            self.workspace_image_plane_frame_wrt_world, self.workspace_image_plane_x_length, self.workspace_image_plane_y_length, self.workspace_image_plane_image_points, self.workspace_image_camera_frame_wrt_world = self.load_workspace_image_infos(self.chosen_detection_workspace_image_name)  # load the information of the chosen workspace image
+            self.removed_boundaries_list = []  # initialize the list to store the removed boundaries of the workspace obstacles
+            self.update_workspace_obstacles_indicators()  # update the indicators of the workspace obstacles
+        else:  # if the chosen file does not exist
+            ms.showerror("Error", f"The chosen workspace image \"{chosen_detection_workspace_image_name}\" does not exist!", parent = self.menus_area)  # show an error message
         self.update_workspace_obstacles_indicators()  # update the indicators of the workspace obstacles
     def change_boundaries_precision(self, event = None):  # change the precision parameter of the boundaries
         self.boundaries_precision_parameter = self.boundaries_precision_slider.get()  # the precision parameter of the boundaries
@@ -3731,7 +3754,12 @@ You can also press left click on the number of a boundary to remove it and right
             elif event == cv2.EVENT_RBUTTONDOWN:  # if the right mouse button is pressed
                 self.removed_boundaries_list = self.removed_boundaries_list[:-1]  # restore the removed boundaries
     def load_chosen_obstacle_boundary_data(self, event = None):  # load the obstacles meshes data from the chosen file
-        self.chosen_obstacle_object_name = self.load_obstacles_data_combobox.get()  # the name of the chosen obstacle object
+        chosen_obstacle_object_name = self.load_obstacles_data_combobox.get()  # the name of the chosen obstacle object
+        if chosen_obstacle_object_name in self.chosen_workspace_saved_obstacles_objects_list:  # if the chosen obstacle object exists
+            self.chosen_obstacle_object_name = chosen_obstacle_object_name  # change the chosen obstacle object name
+        else:  # if the chosen obstacle object does not exist
+            ms.showerror("Error", f"The chosen obstacle object \"{chosen_obstacle_object_name}\" does not exist!", parent = self.menus_area)  # show an error message
+        self.update_workspace_obstacles_indicators()  # update the indicators of the workspace obstacles
     def choose_xy_axis_res_mesh(self, event = None):  # choose the resolution of the xy axis for the obstacle mesh
         self.xy_res_obstacle_mesh = self.alternate_matrix_elements(self.xy_res_obstacle_mesh_list, self.xy_res_obstacle_mesh)  # change the resolution of the xy axis for the obstacle mesh
         self.update_workspace_obstacles_indicators()  # update the indicators of the workspace obstacles
@@ -3778,7 +3806,7 @@ You can also press left click on the number of a boundary to remove it and right
             camera_plane_z_axis_alignment = int(np.round(100 * abs(1 - np.arccos(np.round(np.dot(self.camera_optical_axis, self.obstacles_2d_plane_normal_vector), 3)) / (np.pi/2))))  # the alignment of the camera optical axis with the obstacles plane normal vector
             self.camera_plane_z_axis_alignment_indicator.configure(text = f"{camera_plane_z_axis_alignment} %")  # change the text of the camera plane z axis alignment indicator
             self.load_obstacles_transformation_combobox["values"] = self.saved_obstacles_transformations_list  # set the values of the obstacles transformation combobox to the saved obstacles transformations list
-            self.load_obstacles_transformation_combobox.set(self.chosen_plane_obstacles_transformation)  # set the combobox to the chosen obstacles transformation
+            self.load_obstacles_transformation_combobox.set(self.chosen_plane_obstacles_transformation_name)  # set the combobox to the chosen obstacles transformation
             self.load_workspace_image_combobox["values"] = self.saved_workspace_images_list  # set the values of the workspace image combobox to the saved workspace images list
             self.load_workspace_image_combobox.set(self.chosen_detection_workspace_image_name)  # set the combobox to the chosen workspace image
             self.load_obstacles_data_combobox["values"] = self.chosen_workspace_saved_obstacles_objects_list  # set the values of the obstacles data combobox to the chosen workspace saved obstacles objects list
@@ -3883,7 +3911,11 @@ You can also press left click on the number of a boundary to remove it and right
         self.camera_z_rotation = 0; self.camera_translation_displacement = 0  # initialize the sliders variables for the camera
         self.update_camera_control_indicators()  # update the indicators of the camera control variables
     def change_ArUco_marker(self, event = None):  # change the ArUco marker
-        self.chosen_ArUco_marker = self.choose_ArUco_marker_combobox.get()  # change the ArUco marker
+        chosen_ArUco_marker = self.choose_ArUco_marker_combobox.get()  # change the ArUco marker
+        if chosen_ArUco_marker in self.saved_ArUco_markers_list:  # if the chosen ArUco marker exists
+            self.chosen_ArUco_marker = chosen_ArUco_marker  # change the chosen ArUco marker
+        else:  # if the chosen ArUco marker does not exist
+            ms.showerror("Error", f"The chosen ArUco marker \"{chosen_ArUco_marker}\" does not exist!", parent = self.menus_area)  # show an error message
         self.update_camera_control_indicators()  # update the indicators of the camera control
     def estimate_camera_pose(self, event = None):  # estimate the pose of the camera
         if not self.camera_pose_estimation_happening and not self.obst_plane_pose_estimation_happening:  # if the camera pose estimation is not happening
@@ -3916,8 +3948,12 @@ You can also press left click on the number of a boundary to remove it and right
             self.draw_2d_plane_on_image_happening = True  # the 2D plane is being drawn on the image from now on
             self.open_close_camera()  # open the camera
     def change_shown_workspace_image(self, event = None):  # change the shown workspace image
-        self.shown_workspace_image_name = self.show_workspace_image_combobox.get()  # the name of the shown workspace image
-        _, _, _, self.shown_workspace_image_plane_corners, _ = self.load_workspace_image_infos(self.shown_workspace_image_name)  # load the information of the shown workspace image
+        shown_workspace_image_name = self.show_workspace_image_combobox.get()  # the name of the shown workspace image
+        if shown_workspace_image_name in self.saved_workspace_images_list:  # if the chosen workspace image exists
+            self.shown_workspace_image_name = shown_workspace_image_name  # change the shown workspace image
+            _, _, _, self.shown_workspace_image_plane_corners, _ = self.load_workspace_image_infos(self.shown_workspace_image_name)  # load the information of the shown workspace image
+        else:  # if the chosen workspace image does not exist
+            ms.showerror("Error", f"The chosen workspace image \"{shown_workspace_image_name}\" does not exist!", parent = self.menus_area)  # show an error message
         self.update_camera_control_indicators()  # update the indicators of the camera control
     def show_workspace_image(self, event = None):  # show the specified workspace image
         if self.shown_workspace_image_name in self.saved_workspace_images_list:  # if the chosen workspace image exists
@@ -4122,7 +4158,7 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
                     ms.showinfo("Image saved", "The workspace image and its information have been saved successfully!")  # show an info message
                 else:  # if the 2D plane is not inside the frame
                     ms.showerror("Error while saving", "The whole workspace 2D plane must be inside the frame in order for the image to be saved!")  # show an error message
-            elif pressed_key == ord("d") or pressed_key == ord("D") and self.obstacles_boundaries_are_shown:  # if the user presses the "d" or "D" key
+            elif (pressed_key == ord("d") or pressed_key == ord("D")) and self.obstacles_boundaries_are_shown:  # if the user presses the "d" or "D" key
                 if outer_boundary_index != -1:  # if an outer boundary was detected
                     # remove the excluded boundaries from the detected boundaries and move the outer boundary to the end of the list
                     outer_boundary = obstacles_boundaries_detected_image_points[outer_boundary_index]  # get the outer boundary
@@ -4155,7 +4191,7 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
                     ms.showinfo("Boundaries saved", "The detected obstacles have been saved successfully!")  # show an info message
                 else:  # if no outer boundary was detected
                     ms.showerror("Error while saving", "The detected obstacles where not saved because there is no outer boundary detected (if it exists, it is drawn in red)! Try removing some boundaries!")  # show an error message
-            elif pressed_key == ord("q") or pressed_key == ord("Q") or not self.camera_thread_flag:  # if the user presses the "q" or "Q" key or the camera thread is stopped
+            elif (pressed_key == ord("q") or pressed_key == ord("Q")) or not self.camera_thread_flag:  # if the user presses the "q" or "Q" key or the camera thread is stopped
                 self.kill_camera_thread()  # kill the existed and running camera thread
                 cv2.destroyAllWindows()  # close all OpenCV windows that were opened
                 if self.camera_frames_are_shown: self.camera_capture.release()  # release/free the camera capture object
@@ -4167,39 +4203,43 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
     # for the main menu where the obstalces avoidance problem is solved
     def load_workspace_obstacles_infos_for_solver(self, event = None):  # load the information (the boundaries more specifically) of the chosen workspace obstacles
         if event != None or (event == None and len(self.obstacles_boundaries_for_solver) == 0):  # if the function is called by the user or there are no obstacles boundaries detected yet
-            self.boundaries_are_detected = False  # the boundaries of the obstacles are not detected
-            self.positions_on_plane_are_correct = False  # the positions of the obstacles on the plane are not correct
-            self.transformations_are_built = False  # the workspace transformations are not built
-            self.hntf2d_solver = None  # the solver for the 2D obstacles avoidance problem gets initialized to the default value
-            self.obstacles_boundaries_for_solver = []  # initialize the boundaries of the obstacles for the solver
-            self.reset_control_law_outputs()  # reset the control law outputs
-            self.chosen_solver_workspace_image_name = self.load_workspace_obstacles_objects_combobox.get()
-            self.chosen_workspace_saved_obstacles_objects_list = [file[:-4] for file in os.listdir(self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_solver_workspace_image_name}") if file.endswith(".txt")]  # the list to store the saved obstacles objects for the chosen workspace image
-            if len(self.chosen_workspace_saved_obstacles_objects_list) != 0:  # if there are saved obstacles objects for the chosen workspace image
-                for k in range(len(self.chosen_workspace_saved_obstacles_objects_list)):  # iterate through all the saved obstacles objects
-                    obstacle_object_path = self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_solver_workspace_image_name}/{self.chosen_workspace_saved_obstacles_objects_list[k]}"  # the path of the chosen obstacle object
-                    chosen_obstacle_file_lines = open(obstacle_object_path + ".txt", "r", encoding = "utf-8").readlines()  # read the lines of the chosen obstacle object file
-                    obstacle_boundary_points = np.array([[float(k) for k in line.split(" ")] for line in chosen_obstacle_file_lines[3:]]).reshape(-1, 2)  # the boundary points of the obstacle mesh in millimeters
-                    self.obstacles_boundaries_for_solver.append(obstacle_boundary_points)  # add the obstacle boundary points to the list of the obstacles boundaries for the solver
-                    self.workspace_obstacles_height_saved = float(chosen_obstacle_file_lines[0].split(": ")[1])  # the height of the obstacle mesh
-                inner_boundaries_number = len(self.chosen_workspace_saved_obstacles_objects_list) - 1  # the number of the inner boundaries (total minus the outer boundary)
-                self.boundaries_are_detected = True  # the boundaries of the obstacles are detected
-                self.obstacles_infos_text = f"✓ {inner_boundaries_number} inner and 1 outer boundaries\nObstacles height: {1000.0 * self.workspace_obstacles_height_saved} mm"  # the text to show the obstacles information
-            else:  # if there are no saved obstacles objects for the chosen workspace image
+            chosen_solver_workspace_image_name = self.load_workspace_obstacles_objects_combobox.get()  # the name of the chosen workspace image
+            if chosen_solver_workspace_image_name in self.saved_workspace_images_list:  # if the chosen workspace image exists
+                self.chosen_solver_workspace_image_name = chosen_solver_workspace_image_name  # set the chosen workspace image name
                 self.boundaries_are_detected = False  # the boundaries of the obstacles are not detected
-                self.obstacles_infos_text = "✗ No obstacles have been detected\nyet for this workspace image!"  # the text to show that no obstacles have been detected for the chosen workspace image
-        self.workspace_image_plane_frame_wrt_world, self.workspace_image_plane_x_length, self.workspace_image_plane_y_length, self.workspace_image_plane_image_points, self.workspace_image_camera_frame_wrt_world = self.load_workspace_image_infos(self.chosen_solver_workspace_image_name)  # load the information of the chosen workspace image
-        self.camera_wrt_world_transformation_matrix = np.array(self.workspace_image_camera_frame_wrt_world, dtype = np.float32)  # the transformation matrix of the loaded camera frame with respect to the world frame
-        self.obstacles_2d_plane_x_length = self.workspace_image_plane_x_length  # the length along the x axis of the loaded 2D plane
-        self.obstacles_2d_plane_y_length = self.workspace_image_plane_y_length  # the length along the y axis of the loaded 2D plane
-        self.obst_plane_wrt_world_transformation_matrix = np.array(self.workspace_image_plane_frame_wrt_world, dtype = np.float32)  # the transformation matrix of the loaded 2D plane with respect to the world frame
+                self.positions_on_plane_are_correct = False  # the positions of the obstacles on the plane are not correct
+                self.transformations_are_built = False  # the workspace transformations are not built
+                self.hntf2d_solver = None  # the solver for the 2D obstacles avoidance problem gets initialized to the default value
+                self.obstacles_boundaries_for_solver = []  # initialize the boundaries of the obstacles for the solver
+                self.reset_control_law_outputs()  # reset the control law outputs
+                self.chosen_workspace_saved_obstacles_objects_list = [file[:-4] for file in os.listdir(self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_solver_workspace_image_name}") if file.endswith(".txt")]  # the list to store the saved obstacles objects for the chosen workspace image
+                if len(self.chosen_workspace_saved_obstacles_objects_list) != 0:  # if there are saved obstacles objects for the chosen workspace image
+                    for k in range(len(self.chosen_workspace_saved_obstacles_objects_list)):  # iterate through all the saved obstacles objects
+                        obstacle_object_path = self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_solver_workspace_image_name}/{self.chosen_workspace_saved_obstacles_objects_list[k]}"  # the path of the chosen obstacle object
+                        chosen_obstacle_file_lines = open(obstacle_object_path + ".txt", "r", encoding = "utf-8").readlines()  # read the lines of the chosen obstacle object file
+                        obstacle_boundary_points = np.array([[float(k) for k in line.split(" ")] for line in chosen_obstacle_file_lines[3:]]).reshape(-1, 2)  # the boundary points of the obstacle mesh in millimeters
+                        self.obstacles_boundaries_for_solver.append(obstacle_boundary_points)  # add the obstacle boundary points to the list of the obstacles boundaries for the solver
+                        self.workspace_obstacles_height_saved = float(chosen_obstacle_file_lines[0].split(": ")[1])  # the height of the obstacle mesh
+                    inner_boundaries_number = len(self.chosen_workspace_saved_obstacles_objects_list) - 1  # the number of the inner boundaries (total minus the outer boundary)
+                    self.boundaries_are_detected = True  # the boundaries of the obstacles are detected
+                    self.obstacles_infos_text = f"✓ {inner_boundaries_number} inner and 1 outer boundaries\nObstacles height: {1000.0 * self.workspace_obstacles_height_saved} mm"  # the text to show the obstacles information
+                else:  # if there are no saved obstacles objects for the chosen workspace image
+                    self.boundaries_are_detected = False  # the boundaries of the obstacles are not detected
+                    self.obstacles_infos_text = "✗ No obstacles have been detected\nyet for this workspace image!"  # the text to show that no obstacles have been detected for the chosen workspace image
+            else:  # if the chosen workspace image does not exist
+                ms.showerror("Error", f"The chosen workspace image \"{chosen_solver_workspace_image_name}\" does not exist!")  # show an error message
+            self.workspace_image_plane_frame_wrt_world, self.workspace_image_plane_x_length, self.workspace_image_plane_y_length, self.workspace_image_plane_image_points, self.workspace_image_camera_frame_wrt_world = self.load_workspace_image_infos(self.chosen_solver_workspace_image_name)  # load the information of the chosen workspace image
+            self.camera_wrt_world_transformation_matrix = np.array(self.workspace_image_camera_frame_wrt_world, dtype = np.float32)  # the transformation matrix of the loaded camera frame with respect to the world frame
+            self.obstacles_2d_plane_x_length = self.workspace_image_plane_x_length  # the length along the x axis of the loaded 2D plane
+            self.obstacles_2d_plane_y_length = self.workspace_image_plane_y_length  # the length along the y axis of the loaded 2D plane
+            self.obst_plane_wrt_world_transformation_matrix = np.array(self.workspace_image_plane_frame_wrt_world, dtype = np.float32)  # the transformation matrix of the loaded 2D plane with respect to the world frame
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def plot_obstacles_objects(self, event = None):  # plot the obstacles objects of the workspace with their real world dimensions
         if self.boundaries_are_detected:  # if the boundaries of the obstacles are detected
-            p_x_length = 1000.0 * self.obstacles_2d_plane_x_length; p_y_length = 1000.0 * self.obstacles_2d_plane_y_length  # the lengths of the 2D obstacles plane in millimeters
-            start_pos_workspace_plane = 1000.0 * self.start_pos_workspace_plane  # the start position of the robot's end-effector on the 2D workspace plane in millimeters
-            target_pos_workspace_plane = 1000.0 * self.target_pos_workspace_plane  # the target position of the robot's end-effector on the 2D workspace plane in millimeters
-            obstacles_boundaries_for_solver = [1000.0 * boundary for boundary in self.obstacles_boundaries_for_solver]  # the boundaries of the obstacles for the solver in millimeters
+            p_x_length = 100.0 * self.obstacles_2d_plane_x_length; p_y_length = 100.0 * self.obstacles_2d_plane_y_length  # the lengths of the 2D obstacles plane in centimeters
+            start_pos_workspace_plane = 100.0 * self.start_pos_workspace_plane  # the start position of the robot's end-effector on the 2D workspace plane in centimeters
+            target_pos_workspace_plane = 100.0 * self.target_pos_workspace_plane  # the target position of the robot's end-effector on the 2D workspace plane in centimeters
+            obstacles_boundaries_for_solver = [100.0 * boundary for boundary in self.obstacles_boundaries_for_solver]  # the boundaries of the obstacles for the solver in centimeters
             fig = plt.figure()  # create a figure
             ax = fig.add_subplot(111)  # create a subplot
             outer_plot, = ax.plot(obstacles_boundaries_for_solver[-1][:, 0] + p_x_length/2, obstacles_boundaries_for_solver[-1][:, 1] + p_y_length/2, "r", linewidth = 1)  # plot the outer obstacle boundary
@@ -4212,8 +4252,8 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
             self.start_point_plot_text = ax.text(start_pos_workspace_plane[0], start_pos_workspace_plane[1], "Start", fontsize = 7, color = "m")  # write the text of the start position of the robot's end-effector on the 2D workspace plane
             self.target_point_plot_text = ax.text(target_pos_workspace_plane[0], target_pos_workspace_plane[1], "Target", fontsize = 7, color = "g")  # write the text of the target position of the robot's end-effector on the 2D workspace plane
             ax.legend([plane_plot, outer_plot, inner_plot], ["Obstacles plane", "Outer boundary", "Inner boundaries"], fontsize = 8, loc = "upper right")  # show the legend of the plot
-            ax.set_title("Obstacles objects on the real workspace, with their real dimensions in millimeters\n(The bottom-left corner of the plane is considered to be the point (0, 0) here)\n(use mouse left and right click to mark the start and target positions)")  # set the title of the plot
-            ax.set_xlabel("x (mm)"); ax.set_ylabel("y (mm)"); ax.set_aspect("equal")  # set the labels of the x and y axis and the aspect ratio of the plot to be equal
+            ax.set_title("Obstacles objects on the real workspace, with their real dimensions in centimeters\n(The bottom-left corner of the plane is considered to be the point (0, 0) here)\n(use mouse left and right click to mark the start and target positions)")  # set the title of the plot
+            ax.set_xlabel("x (cm)"); ax.set_ylabel("y (cm)"); ax.set_aspect("equal")  # set the labels of the x and y axis and the aspect ratio of the plot to be equal
             ax.grid(True)  # show the grid
             fig.canvas.mpl_connect("button_press_event", lambda event: self.mark_points_on_obstacles_plot(event, ax))  # connect a function to the plot
             plt.show()  # show the plot
@@ -4301,7 +4341,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             start_pos_workspace_plane = self.start_pos_workspace_plane + np.array([-self.workspace_image_plane_x_length / 2.0, -self.workspace_image_plane_y_length / 2.0])  # the start position of the robot's end-effector on the 2D workspace plane
             target_pos_workspace_plane =  self.target_pos_workspace_plane + np.array([-self.workspace_image_plane_x_length / 2.0, -self.workspace_image_plane_y_length / 2.0])  # the target position of the robot's end-effector on the 2D workspace plane
             self.hntf2d_solver = cl.hntf2d_control_law(p_init = start_pos_workspace_plane, p_d = target_pos_workspace_plane, outer_boundary = self.obstacles_boundaries_for_solver[-1], inner_boundaries = self.obstacles_boundaries_for_solver[:-1], \
-                                                        k_d = self.k_d, k_i = self.k_i, K = self.K, w_phi = self.w_phi, gamma = self.gamma, e_p = self.e_p, e_v = self.e_v)  # create a new hntf2d control law object
+                                                        k_d = self.k_d, k_i = self.k_i, K = self.vp_max, w_phi = self.w_phi, gamma = self.gamma, e_p = self.dp_min, e_v = self.e_v)  # create a new hntf2d control law object
             self.hntf2d_solver.create_new_harmonic_map_object()  # create a new harmonic map object
             self.reset_control_law_outputs()  # reset the control law outputs
             plt.close('all')  # close all the opened plots
@@ -4469,30 +4509,20 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
         except:  # if the entered value is not a number
             ms.showerror("Error", "Please enter a number!", parent = self.menus_area)  # show an error message
-    def change_K_parameter(self, event = None):  # change the K parameter of the obstacles avoidance solver
-        K_parameter = sd.askfloat("Change the K parameter", "Enter the new value of the K parameter:", initialvalue = self.K, minvalue = self.K_limits[0], maxvalue = self.K_limits[1], parent = self.menus_area)  # ask the user to enter the new value of the K parameter
-        if K_parameter != None:  # if the user enters a number
-            self.K = K_parameter  # change the K parameter of the obstacles avoidance solver
-        self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def change_w_phi_parameter(self, event = None):  # change the w_phi parameter of the obstacles avoidance solver
         w_phi_parameter = sd.askfloat("Change the w_phi parameter", "Enter the new value of the w_phi parameter:", initialvalue = self.w_phi, minvalue = self.w_phi_limits[0], maxvalue = self.w_phi_limits[1], parent = self.menus_area)  # ask the user to enter the new value of the w_phi parameter
         if w_phi_parameter != None:  # if the user enters a number
             self.w_phi = w_phi_parameter  # change the w_phi parameter of the obstacles avoidance solver
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
-    def change_gamma_parameter(self, event = None):  # change the gamma parameter of the obstacles avoidance solver
-        gamma_parameter = sd.askfloat("Change the gamma parameter", "Enter the new value of the gamma parameter:", initialvalue = self.gamma, minvalue = self.gamma_limits[0], maxvalue = self.gamma_limits[1], parent = self.menus_area)  # ask the user to enter the new value of the gamma parameter
-        if gamma_parameter != None:  # if the user enters a number
-            self.gamma = gamma_parameter  # change the gamma parameter of the obstacles avoidance solver
+    def change_vp_max_parameter(self, event = None):  # change the vp_max parameter of the obstacles avoidance solver
+        vp_max_parameter = sd.askfloat("Change the vp_max parameter", "Enter the new value of the vp_max parameter:", initialvalue = 100.0 * self.vp_max, minvalue = 100.0 * self.vp_max_limits[0], maxvalue = 100.0 * self.vp_max_limits[1], parent = self.menus_area)  # ask the user to enter the new value of the vp_max parameter
+        if vp_max_parameter != None:  # if the user enters a number
+            self.vp_max = vp_max_parameter / 100.0  # change the vp_max parameter (in meters/sec) of the obstacles avoidance solver
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
-    def change_e_p_parameter(self, event = None):  # change the e_p parameter of the obstacles avoidance solver
-        e_p_parameter = sd.askfloat("Change the e_p parameter", "Enter the new value of the e_p parameter:", initialvalue = self.e_p, minvalue = self.e_p_limits[0], maxvalue = self.e_p_limits[1], parent = self.menus_area)  # ask the user to enter the new value of the e_p parameter
-        if e_p_parameter != None:  # if the user enters a number
-            self.e_p = e_p_parameter  # change the e_p parameter of the obstacles avoidance solver
-        self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
-    def change_e_v_parameter(self, event = None):  # change the e_v parameter of the obstacles avoidance solver
-        e_v_parameter = sd.askfloat("Change the e_v parameter", "Enter the new value of the e_v parameter:", initialvalue = self.e_v, minvalue = self.e_v_limits[0], maxvalue = self.e_v_limits[1], parent = self.menus_area)  # ask the user to enter the new value of the e_v parameter
-        if e_v_parameter != None:  # if the user enters a number
-            self.e_v = e_v_parameter  # change the e_v parameter of the obstacles avoidance solver
+    def change_dp_min_parameter(self, event = None):  # change the dp_min parameter of the obstacles avoidance solver
+        dp_min_parameter = sd.askfloat("Change the dp_min parameter", "Enter the new value of the dp_min parameter:", initialvalue = 100.0 * self.dp_min, minvalue = 100.0 * self.dp_min_limits[0], maxvalue = 100.0 * self.dp_min_limits[1], parent = self.menus_area)  # ask the user to enter the new value of the dp_min parameter
+        if dp_min_parameter != None:  # if the user enters a number
+            self.dp_min = dp_min_parameter / 100.0  # change the dp_min parameter (in meters) of the obstacles avoidance solver
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def save_control_law_parameters(self, event = None):  # save the control law parameters of the obstacles avoidance solver
         ask_file_name = sd.askstring("Save control law parameters", "Enter the file name to save the control law parameters:", initialvalue = f"parameters_{len(self.saved_control_law_parameters_list) + 1}", parent = self.menus_area)  # ask the user to enter the file name to save the control law parameters
@@ -4504,11 +4534,9 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                 with open(self.saved_control_law_parameters_folder_path + fr"/{ask_file_name}.txt", "w", encoding = "utf-8") as file:  # open the file in write mode
                     file.write(f"k_d: {self.k_d:.2f}\n")  # write the k_d parameter to the file
                     file.write(f"k_i: " + str([float(f"{self.k_i[k]:.2f}") for k in range(len(self.k_i))]) + "\n")  # write the k_i parameters to the file
-                    file.write(f"K: {self.K:.2f}\n")  # write the K parameters to the file
                     file.write(f"w_phi: {self.w_phi:.2f}\n")  # write the w_phi parameter to the file
-                    file.write(f"gamma: {self.gamma:.2f}\n")  # write the gamma parameter to the file
-                    file.write(f"e_p: {self.e_p:.2f}\n")  # write the e_p parameter to the file
-                    file.write(f"e_v: {self.e_v:.2f}\n")  # write the e_v parameter to the file
+                    file.write(f"vp_max: {self.vp_max:.3f}\n")  # write the vp_max parameter to the file
+                    file.write(f"dp_min: {self.dp_min:.3f}\n")  # write the dp_min parameter to the file
                 file.close()  # close the file
                 ms.showinfo("Control law parameters saved", f"The control law parameters have been saved successfully in '{ask_file_name}.txt'!", parent = self.menus_area)  # show an info message that the control law parameters have been saved successfully
                 if ask_file_name not in self.saved_control_law_parameters_list:  # if the name of the saved file is not in the values of the combobox that contains the names of the saved files
@@ -4520,25 +4548,24 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def load_control_law_parameters(self, event = None):  # load the control law parameters of the obstacles avoidance solver
         load_file_accept = False  # the user's choice to load the file
-        self.chosen_control_law_parameters = self.load_control_parameters_combobox.get()  # the name of the chosen loaded file that contains the control law parameters
-        if self.chosen_control_law_parameters in self.saved_control_law_parameters_list:  # if the chosen file exists
+        chosen_control_law_parameters_name = self.load_control_parameters_combobox.get()  # the name of the chosen loaded file that contains the control law parameters
+        if chosen_control_law_parameters_name in self.saved_control_law_parameters_list:  # if the chosen file exists
             if event != None:  # if the function is called by an event
-                load_file_accept = ms.askyesno("Confirm loading", f"Are you sure you want to load the file \"{self.chosen_control_law_parameters}.txt\"?")  # ask the user if they want to load the chosen file
+                load_file_accept = ms.askyesno("Confirm loading", f"Are you sure you want to load the file \"{chosen_control_law_parameters_name}.txt\"?")  # ask the user if they want to load the chosen file
             else:
                 load_file_accept = True  # the file is loaded automatically
             if load_file_accept:  # if the user wants to load the chosen file
-                parameters_file = open(self.saved_control_law_parameters_folder_path + fr"/{self.chosen_control_law_parameters}.txt", "r", encoding = "utf-8")  # open the chosen file in read mode
+                self.chosen_control_law_parameters_name = chosen_control_law_parameters_name  # change the control law parameters name
+                parameters_file = open(self.saved_control_law_parameters_folder_path + fr"/{self.chosen_control_law_parameters_name}.txt", "r", encoding = "utf-8")  # open the chosen file in read mode
                 parameters_file_lines = parameters_file.readlines()  # read all the lines of the file
                 parameters_file.close()  # close the file
                 self.k_d = float(parameters_file_lines[0].split(": ")[1])  # the k_d parameter of the obstacles avoidance solver
                 self.k_i = np.array([float(k) for k in parameters_file_lines[1].split(": ")[1][1:-2].split(", ")])  # the k_i parameters of the obstacles avoidance solver
-                self.K = float(parameters_file_lines[2].split(": ")[1])  # the K parameter of the obstacles avoidance solver
-                self.w_phi = float(parameters_file_lines[3].split(": ")[1])  # the w_phi parameter of the obstacles avoidance solver
-                self.gamma = float(parameters_file_lines[4].split(": ")[1])  # the gamma parameter of the obstacles avoidance solver
-                self.e_p = float(parameters_file_lines[5].split(": ")[1])  # the e_p parameter of the obstacles avoidance solver
-                self.e_v = float(parameters_file_lines[6].split(": ")[1])  # the e_v parameter of the obstacles avoidance solver
+                self.w_phi = float(parameters_file_lines[2].split(": ")[1])  # the w_phi parameter of the obstacles avoidance solver
+                self.vp_max = float(parameters_file_lines[3].split(": ")[1])  # the vp_max parameter of the obstacles avoidance solver
+                self.dp_min = float(parameters_file_lines[4].split(": ")[1])  # the dp_min parameter of the obstacles avoidance solver
         else:  # if the chosen file does not exist
-            ms.showerror("Error", f"The file {self.chosen_control_law_parameters}.txt does not exist!", parent = self.menus_area)  # show an error message               
+            ms.showerror("Error", f"The file {chosen_control_law_parameters_name}.txt does not exist!", parent = self.menus_area)  # show an error message               
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def plot_navigation_potential_field_values(self, event = None):  # plot the navigation function of the obstacles avoidance solver
         if self.hntf2d_solver != None and self.transformations_are_built:  # if the workspace transformations are built
@@ -4668,7 +4695,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
     def apply_control_law_obstacles_avoidance(self, event = None):  # apply the control law for the obstacles avoidance
         if not self.robot_control_thread_flag:  # if the robot control thread is not running
             if self.hntf2d_solver != None and self.transformations_are_built and self.positions_on_plane_are_correct:  # if the workspace transformations are built
-                p_list, p_dot_list, control_law_success = self.hntf2d_solver.run_control_law(self.solver_time_step_dt, self.solver_error_tolerance, self.solver_maximum_iterations)  # apply the control law and compute the path positions and velocities on the real and transformed workspaces
+                p_list, p_dot_list, control_law_success = self.hntf2d_solver.run_control_law(self.solver_time_step_dt, self.solver_maximum_iterations, self.solver_error_tolerance)  # apply the control law and compute the path positions and velocities on the real and transformed workspaces
                 print("The control process has been completed!")  # print a message
                 self.reset_control_law_outputs()  # reset the control law outputs
                 self.realws_path_control_law_output = p_list  # the path positions on the real workspace generated by the control law
@@ -4704,29 +4731,30 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             if self.robotic_manipulator_is_built: # if a robotic manipulator is built
                 self.control_or_kinematics_variables_visualization = self.control_or_kinematics_variables_visualization_list[0]  # choose the control variables for visualization
                 if len(self.realws_velocities_control_law_output) != 0 and len(self.robot_joints_control_law_output) == 0:  # if the control law has been applied but the robot joints for the robot's motion have not been computed yet
-                    
+
                     self.move_real_robot_dt = 0.1
                     
-                    self.robot_joints_control_law_output.append(self.control_joints_variables)  # append the forward kinematics variables to the list of the control law output
+                    self.robot_joints_control_law_output.append(np.array(self.control_joints_variables))  # append the forward kinematics variables to the list of the control law output
                     # compute the start configuration of the end-effector on the workspace plane
                     obstacles_2d_plane_normal_vector, obstacles_2d_plane_orientation, obstacles_2d_plane_translation = gf.get_components_from_xy_plane_transformation(self.obst_plane_wrt_world_transformation_matrix)  # get the components of the obstacles 2D plane transformation
                     end_effector_start_configuration = gf.xy_plane_transformation(-obstacles_2d_plane_normal_vector, obstacles_2d_plane_orientation, obstacles_2d_plane_translation)  # initialize the transformation matrix of the end-effector on the workspace plane
                     end_effector_start_position = self.obst_plane_wrt_world_transformation_matrix @ np.array([self.start_pos_workspace_plane[0] - self.obstacles_2d_plane_x_length / 2.0, self.start_pos_workspace_plane[1] - self.obstacles_2d_plane_y_length / 2.0, 0.0, 1.0])  # the start position of the end-effector on the workspace plane
                     end_effector_start_configuration[:, 3] = end_effector_start_position  # the transformation matrix of the end-effector on the workspace plane
                     # compute the start configuration of the joints
-                    q_joints_start_configuration, invkine_success = kin.compute_inverse_kinematics(self.built_robotic_manipulator, end_effector_start_configuration, self.invkine_tolerance)
-                    self.robot_joints_control_law_output.append(q_joints_start_configuration)  # append the start configuration of the joints to the list of the control law output
-                    
-                    R_plane = self.obst_plane_wrt_world_transformation_matrix[0:3, 0:3]  # the rotation matrix of the workspace plane wrt the world frame
-                    for k in range(len(self.realws_velocities_control_law_output)):  # loop through all the velocities of the real workspace path, generated by the control law
-                        p_dot = self.realws_velocities_control_law_output[k]  # the velocity of the real workspace path
-                        qr = self.robot_joints_control_law_output[-1]  # the last configuration of the robot's joints
-                        pe_dot = R_plane @ np.array([p_dot[0], p_dot[1], 0.0])  # the velocity of the end-effector on the workspace plane wrt the world frame
-                        ve_dot = np.concatenate((pe_dot, np.zeros(3)), axis = 0)  # the velocity of the end-effector wrt the world frame
-                        qr_dot, J0_is_full_rank = kin.compute_inverse_differential_kinematics(self.built_robotic_manipulator, self.robot_joints_control_law_output[-1], ve_dot, "world")  # compute the joints velocities
-                        qr_new = qr + qr_dot * self.solver_time_step_dt  # the new configuration of the robot's joints
-                        self.robot_joints_control_law_output.append(qr_new)  # append the new configuration of the robot's joints to the list of the control law output
-                                        
+                    q_joints_start_configuration, invkine_success = kin.compute_inverse_kinematics(self.built_robotic_manipulator, end_effector_start_configuration, self.invkine_tolerance)  # compute the robot's joints configuration (if possible) for the start end-effector configuration
+                    if invkine_success:  # if the inverse kinematics gave a feasible solution
+                        self.robot_joints_control_law_output.append(q_joints_start_configuration)  # append the start configuration of the joints to the list of the control law output
+                        R_plane = self.obst_plane_wrt_world_transformation_matrix[0:3, 0:3]  # the rotation matrix of the workspace plane wrt the world frame
+                        for k in range(len(self.realws_velocities_control_law_output)):  # loop through all the velocities of the real workspace path, generated by the control law
+                            p_dot = self.realws_velocities_control_law_output[k]  # the velocity of the real workspace path
+                            qr = self.robot_joints_control_law_output[-1]  # the last configuration of the robot's joints
+                            pe_dot = R_plane @ np.array([p_dot[0], p_dot[1], 0.0])  # the velocity of the end-effector on the workspace plane wrt the world frame
+                            ve_dot = np.concatenate((pe_dot, np.zeros(3)), axis = 0)  # the velocity of the end-effector wrt the world frame
+                            qr_dot, J0_is_full_rank = kin.compute_inverse_differential_kinematics(self.built_robotic_manipulator, self.robot_joints_control_law_output[-1], ve_dot, "world")  # compute the joints velocities
+                            qr_new = qr + qr_dot * self.solver_time_step_dt  # the new configuration of the robot's joints
+                            self.robot_joints_control_law_output.append(qr_new)  # append the new configuration of the robot's joints to the list of the control law output
+                    else:
+                        pass
                     # self.move_real_robot_dt
                     # check_robot_joints_limits, joints_limits_distance = kin.check_joints_limits(self.built_robotic_manipulator, self.built_robotic_manipulator.q)  # check the joints limits
             else:  # if no robotic manipulator is built yet
@@ -4767,33 +4795,31 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             self.choose_k_d_parameter_button.configure(text = f"{self.k_d:.2f}")  # change the text of the button that allows the user to choose the k_d parameter
             if len(self.k_i) != len(self.obstacles_boundaries_for_solver) - 1:  # if the number of the k_i parameters is not equal to the number of the inner boundaries
                 self.k_i = [0.1 for k in range(len(self.obstacles_boundaries_for_solver) - 1)]  # set the k_i parameters to a default value
-            self.choose_k_i_parameters_combobox["values"] = [f"{k + 1}: {self.k_i[k]:.2f}" for k in range(len(self.obstacles_boundaries_for_solver) - 1)]  # update the values of the combobox that allows the user to choose the k_i parameters
             if len(self.obstacles_boundaries_for_solver) != 0:  # if there are obstacles boundaries
+                self.choose_k_i_parameters_combobox["values"] = [f"{k + 1}: {self.k_i[k]:.2f}" for k in range(len(self.obstacles_boundaries_for_solver) - 1)]  # update the values of the combobox that allows the user to choose the k_i parameters
                 if self.k_i_chosen_num > len(self.obstacles_boundaries_for_solver) - 1:  # if the chosen number of the k_i parameters is greater than the number of the inner boundaries
                     self.k_i_chosen_num = 1  # set the chosen number of the k_i parameters to 1 (the first inner boundary)
                 self.choose_k_i_parameters_combobox.set(f"{self.k_i[self.k_i_chosen_num - 1]:.2f}")  # set the value of the combobox that allows the user to choose the k_i parameters
-            else: self.choose_k_i_parameters_combobox.set("")  # if there are no obstacles boundaries
-            self.choose_K_parameter_button.configure(text = f"{self.K:.2f}")  # change the text of the button that allows the user to choose the K parameter
+            else:  # if there are no obstacles boundaries yet
+                self.choose_k_i_parameters_combobox["values"] = [""]  # update the values of the combobox that allows the user to choose the k_i parameters
+                self.choose_k_i_parameters_combobox.set("")  # set the value of the combobox that allows the user to choose the k_i parameters
             self.choose_w_phi_parameter_button.configure(text = f"{self.w_phi:.2f}")  # change the text of the button that allows the user to choose the w_phi parameter
-            self.choose_gamma_parameter_button.configure(text = f"{self.gamma:.2f}")  # change the text of the button that allows the user to choose the gamma parameter
-            self.choose_e_p_parameter_button.configure(text = f"{self.e_p:.2f}")  # change the text of the button that allows the user to choose the e_p parameter
-            self.choose_e_v_parameter_button.configure(text = f"{self.e_v:.2f}")  # change the text of the button that allows the user to choose the e_v parameter
+            self.choose_vp_max_parameter_button.configure(text = f"{100.0 * self.vp_max:.1f}")  # change the text of the button that allows the user to choose the vp_max parameter
+            self.choose_dp_min_parameter_button.configure(text = f"{100.0 * self.dp_min:.1f}")  # change the text of the button that allows the user to choose the dp_min parameter
             self.load_control_parameters_combobox["values"] = self.saved_control_law_parameters_list  # update the values of the combobox that allows the user to load the control law parameters
             self.navigation_field_plot_points_divs_button.configure(text = f"{self.navigation_field_plot_points_divs}")  # change the text of the button that allows the user to change the number of points divisions in the navigation field plot
             self.choose_solver_dt_button.configure(text = f"{self.solver_time_step_dt:.3f}")  # change the text of the button that allows the user to choose the time step for the control law
             self.choose_solver_max_iter_button.configure(text = f"{self.solver_maximum_iterations}")  # change the text of the button that allows the user to choose the maximum number of iterations for the control law
-            self.choose_solver_error_tol_button.configure(text = f"{1000.0 * self.solver_error_tolerance:.1f}")  # change the text of the button that allows the user to choose the error tolerance for the control law
+            self.choose_solver_error_tol_button.configure(text = f"{100.0 * self.solver_error_tolerance:.1f}")  # change the text of the button that allows the user to choose the error tolerance for the control law
             self.enable_error_correction_button.configure(text = ["no", "yes"][[False, True].index(self.solver_enable_error_correction)])  # change the text of the button that allows the user to enable/disable the error correction for the control law
             if self.hntf2d_solver != None:  # if the hntf2d control law object has been created
                 self.hntf2d_solver.p_init = self.start_pos_workspace_plane + np.array([-self.workspace_image_plane_x_length / 2.0, -self.workspace_image_plane_y_length / 2.0])  # change the initial position of the obstacles avoidance solver
                 self.hntf2d_solver.p_d = self.target_pos_workspace_plane + np.array([-self.workspace_image_plane_x_length / 2.0, -self.workspace_image_plane_y_length / 2.0])  # change the target position of the obstacles avoidance solver
                 self.hntf2d_solver.k_d = self.k_d  # change the k_d parameter of the obstacles avoidance solver
                 self.hntf2d_solver.k_i = self.k_i  # change the k_i parameters of the obstacles avoidance solver
-                self.hntf2d_solver.K = self.K  # change the K parameter of the obstacles avoidance solver
                 self.hntf2d_solver.w_phi = self.w_phi  # change the w_phi parameter of the obstacles avoidance solver
-                self.hntf2d_solver.gamma = self.gamma  # change the gamma parameter of the obstacles avoidance solver
-                self.hntf2d_solver.e_p = self.e_p  # change the e_p parameter of the obstacles avoidance solver
-                self.hntf2d_solver.e_v = self.e_v  # change the e_v parameter of the obstacles avoidance solver
+                self.hntf2d_solver.vp_max = self.vp_max  # change the vp_max parameter of the obstacles avoidance solver
+                self.hntf2d_solver.dp_min = self.dp_min  # change the dp_min parameter of the obstacles avoidance solver
                 self.hntf2d_solver.start_target_positions_transformations()  # transform the start and target positions
         except Exception as e:
             if "invalid command name" not in str(e): print(f"Error in update_obstacles_avoidance_solver_indicators: {e}")
@@ -4815,7 +4841,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                     # animate
                 elif control_or_kinematics_choose == self.control_or_kinematics_variables_visualization_list[1]:  # if the user wants to visualize the forward kinematics variables
                     self.forward_kinematics_variables = self.robot_joints_control_law_output[k].copy()  # the joints variables for the robot control, for the current time step
-                time.sleep(self.move_real_robot_dt)  # wait for some time equal to the time step of the solver
+                time.sleep(self.solver_time_step_dt)  # wait for some time equal to the time step of the solver
             self.kill_robot_control_thread()  # kill the existed and running camera thread
             if not self.robot_control_thread_flag:  # if the thread is stopped
                 break  # break the while loop

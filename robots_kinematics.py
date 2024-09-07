@@ -4,8 +4,8 @@ import itertools
 import general_functions as gf
 
 # for the kinematics of the robotic arm
+# robot must be an rtb.DHRobot object
 # DH parameters are in a matrix form where each row represents a joint and the columns represent the parameters a, alpha, d, theta respectively
-# the robot must be an rtb.DHRobot object
 # world_base_T is the transformation matrix from the world to the base frame of coordinates
 # base_0_T is the transformation matrix from the base to the 0 frame of coordinates
 # n_end_effector_T is the transformation matrix from the n to the end-effector frame of coordinates
@@ -95,7 +95,7 @@ def compute_inverse_differential_kinematics(robot, q_joints, end_effector_veloci
     else:  # if the Jacobian matrix is not full rank
         return np.zeros(len(q_joints)), J0_is_full_rank  # return zero joints velocities
 
-def check_joint_limits(robot, q_joints):  # check if the joints configuration is within the joints limits and compute a metric that indicates how far the joints configuration is from the joints limits
+def check_joints_limits(robot, q_joints):  # check if the joints configuration is within the joints limits and compute a metric that indicates how far the joints configuration is from the joints limits
     q_joints = np.array(q_joints).reshape(-1, 1)  # convert the joints configuration to a numpy array
     joints_num = len(q_joints)  # get the number of joints of the robotic arm
     q_min = np.array([robot.qlim[0][:joints_num]]).reshape(-1, 1)  # get the minimum joints values
@@ -103,9 +103,9 @@ def check_joint_limits(robot, q_joints):  # check if the joints configuration is
     q_range = q_max - q_min  # calculate the range of the joints
     q_min_diff = q_joints - q_min  # calculate the difference between the joints configuration and the minimum joints values
     q_max_diff = q_max - q_joints  # calculate the difference between the joints configuration and the maximum joints values
-    check_joints_limits = np.all(q_min_diff >= 0) and np.all(q_max_diff >= 0)  # check if the joints configuration is within the joints limits
-    joints_limits_distance = (q_min_diff * q_max_diff) / (q_range + 1e-7)  # compute a metric that indicates how far the joints configuration is from the joints limits
-    return check_joints_limits  # return the flag that indicates if the joints configuration is within the joints limits
+    check_limits = np.all(q_min_diff >= 0) and np.all(q_max_diff >= 0)  # check if the joints configuration is within the joints limits
+    joints_limits_distance = (q_min_diff * q_max_diff) / ((q_range/2.0)**2.0 + 1e-7)  # compute a metric that indicates how far the joints configuration is from the joints limits
+    return check_limits, joints_limits_distance  # return the flag that indicates if the joints configuration is within the joints limits and the metric that indicates how far the joints configuration is from the joints limits
 
 def find_reachable_workspace(robot, divs = 5, show_plots = False):  # find the reachable workspace of the robotic arm, i.e. the positions that the end-effector can reach in the 3D space no matter the orientation of the end-effector frame
     joints_num = len(robot.q)  # get the number of joints of the robotic arm
@@ -139,18 +139,23 @@ def find_kinematic_singularities_on_plane(robot, plane_x_range, plane_y_range, p
     singular_pos = []; non_singular_pos = []  # initialize the lists to store the singular and non-singular end-effector positions
     reachable_pos = []; non_reachable_pos = []  # initialize the lists to store the reachable and non-reachable end-effector positions
     initial_plane = [[[x, y, 0, 1] for y in np.linspace(-plane_y_range/2, plane_y_range/2, divs_y)] for x in np.linspace(-plane_x_range/2, plane_x_range/2, divs_x)]  # create the initial plane points
+    # try to find a new plane rotation, in case the end-effector can not be rotated
     plane_T_rev_new = np.array(plane_T_rev, dtype = float)  # create a new transformation matrix for the plane
-    for i in range(divs_x):  # iterate through the x-axis of the plane
-        for j in range(divs_y):  # iterate through the y-axis of the plane
-            pos_transformed = np.array(plane_T_rev_new @ np.array(initial_plane[i][j], dtype = float)).reshape(-1, 1)  # transform the plane points
+    R_rot = np.array([[np.cos(np.deg2rad(1)), -np.sin(np.deg2rad(1)), 0, 0], [np.sin(np.deg2rad(1)), np.cos(np.deg2rad(1)), 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]], dtype = float)  # create the rotation matrix for the plane
+    for point in [[0, 0, 0, 1], [-plane_x_range/4, -plane_y_range/4, 0, 1], [-plane_x_range/4, plane_y_range/4, 0, 1], [plane_x_range/4, plane_y_range/4, 0, 1], [plane_x_range/4, -plane_y_range/4, 0, 1]]:  # iterate through some plane points
+        pos_transformed = np.array(plane_T_rev_new @ np.array(point, dtype = float)).reshape(-1, 1)  # transform the plane points
+        for _ in range(0, 360, 1):  # iterate through the various plane rotations
             end_effector_desired_pose = np.hstack((plane_T_rev_new[:, :-1], pos_transformed))  # create the desired end-effector pose
             q, invkine_success = compute_inverse_kinematics(robot, end_effector_desired_pose, invkine_tol)  # calculate the inverse kinematics of the robotic arm
-            # invkine_success = False  # initialize the flag for the success of the inverse kinematics solver
-            # for _ in range(0, 360, 1):  # iterate through the various plane rotations
-            #     q, invkine_success = compute_inverse_kinematics(robot, end_effector_desired_pose, invkine_tol)  # calculate the inverse kinematics of the robotic arm
-            #     if invkine_success: break  # if the inverse kinematics solver converged to a solution, break the loop
-            #     R_rot = np.array([[np.cos(np.deg2rad(1)), -np.sin(np.deg2rad(1)), 0, 0], [np.sin(np.deg2rad(1)), np.cos(np.deg2rad(1)), 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]], dtype = float)  # create the rotation matrix for the plane
-            #     plane_T_rev_new = plane_T_rev_new @ R_rot  # update the plane transformation matrix
+            if invkine_success: break  # if the inverse kinematics solver converged to a solution, break the loop
+            plane_T_rev_new = plane_T_rev_new @ R_rot  # update the plane transformation matrix
+        if invkine_success: break  # if the inverse kinematics solver converged to a solution, break the loop
+    # find the kinematic singularities on the plane, when the end-effector z-axis is perpendicular to it and with the same orientation as the reversed plane plane_T_rev_new
+    for i in range(divs_x):  # iterate through the x-axis of the plane
+        for j in range(divs_y):  # iterate through the y-axis of the plane
+            pos_transformed = np.array(plane_T_rev @ np.array(initial_plane[i][j], dtype = float)).reshape(-1, 1)  # transform the plane points
+            end_effector_desired_pose = np.hstack((plane_T_rev_new[:, :-1], pos_transformed))  # create the desired end-effector pose with the plane_T_rev position and the plane_T_rev_new orientation
+            q, invkine_success = compute_inverse_kinematics(robot, end_effector_desired_pose, invkine_tol)  # calculate the inverse kinematics of the robotic arm
             J = robot.jacob0(q)  # calculate the geometric Jacobian matrix of the robotic arm wrt the world frame
             if invkine_success:  # if the inverse kinematics solver converged to a solution
                 if pos_transformed[2] >= -1e-3:  # if the end-effector position is above the xy-plane, meaning it is above the ground

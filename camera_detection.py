@@ -177,7 +177,7 @@ def draw_shape_on_image_plane(image, shape_points, ArUco_wrt_camera_transformati
     shape_points_homogeneous = np.hstack((shape_points_wrt_ArUco_frame, np.ones((len(shape_points), 1)))).T  # make the coordinates of the shape points homogeneous
     camera_shape_points_homogeneous = ArUco_wrt_camera_transformation_matrix @ shape_points_homogeneous  # transform the shape points from the ArUco marker frame to the camera frame
     camera_shape_points = camera_shape_points_homogeneous[:3, :].T  # get the camera coordinates of the shape points
-    image_shape_points, _ = cv2.projectPoints(camera_shape_points, np.zeros(3), np.zeros(3), intrinsic_mat, dist_coeffs)  # project the camera frame coordinates to the image plane that is shown in the image
+    image_shape_points, _ = cv2.projectPoints(camera_shape_points, np.zeros(3), np.zeros(3), intrinsic_mat, dist_coeffs)  # project the camera frame coordinates to the image plane
     # draw the shape on the image plane
     image_shape_points = np.int32(image_shape_points.reshape(-1, 2))  # convert the image points to integers
     for k in range(len(shape_points)):
