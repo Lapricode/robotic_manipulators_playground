@@ -157,18 +157,15 @@ def find_kinematic_singularities_on_plane(robot, plane_x_range, plane_y_range, p
             end_effector_desired_pose = np.hstack((plane_T_rev_new[:, :-1], pos_transformed))  # create the desired end-effector pose with the plane_T_rev position and the plane_T_rev_new orientation
             q, invkine_success = compute_inverse_kinematics(robot, end_effector_desired_pose, invkine_tol)  # calculate the inverse kinematics of the robotic arm
             J = robot.jacob0(q)  # calculate the geometric Jacobian matrix of the robotic arm wrt the world frame
-            if invkine_success:  # if the inverse kinematics solver converged to a solution
-                if pos_transformed[2] >= -1e-3:  # if the end-effector position is above the xy-plane, meaning it is above the ground
-                    reachable_pos.append(pos_transformed[:-1])  # append the reachable end-effector position
-                    # if the Jacobian matrix is square and its determinant is less than the specified singularity bound, or the Jacobian matrix is non square and not full rank, a singular configuration has been detected
-                    if (J.shape[0] == J.shape[1] and np.abs(np.linalg.det(J)) <= singul_bound) or (J.shape[0] != J.shape[1] and np.linalg.matrix_rank(J) != min(J.shape)):
-                        singular_q.append(q)  # append the singular joint configuration
-                        singular_pos.append(pos_transformed[:-1])  # append the singular end-effector position
-                    else:
-                        non_singular_q.append(q)  # append the non-singular joint configuration
-                        non_singular_pos.append(pos_transformed[:-1])  # append the non-singular end-effector position
-                else:  # if the end-effector position is below the xy-plane, meaning it is below the ground
-                    non_reachable_pos.append(pos_transformed[:-1])  # append the non-reachable end-effector position
+            if invkine_success and pos_transformed[2] >= -1e-3:  # if the inverse kinematics solver converged to a solution and the end-effector position is above the xy-plane, meaning it is above the ground
+                reachable_pos.append(pos_transformed[:-1])  # append the reachable end-effector position
+                # if the Jacobian matrix is square and its determinant is less than the specified singularity bound, or the Jacobian matrix is non square and not full rank, a singular configuration has been detected
+                if (J.shape[0] == J.shape[1] and np.abs(np.linalg.det(J)) <= singul_bound) or (J.shape[0] != J.shape[1] and np.linalg.matrix_rank(J) != min(J.shape)):
+                    singular_q.append(q)  # append the singular joint configuration
+                    singular_pos.append(pos_transformed[:-1])  # append the singular end-effector position
+                else:
+                    non_singular_q.append(q)  # append the non-singular joint configuration
+                    non_singular_pos.append(pos_transformed[:-1])  # append the non-singular end-effector position
             else:  # if the inverse kinematics solver did not converge to a solution
                 non_reachable_pos.append(pos_transformed[:-1])  # append the non-reachable end-effector position
     if show_plots:  # if the plots are requested to be shown
