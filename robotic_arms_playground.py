@@ -2050,8 +2050,9 @@ This submenu allows the user to configure the camera device, calibrate it, and c
         show_camera_parameters_button_ord = recalibrate_camera_button_ord+0.8
         show_workspace_image_label_ord = recalibrate_camera_label_ord+0.4
         show_workspace_image_combobox_ord = show_workspace_image_label_ord+0.8
-        show_workspace_image_button_ord = show_workspace_image_label_ord
-        delete_workspace_image_button_ord = show_workspace_image_label_ord+0.8
+        show_workspace_image_button_ord = show_workspace_image_label_ord-0.4
+        rename_workspace_image_button_ord = show_workspace_image_button_ord+0.8
+        delete_workspace_image_button_ord = rename_workspace_image_button_ord+0.8
         draw_2d_plane_button_ord = show_workspace_image_label_ord
         capture_workspace_image_button_ord = show_workspace_image_label_ord+1.2
         # create the options
@@ -2114,11 +2115,12 @@ This submenu allows the user to configure the camera device, calibrate it, and c
         draw_2d_plane_button_x = 5/11; self.draw_2d_plane_button = gbl.menu_button(menu_frame, "draw 2D plane\non frame", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], draw_2d_plane_button_x * menu_properties['width'], draw_2d_plane_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.draw_2d_plane_on_image).button
         capture_workspace_image_button_x = draw_2d_plane_button_x; self.capture_workspace_image_button = gbl.menu_button(menu_frame, "capture image", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], capture_workspace_image_button_x * menu_properties['width'], capture_workspace_image_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.capture_workspace_image).button
         show_workspace_image_label_x = 7/10; gbl.menu_label(menu_frame, "Workspace images:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], show_workspace_image_label_x * menu_properties['width'], show_workspace_image_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        self.show_workspace_image_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "normal", width = 12, values = self.saved_workspace_images_list, justify = "center")
+        self.show_workspace_image_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "normal", width = 13, values = self.saved_workspace_images_list, justify = "center")
         show_workspace_image_combobox_x = show_workspace_image_label_x; self.show_workspace_image_combobox.place(x = show_workspace_image_combobox_x * menu_properties['width'], y = show_workspace_image_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
         self.show_workspace_image_combobox.bind("<<ComboboxSelected>>", self.change_shown_workspace_image)
         self.show_workspace_image_combobox.bind("<Return>", self.change_shown_workspace_image)
         show_workspace_image_button_x = 8/9; self.show_workspace_image_button = gbl.menu_button(menu_frame, "show image", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_workspace_image_button_x * menu_properties['width'], show_workspace_image_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.show_workspace_image).button
+        rename_workspace_image_button_x = show_workspace_image_button_x; self.rename_workspace_image_button = gbl.menu_button(menu_frame, "rename image", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], rename_workspace_image_button_x * menu_properties['width'], rename_workspace_image_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.rename_workspace_image).button
         delete_workspace_image_button_x = show_workspace_image_button_x; self.delete_workspace_image_button = gbl.menu_button(menu_frame, "delete image", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], delete_workspace_image_button_x * menu_properties['width'], delete_workspace_image_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.delete_workspace_image).button
         self.update_camera_control_indicators()  # update the indicators of the camera control
         self.change_shown_workspace_image()  # change the shown workspace image
@@ -2634,9 +2636,9 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
                             model_file.write(f"Frame \"{frame}\" joint's link size: {self.links_sizes[k]}\n")  # write the size of the current link
                             model_file.write(f"Frame \"{frame}\" initial joint's link length: {self.initial_links_lengths[k]:.3f}\n")  # write the initial length of the current link
                     model_file.close()  # close the file where the robotic manipulator model is saved
-                    ms.showinfo("File saved!", f"The robotic manipulator model has been saved successfully in the file \"{ask_file_name}.txt\"!", parent = self.menus_area)  # show an information message
                     if ask_file_name not in self.saved_robots_models_files_list:  # if the name of the saved file is not in the values of the combobox that contains the names of the saved files
                         self.saved_robots_models_files_list.append(ask_file_name)  # add the name of the saved file to the list of the saved files
+                    ms.showinfo("Robot model saved!", f"The robotic manipulator model has been saved successfully in the file \"{ask_file_name}.txt\"!", parent = self.menus_area)  # show an information message
                     self.update_model_visualization_indicators()  # update the model and visualization indicators
                 else:  # if the file exists and the user does not want to overwrite it
                     ms.showinfo("File not saved", "The file has not been saved!", parent = self.menus_area)  # show an information message
@@ -3434,7 +3436,7 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
                 self.joints_motors_mult_factors[self.chosen_joint_number_control - 1].append(1)  # add the new motor's multiplication factor to the list of the chosen control joint motors
                 self.chosen_joint_motor_number = 0  # initialize the chosen motor number of the chosen control joint
             else:
-                ms.showinfo("Info", f"The motor's name '{ask_added_joint_motor}' is already in the list of the chosen control joint motors.", parent = self.menus_area)
+                ms.showinfo("Info", f"The motor's name \"{ask_added_joint_motor}\" is already in the list of the chosen control joint motors.", parent = self.menus_area)
         self.update_control_variables_indicators()  # update the indicators of the control variables of the robotic manipulator
     def decrease_chosen_joint_motors(self, event = None):  # decrease the chosen control joint motors
         if len(self.joints_motors_list[self.chosen_joint_number_control - 1]) > 1:  # if there are more than one motors in the list of the chosen control joint motors
@@ -3445,7 +3447,7 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
                     self.joints_motors_list[self.chosen_joint_number_control - 1].pop(self.joints_motors_list[self.chosen_joint_number_control - 1].index(ask_deleted_joint_motor))  # remove the motor's name from the list of the chosen control joint motors
                     self.chosen_joint_motor_number = 0  # initialize the chosen motor number of the chosen control joint
                 else:
-                    ms.showinfo("Info", f"The motor's name '{ask_deleted_joint_motor}' is not in the list of the chosen control joint motors.", parent = self.menus_area)
+                    ms.showinfo("Info", f"The motor's name \"{ask_deleted_joint_motor}' is not in the list of the chosen control joint motors.", parent = self.menus_area)
         else:
             ms.showinfo("Info", "There is only one motor in the list of the chosen control joint motors, so it can not be deleted. I you want to change its name, you should first add a new motor with the desired name and then delete the old one.", parent = self.menus_area)
         self.update_control_variables_indicators()  # update the indicators of the control variables of the robotic manipulator
@@ -3669,7 +3671,7 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
         if ask_file_name != None and ask_file_name != "":  # if the user enters a file name
             overwrite_file_accept = False  # the user's choice to overwrite the file
             if (ask_file_name + ".txt") in os.listdir(self.saved_obstacles_transformations_folder_path):  # if the file already exists
-                overwrite_file_accept = ms.askyesno("Overwrite file", f"The file '{ask_file_name}.txt' already exists. Do you want to overwrite it?", parent = self.menus_area)  # ask the user if they want to overwrite the file
+                overwrite_file_accept = ms.askyesno("Overwrite file", f"The file \"{ask_file_name}.txt\" already exists. Do you want to overwrite it?", parent = self.menus_area)  # ask the user if they want to overwrite the file
             if (ask_file_name + ".txt") not in os.listdir(self.saved_obstacles_transformations_folder_path) or overwrite_file_accept:  # if the file does not exist or the user wants to overwrite it
                 with open(self.saved_obstacles_transformations_folder_path + fr"/{ask_file_name}.txt", "w", encoding = "utf-8") as file:  # open the file in write mode
                     file.write("Plane x length (m): " + str(self.obstacles_2d_plane_x_length) + "\n")  # write the x length of the 2D plane to the file
@@ -3678,9 +3680,9 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
                     file.write("Plane translation (m): " + str([np.round(self.obstacles_2d_plane_translation[k], 3) for k in range(len(self.obstacles_2d_plane_translation))]) + "\n")  # write the translation of the 2D plane to the file
                     file.write("Plane orientation (degrees): " + str(self.obstacles_2d_plane_orientation) + "\n")  # write the orientation of the 2D plane to the file
                 file.close()  # close the file
-                ms.showinfo("Plane/transformation saved", f"The obstacles transformation has been saved successfully in '{ask_file_name}.txt'!", parent = self.menus_area)  # show an info message that the obstacles transformation has been saved successfully                
                 if ask_file_name not in self.saved_obstacles_transformations_list:  # if the name of the saved file is not in the values of the combobox that contains the names of the saved files
                     self.saved_obstacles_transformations_list.append(ask_file_name)  # add the file name to the list of the saved files
+                ms.showinfo("Plane/Obstacles transformation saved!", f"The obstacles transformation has been saved successfully in \"{ask_file_name}.txt\"!", parent = self.menus_area)  # show an info message that the obstacles transformation has been saved successfully                
             else:  # if the file exists and the user does not want to overwrite it
                 ms.showinfo("File not saved", "The file has not been saved!", parent = self.menus_area)  # show an information message
         else:  # if the user does not enter a name for the file
@@ -3972,6 +3974,25 @@ You can also press left click on the number of a boundary to remove it and right
                 self.open_close_camera()  # open the camera
         else:  # if the chosen workspace image does not exist
             ms.showerror("Error", f"The chosen workspace image \"{self.shown_workspace_image_name}\" does not exist!", parent = self.menus_area)
+    def rename_workspace_image(self, event = None):  # rename the specified workspace image
+        renamed_image = self.show_workspace_image_combobox.get()  # the name of the chosen workspace image
+        if renamed_image != "":  # if the user chooses a workspace image
+            new_image_name = sd.askstring("Rename workspace image", f"Enter the new name of the workspace image \"{renamed_image}\":", initialvalue = renamed_image, parent = self.menus_area)  # ask the user to enter the new name of the workspace image
+            if new_image_name != None:  # if the user enters a name
+                if new_image_name not in self.saved_workspace_images_list:  # if the new name of the workspace image does not exist
+                    os.rename(self.saved_workspace_images_infos_folder_path + fr"/{renamed_image}.jpg", self.saved_workspace_images_infos_folder_path + fr"/{new_image_name}.jpg")  # rename the workspace image
+                    os.rename(self.saved_workspace_images_infos_folder_path + fr"/{renamed_image}_info.txt", self.saved_workspace_images_infos_folder_path + fr"/{new_image_name}_info.txt")  # rename the information file of the workspace image
+                    os.rename(self.saved_obstacles_objects_infos_folder_path + fr"/{renamed_image}", self.saved_obstacles_objects_infos_folder_path + fr"/{new_image_name}")  # rename the folder of the obstacles objects detected in the workspace image
+                    self.saved_workspace_images_list[self.saved_workspace_images_list.index(renamed_image)] = new_image_name  # change the name of the chosen workspace image
+                    self.shown_workspace_image_name = new_image_name  # show the renamed workspace image
+                    self.chosen_detection_workspace_image_name = new_image_name  # choose the renamed workspace image as the detection workspace image
+                    if self.chosen_solver_workspace_image_name == renamed_image:  # if the chosen solver workspace image is the renamed image
+                        self.chosen_solver_workspace_image_name = new_image_name  # choose the renamed workspace image as the solver workspace image
+                    self.update_camera_control_indicators()  # update the indicators of the camera control
+                else:  # if the new name of the workspace image already exists
+                    ms.showerror("Error", f"The new name of the workspace image \"{new_image_name}\" already exists!", parent = self.menus_area)  # show an error message
+        else:  # if the user does not choose a workspace image
+            ms.showerror("Error", "Choose a workspace image to rename!", parent = self.menus_area)
     def delete_workspace_image(self, event = None):  # delete the specified workspace image
         self.workspace_image_is_shown = False  # the workspace image is not shown from now on
         deleted_image = self.show_workspace_image_combobox.get()  # the name of the chosen workspace image
@@ -4000,11 +4021,10 @@ You can also press left click on the number of a boundary to remove it and right
 Press the \"s\" key to save the image (in grayscale format, the whole workspace 2D plane must be inside the frame)!", parent = self.menus_area)  # show an info message
             self.open_close_camera()  # open the camera
     def save_workspace_image_information(self, image, plane_frame_wrt_world, plane_x_length, plane_y_length, plane_corners_image_points, camera_frame_wrt_world, event = None):  # save the workspace image information
-        saved_workspace_images_numbers = [int(image_name.split("_")[-1]) for image_name in self.saved_workspace_images_list]  # the numbers of the saved workspace images
-        max_saved_workspace_image_number = max(saved_workspace_images_numbers) if len(saved_workspace_images_numbers) != 0 else 0  # the maximum number of the saved workspace images
-        workspace_image_name = f"image_{max_saved_workspace_image_number + 1}"  # the name of the workspace image
+        workspace_image_name = f"image_{len(self.saved_workspace_images_list) + 1}"  # the name of the workspace image
+        while os.path.exists(self.saved_workspace_images_infos_folder_path + fr"/{workspace_image_name}.jpg"):  # while the file with the same name exists
+            workspace_image_name = f"image_{int(workspace_image_name.split('_')[-1]) + 1}"  # change the name of the workspace image
         grayscale_image = np.array(Image.fromarray(image).convert("L").point(lambda pixel: cd.convert_image_pixel_to_grayscale(pixel, [self.luminance_threshold])))  # convert the captured frame to black and white
-        self.saved_workspace_images_list.append(workspace_image_name)  # add the name of the workspace image to the list of the saved workspace images
         cv2.imwrite(self.saved_workspace_images_infos_folder_path + fr"/{workspace_image_name}.jpg", grayscale_image)
         with open(self.saved_workspace_images_infos_folder_path + fr"/{workspace_image_name}_info.txt", "w", encoding = "utf-8") as file:  # open the file in write mode
             file.write("Plane frame wrt world transformation matrix:\n")  # write the transformation matrix of the plane frame wrt world to the file
@@ -4019,6 +4039,9 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
             np.savetxt(file, camera_frame_wrt_world, fmt = "%.5f", delimiter = " ")  # write the transformation matrix of the camera frame wrt world to the file
             file.close()  # close the file
         os.mkdir(self.saved_obstacles_objects_infos_folder_path + fr"/{workspace_image_name}")  # create a folder for the obstacles objects detected in the workspace image
+        if workspace_image_name not in self.saved_workspace_images_list:  # if the name of the saved file is not in the values of the combobox that contains the names of the saved files
+            self.saved_workspace_images_list.append(workspace_image_name)  # add the file name to the list of the saved files
+        ms.showinfo("Workspace image information saved!", f"The workspace image and its information have been saved successfully in the files \"{workspace_image_name}.jpg\" and \"{workspace_image_name}_info.txt\" respectively!", parent = self.menus_area)  # show an info message
     def load_workspace_image_infos(self, workspace_image_name, event = None):  # load the information of the workspace image
         if workspace_image_name in self.saved_workspace_images_list:  # if the chosen workspace image exists
             loaded_image_info_file = open(self.saved_workspace_images_infos_folder_path + fr"/{workspace_image_name}_info.txt", "r", encoding = "utf-8")  # open the information file of the chosen workspace image in read mode
@@ -4165,7 +4188,6 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
                 drawn_plane_corners_image_points_y_max = int(np.max(drawn_plane_corners_image_points[:, 1]))  # the maximum y coordinate of the plane corners image points
                 if drawn_plane_corners_image_points_x_min >= 0 and drawn_plane_corners_image_points_x_max < frame_width and drawn_plane_corners_image_points_y_min >= 0 and drawn_plane_corners_image_points_y_max < frame_height:  # if the 2D plane is inside the frame
                     self.save_workspace_image_information(frame, self.obst_plane_wrt_world_transformation_matrix, self.obstacles_2d_plane_x_length, self.obstacles_2d_plane_y_length, drawn_plane_corners_image_points, self.camera_wrt_world_transformation_matrix)  # save the workspace image information
-                    ms.showinfo("Image saved", "The workspace image and its information have been saved successfully!")  # show an info message
                 else:  # if the 2D plane is not inside the frame
                     ms.showerror("Error while saving", "The whole workspace 2D plane must be inside the frame in order for the image to be saved!")  # show an error message
             elif (pressed_key == ord("d") or pressed_key == ord("D")) and self.obstacles_boundaries_are_shown:  # if the user presses the "d" or "D" key
@@ -4566,7 +4588,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
         if ask_file_name != None and ask_file_name != "":  # if the user enters a file name
             overwrite_file_accept = False  # the user's choice to overwrite the file
             if (ask_file_name + ".txt") in os.listdir(self.saved_control_law_parameters_folder_path):  # if the file already exists
-                overwrite_file_accept = ms.askyesno("Overwrite file", f"The file '{ask_file_name}.txt' already exists. Do you want to overwrite it?", parent = self.menus_area)  # ask the user if they want to overwrite the file
+                overwrite_file_accept = ms.askyesno("Overwrite file", f"The file \"{ask_file_name}.txt\" already exists. Do you want to overwrite it?", parent = self.menus_area)  # ask the user if they want to overwrite the file
             if (ask_file_name + ".txt") not in os.listdir(self.saved_control_law_parameters_folder_path) or overwrite_file_accept:  # if the file does not exist or the user wants to overwrite it
                 with open(self.saved_control_law_parameters_folder_path + fr"/{ask_file_name}.txt", "w", encoding = "utf-8") as file:  # open the file in write mode
                     file.write(f"k_d: {self.k_d:.2f}\n")  # write the k_d parameter to the file
@@ -4575,9 +4597,9 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                     file.write(f"dp_min: {self.dp_min:.3f}\n")  # write the dp_min parameter to the file
                     file.write(f"vp_max: {self.vp_max:.3f}\n")  # write the vp_max parameter to the file
                 file.close()  # close the file
-                ms.showinfo("Control law parameters saved", f"The control law parameters have been saved successfully in '{ask_file_name}.txt'!", parent = self.menus_area)  # show an info message that the control law parameters have been saved successfully
                 if ask_file_name not in self.saved_control_law_parameters_list:  # if the name of the saved file is not in the values of the combobox that contains the names of the saved files
                     self.saved_control_law_parameters_list.append(ask_file_name)  # add the file name to the list of the saved files
+                ms.showinfo("Control law parameters saved!", f"The control law parameters have been saved successfully in \"{ask_file_name}.txt'!", parent = self.menus_area)  # show an info message that the control law parameters have been saved successfully
             else:  # if the file exists and the user does not want to overwrite it
                 ms.showinfo("File not saved", "The file has not been saved!", parent = self.menus_area)  # show an information message
         else:  # if the user does not enter a name for the file
