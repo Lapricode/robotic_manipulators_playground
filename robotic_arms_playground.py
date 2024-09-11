@@ -342,8 +342,8 @@ class robotic_manipulators_playground_window():
         self.workspace_plane_creation_parameters_list = ["from\nimage", "manually\ncreated"]  # the possible values to define the workspace plane
         self.workspace_plane_creation_parameter = self.workspace_plane_creation_parameters_list[0]  # the value to define the workspace plane for the obstacles avoidance solver
         self.obstacles_boundaries_for_solver = []  # the real 3D space obstacles boundaries (in meters), transformed on the xy plane of the world frame, for the obstacles avoidance solver
-        self.start_pos_workspace_plane = np.array([0.0, 0.0])  # the start (x, y) position of the end-effector on the workspace obstacles plane (in meters)
-        self.target_pos_workspace_plane = np.array([0.0, 0.0])  # the final (x, y) position of the end-effector on the workspace obstacles plane (in meters)
+        self.start_pos_workspace_plane = np.array([0.0, 0.0])  # the start (x, y) position (wrt the obstacles plane) of the end-effector on the workspace obstacles plane (in meters)
+        self.target_pos_workspace_plane = np.array([0.0, 0.0])  # the final (x, y) position (wrt the obstacles plane) of the end-effector on the workspace obstacles plane (in meters)
         self.obstacles_infos_text = "outer boundary and\ninner boundaries infos"  # the text to show the obstacles infos of the current workspace image
         self.boundaries_are_detected = False  # the flag to check if the boundaries of the obstacles are detected
         self.check_positions_on_plane_text = "check positions"  # the text to check the start and target positions of the end-effector on the workspace obstacles plane
@@ -416,6 +416,7 @@ class robotic_manipulators_playground_window():
         self.root.bind("<Control-z>", self.visualize_robotic_manipulator); self.root.bind("<Control-Z>", self.visualize_robotic_manipulator)  # bind the visualize robotic manipulator function to the Control + z and Control + Z keys combinations
         self.root.bind("<Control-x>", self.visualize_obstacles); self.root.bind("<Control-X>", self.visualize_obstacles)  # bind the visualize obstacles function to the Control + x and Control + X keys combinations
         self.root.bind("<Control-c>", self.visualize_camera); self.root.bind("<Control-C>", self.visualize_camera)  # bind the visualize camera function to the Control + c and Control + C keys combinations
+        self.root.bind("<Control-m>", self.move_simulated_robot_obstacles_avoidance); self.root.bind("<Control-M>", self.move_simulated_robot_obstacles_avoidance)  # bind the move simulated robot for obstacles avoidance function to the Control + m and Control + M keys combinations
         # self.root.bind("<FocusIn>", self.resize_root_window_2)  # bind the resize window function to the focus in event
         # self.root.bind("<Unmap>", self.root_not_in_focus)  # bind the resize window function to the focus out event
         for main_menu_num in range(len(self.main_menus_build_details)):
@@ -840,8 +841,8 @@ class robotic_manipulators_playground_window():
         self.obstacles_plane_points.append([-self.obstacles_2d_plane_x_length / 2.0, self.obstacles_2d_plane_y_length / 2.0, 0.0, 1.0])
         self.obstacles_plane_points.append([-self.obstacles_2d_plane_x_length / 2.0, -self.obstacles_2d_plane_y_length / 2.0, 0.0, 1.0])
         self.obstacles_plane_points.append([self.obstacles_2d_plane_x_length / 2.0, -self.obstacles_2d_plane_y_length / 2.0, 0.0, 1.0])
-        start_pos_on_plane = np.array([self.start_pos_workspace_plane[0] - self.obstacles_2d_plane_x_length / 2.0, self.start_pos_workspace_plane[1] - self.obstacles_2d_plane_y_length / 2.0, 0.0, 1.0])  # the start position on the plane
-        target_pos_on_plane = np.array([self.target_pos_workspace_plane[0] - self.obstacles_2d_plane_x_length / 2.0, self.target_pos_workspace_plane[1] - self.obstacles_2d_plane_y_length / 2.0, 0.0, 1.0])  # the final position on the plane
+        start_pos_on_plane = np.array([self.start_pos_workspace_plane[0], self.start_pos_workspace_plane[1], 0.0, 1.0])  # the start position on the plane
+        target_pos_on_plane = np.array([self.target_pos_workspace_plane[0], self.target_pos_workspace_plane[1], 0.0, 1.0])  # the final position on the plane
         self.obstacles_plane_points.append(start_pos_on_plane.tolist())
         self.obstacles_plane_points.append(target_pos_on_plane.tolist())
         if self.obst_avoid_solver_menu_is_enabled and len(self.realws_path_control_law_output) != 0:  # if the control law has generated a path
@@ -2827,7 +2828,7 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
             self.workspace_obstacles_size = obstacles_objects_size
     def open_matplotlib_simulator(self, event = None):  # open the matplotlib simulator of the robotic manipulator
         if self.robotic_manipulator_is_built:  # if a robotic manipulator model is built
-            self.built_robotic_manipulator.teach(q = self.built_robotic_manipulator.q, backend = "pyplot", block = True)  # open the pyplot simulator and allow the user to control the robotic manipulator
+            self.built_robotic_manipulator.teach(q = self.built_robotic_manipulator.q, backend = "pyplot", vellipse = True, block = True)  # open the pyplot simulator and allow the user to control the robotic manipulator
         else:
             ms.showerror("Error", "You have not built the robotic manipulator model yet!", parent = self.menus_area)  # show an error message
     def open_close_swift_simulator(self, event = None):  # open the Swift simulator of the robotic manipulator
@@ -3674,11 +3675,11 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
                 overwrite_file_accept = ms.askyesno("Overwrite file", f"The file \"{ask_file_name}.txt\" already exists. Do you want to overwrite it?", parent = self.menus_area)  # ask the user if they want to overwrite the file
             if (ask_file_name + ".txt") not in os.listdir(self.saved_obstacles_transformations_folder_path) or overwrite_file_accept:  # if the file does not exist or the user wants to overwrite it
                 with open(self.saved_obstacles_transformations_folder_path + fr"/{ask_file_name}.txt", "w", encoding = "utf-8") as file:  # open the file in write mode
-                    file.write("Plane x length (m): " + str(self.obstacles_2d_plane_x_length) + "\n")  # write the x length of the 2D plane to the file
-                    file.write("Plane y length (m): " + str(self.obstacles_2d_plane_y_length) + "\n")  # write the y length of the 2D plane to the file
+                    file.write("Plane x length (m): " + f"{self.obstacles_2d_plane_x_length:.3f}" + "\n")  # write the x length of the 2D plane to the file
+                    file.write("Plane y length (m): " + f"{self.obstacles_2d_plane_y_length:.3f}" + "\n")  # write the y length of the 2D plane to the file
                     file.write("Plane normal vector: " + str([np.round(self.obstacles_2d_plane_normal_vector[k], 3) for k in range(len(self.obstacles_2d_plane_normal_vector))]) + "\n")  # write the normal vector of the 2D plane to the file
                     file.write("Plane translation (m): " + str([np.round(self.obstacles_2d_plane_translation[k], 3) for k in range(len(self.obstacles_2d_plane_translation))]) + "\n")  # write the translation of the 2D plane to the file
-                    file.write("Plane orientation (degrees): " + str(self.obstacles_2d_plane_orientation) + "\n")  # write the orientation of the 2D plane to the file
+                    file.write("Plane orientation (degrees): " + f"{self.obstacles_2d_plane_orientation:.1f}" + "\n")  # write the orientation of the 2D plane to the file
                 file.close()  # close the file
                 if ask_file_name not in self.saved_obstacles_transformations_list:  # if the name of the saved file is not in the values of the combobox that contains the names of the saved files
                     self.saved_obstacles_transformations_list.append(ask_file_name)  # add the file name to the list of the saved files
@@ -3722,7 +3723,7 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
                 self.workspace_obstacles_height_saved = float(chosen_obstacle_file_lines[0].split(": ")[1])  # the saved height of the obstacles for the chosen workspace image
             else:  # if there are no saved obstacles objects for the chosen workspace image
                 self.chosen_obstacle_object_name = ""  # reset the chosen obstacle object name, if there are no saved obstacles objects for the chosen workspace image
-            self.workspace_image_plane_frame_wrt_world, self.workspace_image_plane_x_length, self.workspace_image_plane_y_length, self.workspace_image_plane_image_points, self.workspace_image_camera_frame_wrt_world = self.load_workspace_image_infos(self.chosen_detection_workspace_image_name)  # load the information of the chosen workspace image
+            self.workspace_image_plane_frame_wrt_world, self.workspace_image_plane_x_length, self.workspace_image_plane_y_length, self.workspace_image_plane_image_points, self.workspace_image_camera_frame_wrt_world = self.load_workspace_image_information(self.chosen_detection_workspace_image_name)  # load the information of the chosen workspace image
             self.removed_boundaries_list = []  # initialize the list to store the removed boundaries of the workspace obstacles
             self.update_workspace_obstacles_indicators()  # update the indicators of the workspace obstacles
         else:  # if the chosen file does not exist
@@ -3963,7 +3964,7 @@ You can also press left click on the number of a boundary to remove it and right
         shown_workspace_image_name = self.show_workspace_image_combobox.get()  # the name of the shown workspace image
         if shown_workspace_image_name in self.saved_workspace_images_list:  # if the chosen workspace image exists
             self.shown_workspace_image_name = shown_workspace_image_name  # change the shown workspace image
-            _, _, _, self.shown_workspace_image_plane_corners, _ = self.load_workspace_image_infos(self.shown_workspace_image_name)  # load the information of the shown workspace image
+            _, _, _, self.shown_workspace_image_plane_corners, _ = self.load_workspace_image_information(self.shown_workspace_image_name)  # load the information of the shown workspace image
         else:  # if the chosen workspace image does not exist
             ms.showerror("Error", f"The chosen workspace image \"{shown_workspace_image_name}\" does not exist!", parent = self.menus_area)  # show an error message
         self.update_camera_control_indicators()  # update the indicators of the camera control
@@ -4042,7 +4043,7 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
         if workspace_image_name not in self.saved_workspace_images_list:  # if the name of the saved file is not in the values of the combobox that contains the names of the saved files
             self.saved_workspace_images_list.append(workspace_image_name)  # add the file name to the list of the saved files
         ms.showinfo("Workspace image information saved!", f"The workspace image and its information have been saved successfully in the files \"{workspace_image_name}.jpg\" and \"{workspace_image_name}_info.txt\" respectively!", parent = self.menus_area)  # show an info message
-    def load_workspace_image_infos(self, workspace_image_name, event = None):  # load the information of the workspace image
+    def load_workspace_image_information(self, workspace_image_name, event = None):  # load the information of the workspace image
         if workspace_image_name in self.saved_workspace_images_list:  # if the chosen workspace image exists
             loaded_image_info_file = open(self.saved_workspace_images_infos_folder_path + fr"/{workspace_image_name}_info.txt", "r", encoding = "utf-8")  # open the information file of the chosen workspace image in read mode
             loaded_image_info_lines = loaded_image_info_file.readlines()  # read all the lines of the information file
@@ -4260,7 +4261,7 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
                     self.obstacles_infos_text = "✗ No obstacles have been detected\nyet for this workspace image!"  # the text to show that no obstacles have been detected for the chosen workspace image
             else:  # if the chosen workspace image does not exist
                 ms.showerror("Error", f"The chosen workspace image \"{chosen_solver_workspace_image_name}\" does not exist!")  # show an error message
-            self.workspace_image_plane_frame_wrt_world, self.workspace_image_plane_x_length, self.workspace_image_plane_y_length, self.workspace_image_plane_image_points, self.workspace_image_camera_frame_wrt_world = self.load_workspace_image_infos(self.chosen_solver_workspace_image_name)  # load the information of the chosen workspace image
+            self.workspace_image_plane_frame_wrt_world, self.workspace_image_plane_x_length, self.workspace_image_plane_y_length, self.workspace_image_plane_image_points, self.workspace_image_camera_frame_wrt_world = self.load_workspace_image_information(self.chosen_solver_workspace_image_name)  # load the information of the chosen workspace image
             self.camera_wrt_world_transformation_matrix = np.array(self.workspace_image_camera_frame_wrt_world, dtype = np.float32)  # the transformation matrix of the loaded camera frame with respect to the world frame
             self.obstacles_2d_plane_x_length = self.workspace_image_plane_x_length  # the length along the x axis of the loaded 2D plane
             self.obstacles_2d_plane_y_length = self.workspace_image_plane_y_length  # the length along the y axis of the loaded 2D plane
@@ -4269,8 +4270,8 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
     def plot_obstacles_objects(self, event = None):  # plot the obstacles objects of the workspace with their real world dimensions
         if self.boundaries_are_detected:  # if the boundaries of the obstacles are detected
             p_x_length = 100.0 * self.obstacles_2d_plane_x_length; p_y_length = 100.0 * self.obstacles_2d_plane_y_length  # the lengths of the 2D obstacles plane in centimeters
-            start_pos_workspace_plane = 100.0 * self.start_pos_workspace_plane  # the start position of the robot's end-effector on the 2D workspace plane in centimeters
-            target_pos_workspace_plane = 100.0 * self.target_pos_workspace_plane  # the target position of the robot's end-effector on the 2D workspace plane in centimeters
+            start_pos_workspace_plane = 100.0 * (self.start_pos_workspace_plane + np.array([self.obstacles_2d_plane_x_length / 2.0, self.obstacles_2d_plane_y_length / 2.0]))  # the start position of the robot's end-effector on the 2D workspace plane in centimeters
+            target_pos_workspace_plane = 100.0 * (self.target_pos_workspace_plane + np.array([self.obstacles_2d_plane_x_length / 2.0, self.obstacles_2d_plane_y_length / 2.0]))  # the target position of the robot's end-effector on the 2D workspace plane in centimeters
             obstacles_boundaries_for_solver = [100.0 * boundary for boundary in self.obstacles_boundaries_for_solver]  # the boundaries of the obstacles for the solver in centimeters
             fig = plt.figure()  # create a figure
             ax = fig.add_subplot(111)  # create a subplot
@@ -4304,7 +4305,7 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
                 except: pass
                 self.start_point_plot, = fig_ax.plot(x, y, "mo", markersize = 5)  # plot the start position of the robot's end-effector on the 2D workspace plane
                 self.start_point_plot_text = fig_ax.text(x, y, "Start", fontsize = 7, color = "m")  # write the text of the start position of the robot's end-effector on the 2D workspace plane
-                self.start_pos_workspace_plane = np.array([x / 100.0, y / 100.0])  # change the start position of the robot's end-effector on the 2D workspace plane
+                self.start_pos_workspace_plane = np.array([x / 100.0 - self.obstacles_2d_plane_x_length / 2.0, y / 100.0 - self.obstacles_2d_plane_y_length / 2.0])  # change the start position of the robot's end-effector on the 2D workspace plane
                 self.reset_control_law_outputs()  # reset the control law outputs
             elif event.button == 3:  # if the user presses mouse right click
                 try:
@@ -4313,7 +4314,7 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
                 except: pass
                 self.target_point_plot, = fig_ax.plot(x, y, "go", markersize = 5)  # plot the target position of the robot's end-effector on the 2D workspace plane
                 self.target_point_plot_text = fig_ax.text(x, y, "Target", fontsize = 7, color = "g")  # write the text of the target position of the robot's end-effector on the 2D workspace plane
-                self.target_pos_workspace_plane = np.array([x / 100.0, y / 100.0])  # change the target position of the robot's end-effector on the 2D workspace plane
+                self.target_pos_workspace_plane = np.array([x / 100.0 - self.obstacles_2d_plane_x_length / 2.0, y / 100.0 - self.obstacles_2d_plane_y_length / 2.0])  # change the target position of the robot's end-effector on the 2D workspace plane
                 self.reset_control_law_outputs()  # reset the control law outputs
             elif event.button == 2:  # if the user presses mouse middle click
                 try:
@@ -4328,39 +4329,37 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
         self.workspace_plane_creation_parameter = self.alternate_matrix_elements(self.workspace_plane_creation_parameters_list, self.workspace_plane_creation_parameter)  # change the workspace plane creation parameters
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def set_start_pos_on_plane(self, event = None):  # set the start position of the robot's end-effector on the 2D workspace plane for the obstacles avoidance solver
-        start_pos_previous = np.array(self.start_pos_workspace_plane)  # the previous start position of the robot's end-effector on the 2D workspace plane
+        start_pos_previous = np.array(self.start_pos_workspace_plane) + np.array([self.obstacles_2d_plane_x_length / 2.0, self.obstacles_2d_plane_y_length / 2.0])  # the previous start position of the robot's end-effector on the 2D workspace plane
         initial_x_pos_on_plane = sd.askfloat("Choose the start position on plane", f"Suppose that the origin of the plane is the bottom-left corner of the plane and the x-axis,\ny-axis are extended to the bottom-right and top-left corners of the plane, respectively.\n\
-Enter the start x coordinate of the robot's end-effector on the 2D workspace plane (in meters).\nThe value must be in the range [0, {self.workspace_image_plane_x_length:.3f}]:", initialvalue = self.start_pos_workspace_plane[0], minvalue = 0, maxvalue = self.workspace_image_plane_x_length, parent = self.menus_area)  # ask the user to enter the start x pos of the robot's end-effector on the 2D workspace plane
+Enter the start x coordinate of the robot's end-effector on the 2D workspace plane (in meters).\nThe value must be in the range [0, {self.workspace_image_plane_x_length:.3f}]:", initialvalue = start_pos_previous[0], minvalue = 0, maxvalue = self.workspace_image_plane_x_length, parent = self.menus_area)  # ask the user to enter the start x pos of the robot's end-effector on the 2D workspace plane
         if initial_x_pos_on_plane != None:  # if the user enters a number
-            self.start_pos_workspace_plane[0] = initial_x_pos_on_plane  # change the start x pos of the robot's end-effector on the 2D workspace plane
-        initial_y_pos_on_plane = sd.askfloat("Choose the start position on plane", f"Enter the start y coordinate of the robot's end-effector on the\n2D workspace plane (in meters). The value must be in the range [0, {self.workspace_image_plane_y_length:.3f}]:", initialvalue = self.start_pos_workspace_plane[1], minvalue = 0, maxvalue = self.workspace_image_plane_y_length, parent = self.menus_area)  # ask the user to enter the start y pos of the robot's end-effector on the 2D workspace plane
+            self.start_pos_workspace_plane[0] = initial_x_pos_on_plane - self.obstacles_2d_plane_x_length / 2.0  # change the start x pos of the robot's end-effector on the 2D workspace plane
+        initial_y_pos_on_plane = sd.askfloat("Choose the start position on plane", f"Enter the start y coordinate of the robot's end-effector on the\n2D workspace plane (in meters). The value must be in the range [0, {self.workspace_image_plane_y_length:.3f}]:", initialvalue = start_pos_previous[1], minvalue = 0, maxvalue = self.workspace_image_plane_y_length, parent = self.menus_area)  # ask the user to enter the start y pos of the robot's end-effector on the 2D workspace plane
         if initial_y_pos_on_plane != None:  # if the user enters a number
-            self.start_pos_workspace_plane[1] = initial_y_pos_on_plane  # change the start y pos of the robot's end-effector on the 2D workspace plane
-        if not np.linalg.norm(self.start_pos_workspace_plane - start_pos_previous) < 0.0001:  # if the start position of the robot's end-effector on the 2D workspace plane is changed (it is different from the previous one by more than 0.1 mm)
+            self.start_pos_workspace_plane[1] = initial_y_pos_on_plane - self.obstacles_2d_plane_y_length / 2.0  # change the start y pos of the robot's end-effector on the 2D workspace plane
+        if not np.linalg.norm(self.start_pos_workspace_plane + np.array([self.obstacles_2d_plane_x_length / 2.0, self.obstacles_2d_plane_y_length / 2.0]) - start_pos_previous) < 0.001:  # if the start position of the robot's end-effector on the 2D workspace plane is changed (it is different from the previous one by more than 0.1 mm)
             self.reset_control_law_outputs()  # reset the control law outputs
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def set_target_pos_on_plane(self, event = None):  # set the final position of the robot's end-effector on the 2D workspace plane for the obstacles avoidance solver
-        target_pos_previous = np.array(self.target_pos_workspace_plane)  # the previous target position of the robot's end-effector on the 2D workspace plane
+        target_pos_previous = np.array(self.target_pos_workspace_plane) + np.array([self.obstacles_2d_plane_x_length / 2.0, self.obstacles_2d_plane_y_length / 2.0])  # the previous target position of the robot's end-effector on the 2D workspace plane
         final_x_pos_plane = sd.askfloat("Choose the final position on plane", f"Suppose that the origin of the plane is the bottom-left corner of the plane and the x-axis,\ny-axis are extended to the bottom-right and top-left corners of the plane, respectively.\n\
-Enter the final x coordinate of the robot's end-effector on the 2D workspace plane (in meters).\nThe value must be in the range [0, {self.workspace_image_plane_x_length:.3f}]:", initialvalue = self.target_pos_workspace_plane[0], minvalue = 0, maxvalue = self.workspace_image_plane_x_length, parent = self.menus_area)  # ask the user to enter the final x pos of the robot's end-effector on the 2D workspace plane
+Enter the final x coordinate of the robot's end-effector on the 2D workspace plane (in meters).\nThe value must be in the range [0, {self.workspace_image_plane_x_length:.3f}]:", initialvalue = target_pos_previous[0], minvalue = 0, maxvalue = self.workspace_image_plane_x_length, parent = self.menus_area)  # ask the user to enter the final x pos of the robot's end-effector on the 2D workspace plane
         if final_x_pos_plane != None:  # if the user enters a number
-            self.target_pos_workspace_plane[0] = final_x_pos_plane  # change the final x pos of the robot's end-effector on the 2D workspace plane
-        final_y_pos_plane = sd.askfloat("Choose the final position on plane", f"Enter the final y coordinate of the robot's end-effector on the\n2D workspace plane (in meters). The value must be in the range [0, {self.workspace_image_plane_y_length:.3f}]:", initialvalue = self.target_pos_workspace_plane[1], minvalue = 0, maxvalue = self.workspace_image_plane_y_length, parent = self.menus_area)  # ask the user to enter the final y pos of the robot's end-effector on the 2D workspace plane
+            self.target_pos_workspace_plane[0] = final_x_pos_plane - self.obstacles_2d_plane_x_length / 2.0  # change the final x pos of the robot's end-effector on the 2D workspace plane
+        final_y_pos_plane = sd.askfloat("Choose the final position on plane", f"Enter the final y coordinate of the robot's end-effector on the\n2D workspace plane (in meters). The value must be in the range [0, {self.workspace_image_plane_y_length:.3f}]:", initialvalue = target_pos_previous[1], minvalue = 0, maxvalue = self.workspace_image_plane_y_length, parent = self.menus_area)  # ask the user to enter the final y pos of the robot's end-effector on the 2D workspace plane
         if final_y_pos_plane != None:  # if the user enters a number
-            self.target_pos_workspace_plane[1] = final_y_pos_plane  # change the final y pos of the robot's end-effector on the 2D workspace plane
-        if not np.linalg.norm(self.target_pos_workspace_plane - target_pos_previous) < 0.0001:  # if the target position of the robot's end-effector on the 2D workspace plane is changed (it is different from the previous one by more than 0.1 mm)
+            self.target_pos_workspace_plane[1] = final_y_pos_plane - self.obstacles_2d_plane_y_length / 2.0  # change the final y pos of the robot's end-effector on the 2D workspace plane
+        if not np.linalg.norm(self.target_pos_workspace_plane + np.array([self.obstacles_2d_plane_x_length / 2.0, self.obstacles_2d_plane_y_length / 2.0]) - target_pos_previous) < 0.001:  # if the target position of the robot's end-effector on the 2D workspace plane is changed (it is different from the previous one by more than 0.1 mm)
             self.reset_control_law_outputs()  # reset the control law outputs
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def check_start_target_pos_on_plane(self, event = None):  # check the start and target positions of the robot's end-effector on the 2D workspace plane
         initial_target_pos_inside_outer_boundary = True  # the flag that indicates if the start and target positions are inside the outer boundary
         initial_target_pos_outside_inner_boundaries = True  # the flag that indicates if the start and target positions are outside the inner boundaries
-        start_pos_plane = np.array(self.start_pos_workspace_plane) + np.array([-self.obstacles_2d_plane_x_length / 2.0, -self.obstacles_2d_plane_y_length / 2.0])  # the start position of the robot's end-effector on the 2D workspace plane
-        target_pos_plane = np.array(self.target_pos_workspace_plane) + np.array([-self.obstacles_2d_plane_x_length / 2.0, -self.obstacles_2d_plane_y_length / 2.0])  # the target position of the robot's end-effector on the 2D workspace plane
         if len(self.obstacles_boundaries_for_solver) != 0:  # if there are obstacles boundaries
-            if not pbo.points_in_polygon_detection(self.obstacles_boundaries_for_solver[-1], [start_pos_plane, target_pos_plane]).all():  # if the start and target positions are not inside the outer boundary
+            if not pbo.points_in_polygon_detection(self.obstacles_boundaries_for_solver[-1], [self.start_pos_workspace_plane, self.target_pos_workspace_plane]).all():  # if the start and target positions are not inside the outer boundary
                 initial_target_pos_inside_outer_boundary = False  # change the flag to indicate that the start and target positions are not inside the outer boundary
             for k in range(len(self.obstacles_boundaries_for_solver) - 1):  # for each inner obstacle boundary
-                if pbo.points_in_polygon_detection(self.obstacles_boundaries_for_solver[k], [start_pos_plane, target_pos_plane]).any():  # if the start and target positions are inside an inner boundary
+                if pbo.points_in_polygon_detection(self.obstacles_boundaries_for_solver[k], [self.start_pos_workspace_plane, self.target_pos_workspace_plane]).any():  # if the start and target positions are inside an inner boundary
                     initial_target_pos_outside_inner_boundaries = False  # change the flag to indicate that the start and target positions are inside an inner boundary
             if initial_target_pos_inside_outer_boundary and initial_target_pos_outside_inner_boundaries:  # if the start and target positions are inside the outer boundary and outside the inner boundaries
                 self.positions_on_plane_are_correct = True  # the start and target positions are set correctly
@@ -4373,9 +4372,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             self.check_positions_on_plane_text = "✗ No obstacles have been detected\nyet for this workspace image!"  # the text to show that no obstacles have been detected for the chosen workspace image            
     def start_building_workspace_transformations(self, event = None):  # start building the workspace transformations
         if self.boundaries_are_detected:  # if the boundaries of the obstacles are detected and the start and target positions are set correctly
-            start_pos_workspace_plane = self.start_pos_workspace_plane + np.array([-self.workspace_image_plane_x_length / 2.0, -self.workspace_image_plane_y_length / 2.0])  # the start position of the robot's end-effector on the 2D workspace plane
-            target_pos_workspace_plane =  self.target_pos_workspace_plane + np.array([-self.workspace_image_plane_x_length / 2.0, -self.workspace_image_plane_y_length / 2.0])  # the target position of the robot's end-effector on the 2D workspace plane
-            self.hntf2d_solver = cl.hntf2d_control_law(p_init = start_pos_workspace_plane, p_d = target_pos_workspace_plane, outer_boundary = self.obstacles_boundaries_for_solver[-1], inner_boundaries = self.obstacles_boundaries_for_solver[:-1], \
+            self.hntf2d_solver = cl.hntf2d_control_law(p_init = self.start_pos_workspace_plane, p_d = self.target_pos_workspace_plane, outer_boundary = self.obstacles_boundaries_for_solver[-1], inner_boundaries = self.obstacles_boundaries_for_solver[:-1], \
                                                         k_d = self.k_d, k_i = self.k_i, w_phi = self.w_phi, vp_max = self.vp_max, dp_min = self.dp_min)  # create a new hntf2d control law object
             self.hntf2d_solver.create_new_harmonic_map_object()  # create a new harmonic map object
             self.reset_control_law_outputs()  # reset the control law outputs
@@ -4400,31 +4397,43 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                 text_margin = 0.01; text_fontsize = 8; legend_fontsize = 7; outer_boundaries_linewidth = 1; inner_boundaries_linewidth = 1; control_law_path_linewidth = 2; positions_fontsize = 5; punctures_fontsize = 4  # some plot parameters
                 fig = plt.figure()
                 ax1 = fig.add_subplot(121)
+                p_init_plot, = ax1.plot(self.hntf2d_solver.p_init[0], self.hntf2d_solver.p_init[1], "magenta", marker = "s", markersize = positions_fontsize)
+                p_d_plot, = ax1.plot(self.hntf2d_solver.p_d[0], self.hntf2d_solver.p_d[1], "green", marker = "s", markersize = positions_fontsize)
                 outer_plot, = ax1.plot(self.hntf2d_solver.outer_boundary[:, 0], self.hntf2d_solver.outer_boundary[:, 1], "red", linewidth = outer_boundaries_linewidth)
                 for i in range(len(self.hntf2d_solver.inner_boundaries)):
                     inner_plot, = ax1.plot(self.hntf2d_solver.inner_boundaries[i][:, 0], self.hntf2d_solver.inner_boundaries[i][:, 1], "blue", linewidth = inner_boundaries_linewidth)
                     ax1.text(np.mean(self.hntf2d_solver.inner_boundaries[i][:, 0]), np.mean(self.hntf2d_solver.inner_boundaries[i][:, 1]), f"{i+1}", fontsize = text_fontsize)
-                p_init_plot, = ax1.plot(self.hntf2d_solver.p_init[0], self.hntf2d_solver.p_init[1], "magenta", marker = "s", markersize = positions_fontsize)
-                p_d_plot, = ax1.plot(self.hntf2d_solver.p_d[0], self.hntf2d_solver.p_d[1], "green", marker = "s", markersize = positions_fontsize)
                 if len(self.realws_path_control_law_output) != 0:  # if a path (on the real workspace) has been calculated by the control law
                     realws_path_plot, = ax1.plot(np.array(self.realws_path_control_law_output)[:, 0], np.array(self.realws_path_control_law_output)[:, 1], "black", linewidth = control_law_path_linewidth)
-                    ax1.legend([outer_plot, inner_plot, p_init_plot, p_d_plot, realws_path_plot], ["Outer boundary", "Inner boundaries", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
+                    if len(self.hntf2d_solver.inner_boundaries) != 0:  # if there are inner boundaries
+                        ax1.legend([outer_plot, inner_plot, p_init_plot, p_d_plot, realws_path_plot], ["Outer boundary", "Inner boundaries", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
+                    else:  # if there are no inner boundaries
+                        ax1.legend([outer_plot, p_init_plot, p_d_plot, realws_path_plot], ["Outer boundary", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
                 else:  # if no path (on the real workspace) has been calculated yet by the control law
-                    ax1.legend([outer_plot, inner_plot, p_init_plot, p_d_plot], ["Outer boundary", "Inner boundaries", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
+                    if len(self.hntf2d_solver.inner_boundaries) != 0:  # if there are inner boundaries
+                        ax1.legend([outer_plot, inner_plot, p_init_plot, p_d_plot], ["Outer boundary", "Inner boundaries", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
+                    else:  # if there are no inner boundaries
+                        ax1.legend([outer_plot, p_init_plot, p_d_plot], ["Outer boundary", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
                 ax1.set_title(f"Original real workspace\n(press mouse right click)")
                 ax1.set_xlabel("x (m)"); ax1.set_ylabel("y (m)"); ax1.set_aspect("equal"); ax1.grid(True)
                 ax2 = fig.add_subplot(122)
+                q_init_plot, = ax2.plot(self.hntf2d_solver.q_init_disk[0], self.hntf2d_solver.q_init_disk[1], "magenta", marker = "s", markersize = positions_fontsize)
+                q_d_plot, = ax2.plot(self.hntf2d_solver.q_d_disk[0], self.hntf2d_solver.q_d_disk[1], "green", marker = "s", markersize = positions_fontsize)
                 unit_disk_plot, = ax2.plot(self.hntf2d_solver.unit_circle[:, 0], self.hntf2d_solver.unit_circle[:, 1], "red", linewidth = outer_boundaries_linewidth)
                 for i in range(len(self.hntf2d_solver.q_i_disk)):
                     punctures_plot, = ax2.plot(self.hntf2d_solver.q_i_disk[i][0], self.hntf2d_solver.q_i_disk[i][1], "blue", marker = "o", markersize = punctures_fontsize)
                     ax2.text(self.hntf2d_solver.q_i_disk[i][0] + text_margin, self.hntf2d_solver.q_i_disk[i][1] + text_margin, f"{i+1}", fontsize = text_fontsize)
-                q_init_plot, = ax2.plot(self.hntf2d_solver.q_init_disk[0], self.hntf2d_solver.q_init_disk[1], "magenta", marker = "s", markersize = positions_fontsize)
-                q_d_plot, = ax2.plot(self.hntf2d_solver.q_d_disk[0], self.hntf2d_solver.q_d_disk[1], "green", marker = "s", markersize = positions_fontsize)
                 if len(self.unit_disk_path_control_law_output) != 0:  # if a path (on the unit disk) has been calculated by the control law
                     unit_disk_path_plot, = ax2.plot(np.array(self.unit_disk_path_control_law_output)[:, 0], np.array(self.unit_disk_path_control_law_output)[:, 1], "black", linewidth = control_law_path_linewidth)
-                    ax2.legend([unit_disk_plot, punctures_plot, q_init_plot, q_d_plot, unit_disk_path_plot], ["Unit disk", "Punctures", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
+                    if len(self.hntf2d_solver.q_i_disk) != 0:  # if there are inner boundaries
+                        ax2.legend([unit_disk_plot, punctures_plot, q_init_plot, q_d_plot, unit_disk_path_plot], ["Unit disk", "Punctures", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
+                    else:  # if there are no inner boundaries
+                        ax2.legend([unit_disk_plot, q_init_plot, q_d_plot, unit_disk_path_plot], ["Unit disk", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
                 else:  # if no path (on the unit disk) has been calculated yet by the control law
-                    ax2.legend([unit_disk_plot, punctures_plot, q_init_plot, q_d_plot], ["Unit disk", "Punctures", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
+                    if len(self.hntf2d_solver.q_i_disk) != 0:  # if there are inner boundaries
+                        ax2.legend([unit_disk_plot, punctures_plot, q_init_plot, q_d_plot], ["Unit disk", "Punctures", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
+                    else:  # if there are no inner boundaries
+                        ax2.legend([unit_disk_plot, q_init_plot, q_d_plot], ["Unit disk", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
                 ax2.set_title(f"Real workspace ->\n-> Unit disk transformation")
                 ax2.set_xlabel("u"); ax2.set_ylabel("v"); ax2.set_aspect("equal"); ax2.grid(True)
                 fig.canvas.mpl_connect("button_press_event", lambda event: self.mark_transform_points_on_wtd_plot(event, ax1, ax2))  # connect a function to the plot
@@ -4462,31 +4471,43 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                 points_max_norm = max([np.linalg.norm(self.hntf2d_solver.q_i[k]) for k in range(len(self.hntf2d_solver.q_i))] + [np.linalg.norm(self.hntf2d_solver.q_init), np.linalg.norm(self.hntf2d_solver.q_d)])  # calculate the maximum norm of the points
                 fig = plt.figure()
                 ax1 = fig.add_subplot(121)
+                q_init_disk_plot, = ax1.plot(self.hntf2d_solver.q_init_disk[0], self.hntf2d_solver.q_init_disk[1], "magenta", marker = "s", markersize = positions_fontsize)
+                q_d_disk_plot, = ax1.plot(self.hntf2d_solver.q_d_disk[0], self.hntf2d_solver.q_d_disk[1], "green", marker = "s", markersize = positions_fontsize)
                 unit_disk_plot, = ax1.plot(self.hntf2d_solver.unit_circle[:, 0], self.hntf2d_solver.unit_circle[:, 1], "red", linewidth = unit_circle_linewidth)
                 for i in range(len(self.hntf2d_solver.q_i_disk)):
                     punctures_plot, = ax1.plot(self.hntf2d_solver.q_i_disk[i][0], self.hntf2d_solver.q_i_disk[i][1], "blue", marker = "o", markersize = punctures_fontsize)
                     ax1.text(self.hntf2d_solver.q_i_disk[i][0] + text_margin, self.hntf2d_solver.q_i_disk[i][1] + text_margin, f"{i+1}", fontsize = text_fontsize)
-                q_init_disk_plot, = ax1.plot(self.hntf2d_solver.q_init_disk[0], self.hntf2d_solver.q_init_disk[1], "magenta", marker = "s", markersize = positions_fontsize)
-                q_d_disk_plot, = ax1.plot(self.hntf2d_solver.q_d_disk[0], self.hntf2d_solver.q_d_disk[1], "green", marker = "s", markersize = positions_fontsize)
                 if len(self.unit_disk_path_control_law_output) != 0:  # if a path (on the unit disk) has been calculated by the control law
                     unit_disk_path_plot, = ax1.plot(np.array(self.unit_disk_path_control_law_output)[:, 0], np.array(self.unit_disk_path_control_law_output)[:, 1], "black", linewidth = control_law_path_linewidth)
-                    ax1.legend([unit_disk_plot, punctures_plot, q_init_disk_plot, q_d_disk_plot, unit_disk_path_plot], ["Unit disk", "Punctures", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
+                    if len(self.hntf2d_solver.q_i_disk) != 0:  # if there are inner boundaries
+                        ax1.legend([unit_disk_plot, punctures_plot, q_init_disk_plot, q_d_disk_plot, unit_disk_path_plot], ["Unit disk", "Punctures", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
+                    else:  # if there are no inner boundaries
+                        ax1.legend([unit_disk_plot, q_init_disk_plot, q_d_disk_plot, unit_disk_path_plot], ["Unit disk", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
                 else:  # if no path (on the unit disk) has been calculated yet by the control law
-                    ax1.legend([unit_disk_plot, punctures_plot, q_init_disk_plot, q_d_disk_plot], ["Unit disk", "Punctures", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
+                    if len(self.hntf2d_solver.q_i_disk) != 0:  # if there are inner boundaries
+                        ax1.legend([unit_disk_plot, punctures_plot, q_init_disk_plot, q_d_disk_plot], ["Unit disk", "Punctures", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
+                    else:  # if there are no inner boundaries
+                        ax1.legend([unit_disk_plot, q_init_disk_plot, q_d_disk_plot], ["Unit disk", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
                 ax1.set_title(f"Real workspace ->\n-> Unit disk transformation\n(press mouse right click)")
                 ax1.set_xlabel("u"); ax1.set_ylabel("v"); ax1.set_aspect("equal")
                 ax1.grid(True)
                 ax2 = fig.add_subplot(122)
+                q_init_R2_plot, = ax2.plot(self.hntf2d_solver.q_init[0], self.hntf2d_solver.q_init[1], "magenta", marker = "s", markersize = positions_fontsize)
+                q_d_R2_plot, = ax2.plot(self.hntf2d_solver.q_d[0], self.hntf2d_solver.q_d[1], "green", marker = "s", markersize = positions_fontsize)
                 for i in range(len(self.hntf2d_solver.q_i)):
                     displayed_punctures_plot, = ax2.plot(self.hntf2d_solver.q_i[i][0], self.hntf2d_solver.q_i[i][1], "blue", marker = "o", markersize = punctures_fontsize)
                     ax2.text(self.hntf2d_solver.q_i[i][0] + 3.0*text_margin, self.hntf2d_solver.q_i[i][1] + 3.0*text_margin, f"{i+1}", fontsize = text_fontsize)
-                q_init_R2_plot, = ax2.plot(self.hntf2d_solver.q_init[0], self.hntf2d_solver.q_init[1], "magenta", marker = "s", markersize = positions_fontsize)
-                q_d_R2_plot, = ax2.plot(self.hntf2d_solver.q_d[0], self.hntf2d_solver.q_d[1], "green", marker = "s", markersize = positions_fontsize)
                 if len(self.R2_plane_path_control_law_output) != 0:  # if a path (on the R2 plane) has been calculated by the control law
                     R2_plane_path_plot, = ax2.plot(np.array(self.R2_plane_path_control_law_output)[:, 0], np.array(self.R2_plane_path_control_law_output)[:, 1], "black", linewidth = control_law_path_linewidth)
-                    ax2.legend([displayed_punctures_plot, q_init_R2_plot, q_d_R2_plot, R2_plane_path_plot], ["Punctures", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
+                    if len(self.hntf2d_solver.q_i) != 0:  # if there are inner boundaries
+                        ax2.legend([displayed_punctures_plot, q_init_R2_plot, q_d_R2_plot, R2_plane_path_plot], ["Punctures", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
+                    else:  # if there are no inner boundaries
+                        ax2.legend([q_init_R2_plot, q_d_R2_plot, R2_plane_path_plot], ["Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
                 else:  # if no path (on the R2 plane) has been calculated yet by the control law
-                    ax2.legend([displayed_punctures_plot, q_init_R2_plot, q_d_R2_plot], ["Punctures", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
+                    if len(self.hntf2d_solver.q_i) != 0:  # if there are inner boundaries
+                        ax2.legend([displayed_punctures_plot, q_init_R2_plot, q_d_R2_plot], ["Punctures", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
+                    else:  # if there are no inner boundaries
+                        ax2.legend([q_init_R2_plot, q_d_R2_plot], ["Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
                 ax2.set_title(f"Unit disk ->\n-> R2 plane transformation")
                 ax2.set_xlabel("x"); ax2.set_ylabel("y"); ax2.set_aspect("equal")
                 ax2.set_xlim(-1.5 * points_max_norm, 1.5 * points_max_norm); ax2.set_ylim(-1.5 * points_max_norm, 1.5 * points_max_norm)
@@ -4681,7 +4702,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             reject_point = False  # the flag to reject the point
             for k in range(len(P)):  # for each point p
                 for i in range(len(self.hntf2d_solver.q_i)):
-                    if np.linalg.norm(P[k] - self.hntf2d_solver.q_i[i]) < (2.0 * grid_scale_factor * points_max_norm) / 100.0:  # if the point p is on an obstacle
+                    if np.linalg.norm(P[k] - self.hntf2d_solver.q_i[i]) < 0.5 * (2.0 * grid_scale_factor * points_max_norm) / 100.0:  # if the point p is on an obstacle
                         reject_point = True  # set the flag to reject the point
                         break
                 if not reject_point:  # if the point p is not near an obstacle
@@ -4736,22 +4757,21 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
     def apply_control_law_obstacles_avoidance(self, event = None):  # apply the control law for the obstacles avoidance
         if not self.robot_control_thread_flag:  # if the robot control thread is not running
             if self.hntf2d_solver != None and self.transformations_are_built and self.positions_on_plane_are_correct:  # if the workspace transformations are built
-                p_list, p_dot_list, control_law_success = self.hntf2d_solver.run_control_law(self.solver_time_step_dt, self.solver_maximum_iterations, self.solver_error_tolerance)  # apply the control law and compute the path positions and velocities on the real and transformed workspaces
+                p_list, p_dot_list, q_disk_list, q_list, control_law_success = self.hntf2d_solver.run_control_law(self.solver_time_step_dt, self.solver_maximum_iterations, self.solver_error_tolerance)  # apply the control law and compute the path positions and velocities on the real and transformed workspaces
                 print("The control process has been completed!")  # print a message
                 self.reset_control_law_outputs()  # reset the control law outputs
-                self.realws_path_control_law_output = p_list  # the path positions on the real workspace generated by the control law
-                self.realws_velocities_control_law_output = p_dot_list  # the velocities on the real workspace generated by the control law
-                for i in range(len(p_list)):  # for each path position
-                    self.unit_disk_path_control_law_output.append(self.hntf2d_solver.realws_to_unit_disk_mapping(p_list[i]))  # the path position on the unit disk
-                    self.R2_plane_path_control_law_output.append(self.hntf2d_solver.unit_disk_to_R2_mapping(self.unit_disk_path_control_law_output[i]))  # the path position on the R2 plane
+                self.realws_path_control_law_output = p_list  # the path positions on the real workspace, generated by the control law
+                self.realws_velocities_control_law_output = p_dot_list  # the velocities on the real workspace, generated by the control law
+                self.unit_disk_path_control_law_output = q_disk_list  # the path positions on the unit disk, generated by the control law
+                self.R2_plane_path_control_law_output = q_list  # the path positions on the R2 plane, generated by the control law
                 if control_law_success:  # if the control law is successful
                     ms.showinfo("Control law success", f"The control law has been applied successfully!\n\
-• Convergence error = {1000.0 * (np.linalg.norm(p_list[-1] - self.hntf2d_solver.p_d)):.1f} mm\n\
+• Convergence error = {100.0 * (np.linalg.norm(p_list[-1] - self.hntf2d_solver.p_d)):.2f} cm\n\
 • Number of iterations = {len(self.realws_path_control_law_output)}\n\
 • Total path time = {np.round(len(self.realws_path_control_law_output) * self.solver_time_step_dt, 3)} sec", parent = self.menus_area)  # show an info message
                 else:  # if the control law is not successful
                     ms.showinfo("Control law failure", f"The control law has failed to converge within the maximum number of iterations ({self.solver_maximum_iterations})!\n\
-• Convergence error = {1000.0 * (np.linalg.norm(p_list[-1] - self.hntf2d_solver.p_d)):.1f} mm", parent = self.menus_area)  # show an info message
+• Convergence error = {100.0 * (np.linalg.norm(p_list[-1] - self.hntf2d_solver.p_d)):.2f} cm", parent = self.menus_area)  # show an info message
                 if self.solver_enable_error_correction:  # if the error correction is enabled
                     self.realws_path_control_law_output.append(self.hntf2d_solver.p_d)  # append the target position to the proper list of the control law output
                     self.realws_velocities_control_law_output.append((self.hntf2d_solver.p_d - p_list[-1]) / self.solver_time_step_dt)  # append the target velocity to the proper list of the control law output
@@ -4776,7 +4796,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                     # compute the start configuration of the end-effector on the workspace plane
                     obstacles_2d_plane_normal_vector, obstacles_2d_plane_orientation, obstacles_2d_plane_translation = gf.get_components_from_xy_plane_transformation(self.obst_plane_wrt_world_transformation_matrix)  # get the components of the obstacles 2D plane transformation
                     end_effector_start_configuration = gf.xy_plane_transformation(-obstacles_2d_plane_normal_vector, obstacles_2d_plane_orientation, obstacles_2d_plane_translation)  # initialize the transformation matrix of the end-effector on the workspace plane
-                    end_effector_start_position = self.obst_plane_wrt_world_transformation_matrix @ np.array([self.start_pos_workspace_plane[0] - self.obstacles_2d_plane_x_length / 2.0, self.start_pos_workspace_plane[1] - self.obstacles_2d_plane_y_length / 2.0, 0.0, 1.0])  # the start position of the end-effector on the workspace plane
+                    end_effector_start_position = self.obst_plane_wrt_world_transformation_matrix @ np.array([self.start_pos_workspace_plane[0], self.start_pos_workspace_plane[1], 0.0, 1.0])  # the start position of the end-effector on the workspace plane
                     end_effector_start_configuration[:, 3] = end_effector_start_position  # the transformation matrix of the end-effector on the workspace plane
                     # compute the start configuration of the joints
                     q_joints_start_configuration, invkine_success = kin.compute_inverse_kinematics(self.built_robotic_manipulator, end_effector_start_configuration, self.invkine_tolerance)  # compute the robot's joints configuration (if possible) for the start end-effector configuration
@@ -4825,8 +4845,10 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                 self.obst_plane_wrt_world_transformation_matrix = np.array(self.workspace_image_plane_frame_wrt_world, dtype = np.float32)  # the transformation matrix of the workspace plane with respect to the world frame
             elif self.workspace_plane_creation_parameter == self.workspace_plane_creation_parameters_list[1]:  # if the user wants to define the workspace plane using the manual inputs
                 self.obst_plane_wrt_world_transformation_matrix = gf.xy_plane_transformation(self.obstacles_2d_plane_normal_vector, self.obstacles_2d_plane_orientation, self.obstacles_2d_plane_translation)  # the transformation matrix of the workspace plane with respect to the world frame
-            self.start_pos_plane_button.configure(text = str([np.round(self.start_pos_workspace_plane[k], self.distances_precision) for k in range(len(self.start_pos_workspace_plane))]))  # change the text of the start position on the plane button
-            self.target_pos_plane_button.configure(text = str([np.round(self.target_pos_workspace_plane[k], self.distances_precision) for k in range(len(self.target_pos_workspace_plane))]))  # change the text of the target position on the plane button
+            start_pos_workspace_plane = self.start_pos_workspace_plane + np.array([self.workspace_image_plane_x_length / 2.0, self.workspace_image_plane_y_length / 2.0])  # the start position of the robot's end-effector on the 2D workspace plane
+            target_pos_workspace_plane =  self.target_pos_workspace_plane + np.array([self.workspace_image_plane_x_length / 2.0, self.workspace_image_plane_y_length / 2.0])  # the target position of the robot's end-effector on the 2D workspace plane
+            self.start_pos_plane_button.configure(text = str([np.round(start_pos_workspace_plane[k], self.distances_precision) for k in range(len(start_pos_workspace_plane))]))  # change the text of the start position on the plane button
+            self.target_pos_plane_button.configure(text = str([np.round(target_pos_workspace_plane[k], self.distances_precision) for k in range(len(target_pos_workspace_plane))]))  # change the text of the target position on the plane button
             self.check_start_target_pos_indicator.configure(text = self.check_positions_on_plane_text)  # change the text of the label that checks the start and target positions on the plane
             self.show_transformations_built_indicator.configure(text = self.check_transformations_built_text)  # change the text of the label that shows the built transformations
             self.choose_k_d_parameter_button.configure(text = f"{self.k_d:.2f}")  # change the text of the button that allows the user to choose the k_d parameter
@@ -4837,7 +4859,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                 if self.k_i_chosen_num > len(self.obstacles_boundaries_for_solver) - 1:  # if the chosen number of the k_i parameters is greater than the number of the inner boundaries
                     self.k_i_chosen_num = 1  # set the chosen number of the k_i parameters to 1 (the first inner boundary)
             else:  # if there are no obstacles boundaries yet
-                self.choose_k_i_parameters_combobox["values"] = [""]  # update the values of the combobox that allows the user to choose the k_i parameters
+                self.choose_k_i_parameters_combobox["values"] = []  # update the values of the combobox that allows the user to choose the k_i parameters
                 self.k_i_chosen_num = 1  # set the chosen number of the k_i parameters to 1 (the first inner boundary)
             if len(self.k_i) != 0:  # if there are k_i parameters
                 self.choose_k_i_parameters_combobox.set(f"{self.k_i[self.k_i_chosen_num - 1]:.2f}")  # set the value of the combobox that allows the user to choose the k_i parameters
@@ -4856,8 +4878,8 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             max_path_length = self.calculate_maximum_path_length()  # calculate the maximum path length
             self.show_max_path_length_indicator.configure(text = f"{100.0 * max_path_length:.1f}")  # change the text of the label that shows the maximum path length
             if self.hntf2d_solver != None:  # if the hntf2d control law object has been created
-                self.hntf2d_solver.p_init = self.start_pos_workspace_plane + np.array([-self.workspace_image_plane_x_length / 2.0, -self.workspace_image_plane_y_length / 2.0])  # change the initial position of the obstacles avoidance solver
-                self.hntf2d_solver.p_d = self.target_pos_workspace_plane + np.array([-self.workspace_image_plane_x_length / 2.0, -self.workspace_image_plane_y_length / 2.0])  # change the target position of the obstacles avoidance solver
+                self.hntf2d_solver.p_init = self.start_pos_workspace_plane  # change the initial position of the obstacles avoidance solver
+                self.hntf2d_solver.p_d = self.target_pos_workspace_plane  # change the target position of the obstacles avoidance solver
                 self.hntf2d_solver.k_d = self.k_d  # change the k_d parameter of the obstacles avoidance solver
                 self.hntf2d_solver.k_i = self.k_i  # change the k_i parameters of the obstacles avoidance solver
                 self.hntf2d_solver.w_phi = self.w_phi  # change the w_phi parameter of the obstacles avoidance solver

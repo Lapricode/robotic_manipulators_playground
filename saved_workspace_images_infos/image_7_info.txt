@@ -1,0 +1,22 @@
+Plane frame wrt world transformation matrix:
+0.99569 0.02381 0.08967 -0.03657
+0.05101 -0.94782 -0.31470 0.10501
+0.07750 0.31791 -0.94495 1.45954
+0.00000 0.00000 0.00000 1.00000
+
+Plane x length (m):
+0.500
+Plane y length (m):
+0.500
+
+Plane corners image points (top-left, top-right, bottom-right, bottom-left) in pixels:
+415 193
+875 219
+885 688
+372 672
+
+Camera frame wrt world transformation matrix:
+1.00000 0.00000 0.00000 0.00000
+0.00000 1.00000 0.00000 0.00000
+0.00000 0.00000 1.00000 0.00000
+0.00000 0.00000 0.00000 1.00000

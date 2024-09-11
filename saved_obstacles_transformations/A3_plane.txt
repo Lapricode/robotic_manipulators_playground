@@ -1,4 +1,4 @@
-Plane x length (m): 0.42
+Plane x length (m): 0.420
 Plane y length (m): 0.297
 Plane normal vector: [0.0, 0.0, 1.0]
 Plane translation (m): [0.0, 0.0, 0.0]
