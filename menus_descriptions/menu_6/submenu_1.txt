@@ -1,27 +1,24 @@
-This submenu allows the user to configure the camera device, calibrate it, and capture images of the robot's workspace. The following options are available:
-- Define the Camera Object:
-• Camera Device: Dropdown to select the camera device being used, choosing between the internal camera or an external one.
-• Aspect Ratio: Allows the user to choose the aspect ratio of the camera, with options like 16/9.
-• Resolution: Dropdown to set the camera's resolution, such as 720p.
-• Image Size (%): Slider to adjust the size of the image frames shown on the screen, relative to the camera's resolution.
-• Open/Close Camera Button: Button to open or close the camera device.
-• Diagonal FoV (°): Displays the diagonal field of view of the camera in degrees.
-• Min Distance (m) from 2D Plane: Displays the minimum distance (in meters) between the camera and the 2D plane (in order for the camera to capture the entire plane).
-- Convert Frames to Black & White:
-• Luminance threshold: Slider to adjust the cutoff between black and white in the captured image.
-• Show grayscale image: Button to convert the captured image to black and white.
-- Define the Camera Pose:
-• Estimate camera pose: Button to estimate the camera's pose in real time using ArUco markers.
-• Estimate plane pose: Button to estimate the 2D obstacles plane's pose in real time using ArUco markers.
-• Apply moving average filter: Button to apply a moving average filter to smooth the measurements of the camera or plane pose.
-• ArUco Marker: Dropdown to select the type of ArUco marker being used for pose estimation, for example 4X4 grid with 100mm size.
-• Camera Transformation (w.r.t. World): Displays the camera's transformation matrix relative to the world coordinate system.
-• Optical Axis, Translation (m), Orientation (°): Buttons to define the optical axis vector, the translation vector, and the orientation angle (around the optical axis) of the object camera relative to the world coordinate system.
-• Rotation around Z-axis (°), Translation along Optical Axis (m): Sliders to rotate the camera object around the world's z-axis and translate it along the optical axis.
-- Operations for Capturing the Workspace Image Using the Camera:
-• Camera Calibration: Buttons to recalibrate the camera ("recalibrate camera") and display the camera intrinsic matrix and distortion coefficients ("show camera parameters").
-• Draw 2D Plane on Frame: Option to overlay a 2D plane on the camera frame, which is useful for aligning the camera with the workspace.
-• Capture Image: Button to capture the current view of the workspace.
-• Workspace Images: Dropdown to select from previously captured workspace images.
-• Show Image: Button to display the selected workspace image.
-• Delete Image: Button to delete the selected workspace image.
+This submenu allows the user to create the workspace obstacles and the 2D plane where they are located, detect the obstacles boundaries, and save them as STL files.
+- Create the Obstacles Transformation:
+• 2D Plane x Length (m) / 2D Plane y Length (m): Fields to input the dimensions of the plane in meters.
+• Normal Vector: Input the normal vector of the plane.
+• Translation (m): Set the translation of the 2D plane in 3D space.
+• Orientation (°): Specify the plane's orientation (the rotation angle around the normal vector).
+• Rotation around z-axis (°) / Translation along Normal Vector (m): Sliders to adjust the plane's rotation around the z-axis and its translation along the normal vector.
+• Camera-Plane z-axis Alignment: Indicates the alignment between the camera's z-axis and the plane's normal vector.
+• Obstacles Transformation (w.r.t. World): Matrix showing the transformation of the obstacles in the world coordinate system.
+• ArUco Pose on Plane: Options to define the "Position" and "Orientation" of the ArUco marker on the 2D plane.
+- Find Singularities on Obstacles Plane:
+• Tolerance / Samples: Input fields to set the tolerance and the number of samples (points divisions of the plane) for the singularities detection.
+• Find Kinematic Singularities: Button to initiate the process of finding kinematic singularities for the robotic manipulator on the plane.
+• Load Plane: Dropdown to select a plane configuration to load.
+• Save Plane: Option to save the current plane configuration.
+- Build Workspace Obstacles:
+• Load Workspace Image: Dropdown to select a saved captured workspace image.
+• Obstacles Saved Height (mm) / Obstacles Height (mm) for Detection: Input fields to set the obstacles' height (in millimeters) used for their detection and the one that is saved.
+• Precision / Vertices Limit: Sliders to adjust the precision of the obstacles' detection and the minimum vertices number of their polygonal approximations.
+• Detect Boundaries: Button to detect the boundaries (outer and inner) of the obstacles within the loaded workspace image.
+• Load Obstacle Data: Dropdown to select a predefined obstacle's data.
+• XY-axis resolution, Z-axis resolution: Adjust the XY-axis resolution and Z-axis resolution points for the creation of the obstacles meshes.
+• Create STL file: Build an STL file for the current obstacle mesh.
+• Create all STL files: Build STL files for all obstacles meshes.
