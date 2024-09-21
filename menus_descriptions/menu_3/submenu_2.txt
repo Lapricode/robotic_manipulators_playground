@@ -1,0 +1,12 @@
+Inverse differential kinematics is the process of determining the joint velocities required to achieve a specific end-effector velocity. The elements in this submenu include:
+• Get Differential Kinematics Analysis Result:
+This button retrieves results from the differential kinematics analysis to use as a starting point for the inverse calculations.
+• Send Inverse Differential Kinematics Analysis Result:
+This action submits the currently found inverse differential kinematics result (joints velocities) to the differential kinematics submenu.
+• End-Effector Linear and Angular Velocity:
+These fields allow users to input desired values for the linear and angular velocities of the end-effector. The system will then compute the necessary joint velocities to achieve these values.
+• Velocities Defined W.r.t. Frame:
+This dropdown allows you to specify the frame of reference for the velocities (it can be "world" or "end-effector"), ensuring consistency in how the velocities are calculated and displayed.
+• Joints Velocities:
+The resulting joint velocities needed to achieve the specified end-effector velocities are displayed here. If a valid solution is found, these fields will show the computed values.
+If no solution is found, a warning or notification will indicate that the system was unable to compute a valid set of joint velocities for the given end-effector velocity.

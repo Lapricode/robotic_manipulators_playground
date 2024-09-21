@@ -1,0 +1,14 @@
+Forward kinematics involves determining the position and orientation of the end-effector (the part of the robot that interacts with the environment) based on the known joint parameters (e.g., angles, lengths). The operations in this submenu include:
+• Joint Number and Joint Value:
+You can select a joint (e.g., joint 1) from a dropdown menu and input its value, which represents the angle (for revolute joints) or distance (for prismatic joints) of that particular joint.
+Sliders are provided to adjust the values of multiple joints, giving a visual way to control joints parameters.
+• Frame:
+This dropdown allows you to select the frame on which to perform the forward kinematics analysis. It can be the base, the end-effector, or any intermediate frame.
+• Position and Orientation:
+Displays the current position (in meters) and orientation (in Euler angles, quaternions or in the form of a rotation matrix) of the selected frame wrt the world, which is updated based on the joints values.
+• Find Reachable Workspace:
+A feature to determine the space that the end-effector can reach given the current joints limits. The reachable workspace is the volume of space where the robot can position its end-effector, regardless of orientation.
+• Joints Range Divisions:
+It refers to the number of subdivisions used when calculating and plotting the reachable workspace.
+• Compute and Plot:
+An action button that computes the reachable workspace and displays it in a 3D plot.

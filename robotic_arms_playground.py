@@ -31,7 +31,7 @@ import control_law as cl
 class robotic_manipulators_playground_window():
     def __init__(self, root, instance):
         self.root = root  # the root window of the GUI
-        self.root.title("Robotic manipulators playground")  # the title of the windows
+        self.root.title("Robotic manipulators playground, made by Printzios Lampros (https://github.com/Lapricode)")  # the title of the windows
         self.root.geometry("+0+0")  # the position of the window
         self.gui_instance = instance  # the instance of the class that contains the functions and the variables of the robotic manipulator playground
         # do some initial actions for saving and loading the proper folders and files in the system
@@ -45,6 +45,7 @@ class robotic_manipulators_playground_window():
         saved_obstacles_objects_infos_folder_name = "saved_workspace_obstacles_infos"  # the folder name to store the saved workspace obstacles
         saved_camera_calibration_images_folder_name = "camera_calibration_images"  # the folder name to store the saved camera calibration images
         saved_control_law_parameters_folder_name = "saved_control_law_parameters"  # the folder name to store the saved control law parameters
+        menus_descriptions_folder_name = "menus_descriptions"  # the folder name to store the descriptions of the menus
         self.camera_intrinsic_parameters_file_path = str(os.getcwd() + fr"/{camera_intrinsic_parameters_file_name}")  # the path of the file to store the camera intrinsic parameters
         self.aruco_dictionaries_file_path = str(os.getcwd() + fr"/{aruco_dictitionaries_file_name}")  # the path of the file to store the aruco dictionaries
         self.robots_run_by_swift_file_path = str(os.getcwd() + fr"/{robots_run_by_swift_file_name}")  # the path of the file to store the robots that can be simulated by the Swift simulator
@@ -56,6 +57,7 @@ class robotic_manipulators_playground_window():
         self.saved_obstacles_objects_infos_folder_path = str(os.getcwd() + fr"/{saved_obstacles_objects_infos_folder_name}")  # the path of the folder where the saved workspace obstacles are stored
         self.saved_camera_calibration_images_folder_path = str(os.getcwd() + fr"/{saved_camera_calibration_images_folder_name}")  # the path of the folder where the saved camera calibration images are stored
         self.saved_control_law_parameters_folder_path = str(os.getcwd() + fr"/{saved_control_law_parameters_folder_name}")  # the path of the folder where the saved control law parameters are stored
+        self.menus_descriptions_folder_path = str(os.getcwd() + fr"/{menus_descriptions_folder_name}")  # the path of the folder where the descriptions of the menus are stored
         # if robots_models_descriptions_folder_name not in os.listdir(os.getcwd()):  # if the folder to store the descriptions (meshes and urdfs/xacros) of the robots models does not exist
         #     os.mkdir(self.saved_robots_descriptions_folder_path)  # create the folder to store the descriptions (meshes and urdfs/xacros) of the robots models
         #     for robot_name in self.swift_simulated_robots_list:  # for each robotic manipulator that can be simulated by the Swift simulator
@@ -74,6 +76,8 @@ class robotic_manipulators_playground_window():
         #     os.mkdir(self.saved_camera_calibration_images_folder_path)  # create the folder to store the saved camera calibration images
         # if saved_control_law_parameters_folder_name not in os.listdir(os.getcwd()):  # if the folder to store the saved control law parameters does not exist
         #     os.mkdir(self.saved_control_law_parameters_folder_path)  # create the folder to store the saved control law parameters
+        # if menus_descriptions_folder_name not in os.listdir(os.getcwd()):  # if the folder to store the descriptions of the menus does not exist
+        #     os.mkdir(self.menus_descriptions_folder_path)  # create the folder to store the descriptions of the menus
         robots_models_descriptions_folders_list = [folder for folder in os.listdir(self.saved_robots_descriptions_folder_path) if os.path.isdir(self.saved_robots_descriptions_folder_path + fr"/{folder}")]  # the folders of the robots models descriptions
         for robot_model in robots_models_descriptions_folders_list:  # for each robotic manipulator model
             if robot_model not in os.listdir(self.rtbdata_robots_meshes_path):  # if the robotic manipulator model is not in the rtbdata folder
@@ -83,13 +87,28 @@ class robotic_manipulators_playground_window():
                 shutil.copytree(self.saved_robots_descriptions_folder_path + fr"/{robot_model}", self.rtbdata_robots_meshes_path + fr"/{robot_model}")  # copy the robot model to the rtbdata folder
         # define the menus of the GUI
         self.main_menu_choice = 0  # the number choice of the main menu
-        construct_robotic_manipulator_menu_build_details = dict(title = "Construct the robotic manipulator", build_function = self.build_construct_robotic_manipulator_menus)  # a dictionary to store the details of the construct robotic manipulator menu
-        forward_kinematics_menu_build_details = dict(title = "Forward kinematics analysis", build_function = self.build_robotic_manipulator_forward_kinematics_menus)  # a dictionary to store the details of the forward kinematics menu
-        differential_kinematics_menu_build_details = dict(title = "Differential kinematics analysis", build_function = self.build_robotic_manipulator_differential_kinematics_menus)  # a dictionary to store the details of the differential kinematics menu
-        control_robotic_manipulator_menu_build_details = dict(title = "Control the robotic manipulator", build_function = self.build_control_robotic_manipulator_menus)  # a dictionary to store the details of the control robotic manipulator menu
-        workspace_obstacles_menu_build_details = dict(title = "Create workspace obstacles", build_function = self.build_workspace_obstacles_menus)  # a dictionary to store the details of the workspace obstacles menu
-        camera_control_menu_build_details = dict(title = "Control the camera", build_function = self.build_camera_control_menus)  # a dictionary to store the details of the camera control menu
-        solve_obstacles_avoidance_menu_build_details = dict(title = "Solve obstacles avoidance", build_function = self.build_solve_obstacles_avoidance_menus)  # a dictionary to store the details of the solve obstacles avoidance menu
+        submenus_titles = [["Define robot's parameters", "Adjust the visualization"], ["Forward kinematics", "Inverse kinematics"], ["Differential kinematics", "Inverse differential kinematics"], \
+                            ["Establish communication with arduino microcontroller", "Serial monitor / Console", "Control joints and end-effector motors"], ["Camera control"], ["Workspace obstacles"], ["Obstacles avoidance solver"]]  # the titles of the submenus
+        submenus_descriptions = []  # the descriptions of the submenus
+        for menu_num in range(len(submenus_titles)):  # for each menu
+            submenus_descriptions.append([])  # append an empty list to store the descriptions of the submenus for the current menu
+            for submenu_num in range(len(submenus_titles[menu_num])):  # for each submenu
+                try: submenus_descriptions[-1].append("".join(open(self.menus_descriptions_folder_path + fr"/menu_{menu_num + 1}/submenu_{submenu_num + 1}.txt", "r", encoding = "utf-8").readlines()))  # read the description of the current submenu
+                except: pass
+        construct_robotic_manipulator_menu_build_details = dict(title = "Construct the robotic manipulator", submenus_titles = submenus_titles[0], submenus_descriptions = submenus_descriptions[0], \
+                                                                build_function = self.build_construct_robotic_manipulator_menus)  # a dictionary to store the details of the construct robotic manipulator menu
+        forward_kinematics_menu_build_details = dict(title = "Forward kinematics analysis", submenus_titles = submenus_titles[1], submenus_descriptions = submenus_descriptions[1], \
+                                                        build_function = self.build_robotic_manipulator_forward_kinematics_menus)  # a dictionary to store the details of the forward kinematics menu
+        differential_kinematics_menu_build_details = dict(title = "Differential kinematics analysis", submenus_titles = submenus_titles[2], submenus_descriptions = submenus_descriptions[2], \
+                                                            build_function = self.build_robotic_manipulator_differential_kinematics_menus)  # a dictionary to store the details of the differential kinematics menu
+        control_robotic_manipulator_menu_build_details = dict(title = "Control the robotic manipulator", submenus_titles = submenus_titles[3], submenus_descriptions = submenus_descriptions[3], \
+                                                                build_function = self.build_control_robotic_manipulator_menus)  # a dictionary to store the details of the control robotic manipulator menu
+        camera_control_menu_build_details = dict(title = "Control the camera", submenus_titles = submenus_titles[5], submenus_descriptions = submenus_descriptions[4], \
+                                                    build_function = self.build_camera_control_menus)  # a dictionary to store the details of the camera control menu
+        workspace_obstacles_menu_build_details = dict(title = "Create workspace obstacles", submenus_titles = submenus_titles[4], submenus_descriptions = submenus_descriptions[5], \
+                                                        build_function = self.build_workspace_obstacles_menus)  # a dictionary to store the details of the workspace obstacles menu
+        solve_obstacles_avoidance_menu_build_details = dict(title = "Solve obstacles avoidance", submenus_titles = submenus_titles[6], submenus_descriptions = submenus_descriptions[6], \
+                                                            build_function = self.build_solve_obstacles_avoidance_menus)  # a dictionary to store the details of the solve obstacles avoidance menu
         self.main_menus_build_details = [construct_robotic_manipulator_menu_build_details, forward_kinematics_menu_build_details, differential_kinematics_menu_build_details, control_robotic_manipulator_menu_build_details, \
                                         camera_control_menu_build_details, workspace_obstacles_menu_build_details, solve_obstacles_avoidance_menu_build_details]  # a list to store the basic details of all the main menus in order to build them
         # define the workspace parameters
@@ -319,14 +338,14 @@ class robotic_manipulators_playground_window():
             self.chosen_obstacle_object_name = self.chosen_workspace_saved_obstacles_objects_list[0]  # the chosen obstacle name from the saved obstacles objects
         else:  # if there are no saved obstacles objects for the chosen workspace image
             self.chosen_obstacle_object_name = ""  # the chosen obstacle name from the saved obstacles objects
-        self.workspace_obstacles_height_detection = 0.010  # the height of the workspace obstacles for the obstacles detection (in meters)
+        self.workspace_obstacles_height_detection = 0.020  # the height of the workspace obstacles for the obstacles detection (in meters)
         self.workspace_obstacles_height_saved = self.workspace_obstacles_height_detection  # the saved height of the workspace obstacles (in meters)
         self.workspace_obstacles_max_height = 0.100  # the maximum height of the obstacles (in meters)
         self.boundaries_precision_parameter = 10  # the precision parameter for the obstacles boundaries detection (it is used to create an error for the boundaries approximation)
         self.boundaries_precision_limits = [0, 10]  # the limits of the precision parameter for the obstacles boundaries detection
         self.boundaries_minimum_vertices = 3  # the minimum number of vertices for the obstacles boundaries detection
         self.boundaries_minimum_vertices_limits = [3, 100]  # the limits of the minimum number of vertices for the obstacles boundaries detection
-        self.xy_res_obstacle_mesh_list = [50, 100, 150, 200, 250, 300, 500, 1000]  # the possible values of the x and y axis resolution for the obstacles's mesh
+        self.xy_res_obstacle_mesh_list = [50, 100, 150, 200, 250, 300, 400, 500, 750, 1000]  # the possible values of the x and y axis resolution for the obstacles's mesh
         self.xy_res_obstacle_mesh = 100  # the x and y axis resolution for the obstacle mesh
         self.z_res_obstacle_mesh_list = [10, 25, 50, 100]  # the possible values of the z axis resolution for the obstacle mesh
         self.z_res_obstacle_mesh = 10  # the z axis resolution for the obstacle mesh
@@ -342,6 +361,7 @@ class robotic_manipulators_playground_window():
         self.workspace_plane_creation_parameters_list = ["from\nimage", "manually\ncreated"]  # the possible values to define the workspace plane
         self.workspace_plane_creation_parameter = self.workspace_plane_creation_parameters_list[0]  # the value to define the workspace plane for the obstacles avoidance solver
         self.obstacles_boundaries_for_solver = []  # the real 3D space obstacles boundaries (in meters), transformed on the xy plane of the world frame, for the obstacles avoidance solver
+        self.obstacles_height_for_solver = 0.0  # the height of the obstacles (in meters) for the obstacles avoidance solver
         self.start_pos_workspace_plane = np.array([0.0, 0.0])  # the start (x, y) position (wrt the obstacles plane) of the end-effector on the workspace obstacles plane (in meters)
         self.target_pos_workspace_plane = np.array([0.0, 0.0])  # the final (x, y) position (wrt the obstacles plane) of the end-effector on the workspace obstacles plane (in meters)
         self.obstacles_infos_text = "outer boundary and\ninner boundaries infos"  # the text to show the obstacles infos of the current workspace image
@@ -377,10 +397,12 @@ class robotic_manipulators_playground_window():
         self.solver_maximum_iterations = 500  # the maximum number of iterations of the control law for the obstacles avoidance solver
         self.solver_maximum_iterations_limits = [1.0, 1e4]  # the limits of the maximum number of iterations of the control law for the obstacles avoidance solver
         self.realws_path_control_law_output = []  # the path on the real workspace found by the control law for the obstacles avoidance solver
+        self.real_ws_paths_list = []  # the list of the paths on the real workspace found by the control law for the obstacles avoidance solver
         self.realws_velocities_control_law_output = []  # the velocities on the real workspace found by the control law for the obstacles avoidance solver
         self.unit_disk_path_control_law_output = []  # the path on the unit disk found by the control law for the obstacles avoidance solver
         self.R2_plane_path_control_law_output = []  # the path on the R2 plane found by the control law for the obstacles avoidance solver
         self.robot_joints_control_law_output = []  # the robot joints found by the control law for the obstacles avoidance solver
+        self.move_robot_time_step_dt = self.solver_time_step_dt  # the time step for the robot control (in seconds)
         self.move_real_robot_joints_vel_limits = [[1.0, 0.001], [45.0, 0.200]]  # the minimum and maximum velocities (for the revolute -degrees/sec- and prismatic -meters/sec- joints respectively) of the robotic manipulator joints for the obstacles avoidance solver
         self.robot_control_thread_flag = False  # the flag to run/stop the robot control thread
         # define the variables for the online Swift simulator
@@ -1084,63 +1106,21 @@ class robotic_manipulators_playground_window():
             self.obst_avoid_solver_menu_is_enabled = False  # set the proper flag to False
         new_main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title']  # the title of the new main menu
         self.main_menu_label.configure(text = new_main_menu_title + f" ({self.main_menu_choice+1}/{len(self.main_menus_build_details)})")  # change the main menu title
-        self.main_menus_build_details[self.main_menu_choice]['build_function']()  # build the sub menus for the new main menu
+        self.main_menus_build_details[self.main_menu_choice]['build_function'](self.main_menus_build_details[self.main_menu_choice]['submenus_titles'], self.main_menus_build_details[self.main_menu_choice]['submenus_descriptions'])  # build the sub menus for the new main menu
     def create_static_menu_frame(self, menu_properties, event = None):
         menu = tk.Frame(self.menus_background, width = menu_properties['width'], height = menu_properties['height'], bg = menu_properties['bg_color'], highlightbackground = "red", highlightcolor = "red", highlightthickness = 2)
         menu.grid(row = menu_properties['row'], column = menu_properties['column'], sticky = tk.NS)
         return menu  # return the static menu frame created
-    def build_construct_robotic_manipulator_menus(self, event = None):  # build the sub menus for the main menu that constructs the robotic manipulator
+    def build_construct_robotic_manipulator_menus(self, submenus_titles, submenus_descriptions, event = None):  # build the sub menus for the main menu that constructs the robotic manipulator
         self.clear_menus_background()  # clear the menus background
         # create the define parameters sub menu
-        parameters_menu_title = "Define robot's parameters"
-        parameters_menu_info = f"--- {parameters_menu_title} ---\n\
-This submenu allows the user to define the physical and kinematic properties of the robotic manipulator:\n\
-• Model Name: You can nput a name for the robotic model.\"\n\
-• Joints Number (n): This field specifies the number of joints in the robotic manipulator.\n\
-- Denavit-Hartenberg Parameters:\n\
-These parameters are critical for defining the geometry and structure of the robot:\n\
-• Joint Number: A dropdown menu allows to select the joint to configure.\n\
-• Joint Type:  Choose the type of joint (e.g., revolute or prismatic) from a dropdown menu.\n\
-• a (meters): The distance between the previous joint axis and the current joint axis, measured along the previous joint axis.\n\
-• alpha (degrees): The twist angle, which defines the angle between the previous and current joint axes.\n\
-• d (meters): The offset along the previous joint axis to the current joint, which is the variable for prismatic joints.\n\
-• theta (degrees): The rotation angle around the current joint axis, which is the variable for revolute joints.\n\
-• Variable Limits: These fields define the minimum and maximum limits for the joint variables, in degrees or meters depending on the joint type. This is crucial for constraining the motion of the robot.\n\
-- Base and End-Effector Systems:\n\
-• World → Base → Frame \"0\": This section defines the position and orientation of the base frame relative to the world coordinate system and of the first joint frame relative to the base frame.\n\
-• Frame \"n\" → End-Effector: This section defines the position and orientation of the end-effector relative to the last joint frame.\n\
-- Robot control operations:\n\
-• Show Current Robot Info: Displays detailed information about the current robot configuration.\n\
-• Save Robot: Saves the current robot configuration to a text file.\n\
-• Delete Robot: Allows the user to delete a previously saved robot model.\n\
-• Build Robot: Constructs the robot model based on the defined parameters.\n\
-• Destroy Robot: Dismantles or deletes the currently built robot model.\n\
-• Load Robot Model: A dropdown to select and load a previously saved robot model."
+        parameters_menu_title = submenus_titles[0]
+        parameters_menu_info = f"--- {parameters_menu_title} ---\n" + submenus_descriptions[0]
         parameters_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = parameters_menu_title, info = parameters_menu_info, row = 0, column = 0, width = self.menus_background_width / 2, height = self.menus_background_height, \
                                             rows = 21, bg_color = "black", title_font = 15, options_font = 12, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
         # create the adjust visualization sub menu
-        visualization_menu_title = "Adjust the visualization"
-        visualization_menu_info = f"--- {visualization_menu_title} ---\n\
-This submenu allows the user to customize how the robotic manipulator and its environment are visualized within the software:\n\
-- Robotic Manipulator Visualization:\n\
-• Frame: Selects which frame of the robot to visualize (e.g. base, frame 0, end-effector).\n\
-• Frame Color: Allows the user to set a color for the selected frame, with an option to apply the same color to all frames.\n\
-• Frame Size: Sets the size of the frame visualization, with an option to apply the same size to all frames.\n\
-• Joint Position (m): Specifies the position of the joint along its axis in meters.\n\
-• Link: Selects which link of the robot to visualize (e.g., link 1).\n\
-• Link Color: Allows the user to set a color for the selected link, with an option to apply the same color to all links.\n\
-• Link Size: Sets the size of the link visualization, with an option to apply the same size to all links.\n\
-• Link Length (m): Displays the length of the link in meters.\n\
-- Workspace Visualization:\n\
-• Canvas: Customizes the background color of the workspace.\n\
-• Terrain: Adjusts the color and appearance of the simulated ground.\n\
-• Axis: Sets the color and size of the axis visualization within the workspace.\n\
-• 2D Plane: Configures the color and size of the 2D obstacles plane shown in the workspace.\n\
-• Obstacles: Sets the color and size of the obstacles located on the 2D plane, if any are present.\n\
-- Simulators:\n\
-Provides options for different simulators to visualize the robotic manipulator:\n\
-• Matplotlib: A simple, interactive visualization only for the robotic manipulator.\n\
-• Swift: The online Swift simulator for real-time and more advanced visualizations of the robotic manipulator and its environment."
+        visualization_menu_title = submenus_titles[1]
+        visualization_menu_info = f"--- {visualization_menu_title} ---\n" + submenus_descriptions[1]
         visualization_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = visualization_menu_title, info = visualization_menu_info, row = 0, column = 1, width = self.menus_background_width / 2, height = self.menus_background_height, \
                                                 rows = 18, bg_color = "black", title_font = 15, options_font = 12, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
         # generate the sub menus
@@ -1313,42 +1293,16 @@ Provides options for different simulators to visualize the robotic manipulator:\
         swift_simulator_button_x = 2/3; self.swift_simulator_button = gbl.menu_button(menu_frame, "Swift", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], swift_simulator_button_x * menu_properties['width'], swift_simulator_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.open_close_swift_simulator).button
         # create an option for the item appearing as the end-effector of the robotic manipulator
         self.update_model_visualization_indicators()  # update the model and visualization indicators
-    def build_robotic_manipulator_forward_kinematics_menus(self, event = None):  # build the sub menus of the main menu that analyzes the forward kinematics (and inverse kinematics) of the robotic manipulator
+    def build_robotic_manipulator_forward_kinematics_menus(self, submenus_titles, submenus_descriptions, event = None):  # build the sub menus of the main menu that analyzes the forward kinematics (and inverse kinematics) of the robotic manipulator
         self.clear_menus_background()  # clear the menus background
         # create the forward kinematics sub menu
-        fkine_menu_title = "Forward kinematics"
-        fkine_menu_info = f"--- {fkine_menu_title} ---\n\
-Forward kinematics involves determining the position and orientation of the end-effector (the part of the robot that interacts with the environment) based on the known joint parameters (e.g., angles, lengths). The operations in this submenu include:\n\
-• Joint Number and Joint Value:\n\
-You can select a joint (e.g., joint 1) from a dropdown menu and input its value, which represents the angle (for revolute joints) or distance (for prismatic joints) of that particular joint.\n\
-Sliders are provided to adjust the values of multiple joints, giving a visual way to control joints parameters.\n\
-• Frame:\n\
-This dropdown allows you to select the frame on which to perform the forward kinematics analysis. It can be the base, the end-effector, or any intermediate frame.\n\
-• Position and Orientation:\n\
-Displays the current position (in meters) and orientation (in Euler angles, quaternions or in the form of a rotation matrix) of the selected frame wrt the world, which is updated based on the joints values.\n\
-• Find Reachable Workspace:\n\
-A feature to determine the space that the end-effector can reach given the current joints limits. The reachable workspace is the volume of space where the robot can position its end-effector, regardless of orientation.\n\
-• Joints Range Divisions:\n\
-It refers to the number of subdivisions used when calculating and plotting the reachable workspace.\n\
-• Compute and Plot:\n\
-An action button that computes the reachable workspace and displays it in a 3D plot."
+        fkine_menu_title = submenus_titles[0]
+        fkine_menu_info = f"--- {fkine_menu_title} ---\n" + submenus_descriptions[0]
         fkine_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = fkine_menu_title, info = fkine_menu_info, row = 1, column = 0, width = self.menus_background_width, height = self.menus_background_height * 11 / 20, 
                                         rows = 12, bg_color = "black", title_font = 15, options_font = 11, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
         # create the inverse kinematics sub menu
-        invkine_menu_title = "Inverse kinematics"
-        invkine_menu_info = f"--- {invkine_menu_title} ---\n\
-Inverse kinematics is the process of determining the joint parameters needed to achieve a specific position and orientation of the end-effector. The operations in this submenu include:\n\
-• Get Forward Kinematics Analysis Result:\n\
-This option allows you to retrieve the results from the forward kinematics analysis, which will serve as input for the inverse kinematics analysis.\n\
-• Send Inverse Kinematics Analysis Result:\n\
-It submits the currently found inverse kinematics result (joints configuration) to the forward kinematics submenu.\n\
-• End-Effector Position and Orientation:\n\
-Input fields where you can specify the desired position and orientation of the end-effector wrt the world.\n\
-• Numerical Solver Maximum Allowed Error (Tolerance):\n\
-This field allows you to specify the tolerance level for the numerical solver, which impacts the precision of the inverse kinematics solution. Lower tolerance values yield more precise results but may require more computation time.\n\
-• Joints Configuration:\n\
-Displays the resulting joint configurations that achieve the specified end-effector position and orientation.\n\
-A warning or notification indicates if the specified configuration is not achievable within the robot's workspace."
+        invkine_menu_title = submenus_titles[1]
+        invkine_menu_info = f"--- {invkine_menu_title} ---\n" + submenus_descriptions[1]
         invkine_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = invkine_menu_title, info = invkine_menu_info, row = 2, column = 0, width = self.menus_background_width, height = self.menus_background_height * 9 / 20, \
                                         rows = 9, bg_color = "black", title_font = 15, options_font = 11, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
         # generate the sub menus
@@ -1449,40 +1403,16 @@ A warning or notification indicates if the specified configuration is not achiev
         joints_configuration_indicator_x = 3/5; self.joints_configuration_indicator = gbl.menu_label(menu_frame, "joints configuration", f"Calibri {menu_properties['options_font']} bold", menu_properties['indicators_color'], menu_properties['bg_color'], joints_configuration_indicator_x * menu_properties['width'], joints_configuration_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
         # show_invkine_info_button_x = 19/20; self.show_invkine_info_button = gbl.menu_button(menu_frame, "🕮", f"Calibri {menu_properties['options_font']+5} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_invkine_info_button_x * menu_properties['width'], show_invkine_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.show_invkine_info).button
         self.update_inverse_kinematics_indicators()  # update the indicators of the inverse kinematics of the robotic manipulator
-    def build_robotic_manipulator_differential_kinematics_menus(self, event = None):  # build the sub menus of the main menu that analyzes the differential kinematics of the robotic manipulator
+    def build_robotic_manipulator_differential_kinematics_menus(self, submenus_titles, submenus_descriptions, event = None):  # build the sub menus of the main menu that analyzes the differential kinematics of the robotic manipulator
         self.clear_menus_background()  # clear the menus background
         # create the differential kinematics sub menu
-        diffkine_menu_title = "Differential kinematics"
-        diffkine_menu_info = f"--- {diffkine_menu_title} ---\n\
-Differential kinematics is used to determine the velocity of the end-effector based on the velocities of the individual joints. This submenu of the interface includes the following elements:\n\
-• Joint Number and Joint Velocity:\n\
-You can select a specific joint (e.g., joint 1) from a dropdown menu and input its velocity, which is typically expressed in degrees per second (°/s) for revolute joints.\n\
-Sliders are provided for each joint to adjust their respective velocities. These sliders allow users to see the effect of different joint velocities on the overall system.\n\
-• End-Effector Linear Velocity (m/s):\n\
-This displays the calculated linear velocity of the end-effector in meters per second (m/s). This value is computed based on the current joint velocities.\n\
-• End-Effector Angular Velocity (°/s):\n\
-This field shows the angular velocity of the end-effector in degrees per second (°/s), reflecting how fast the end-effector is rotating.\n\
-• Configuration:\n\
-This setting (it can be \"control\" or \"kinematics\") indicates the current joints configuration mode, which may affect how the velocities are interpreted.\n\
-• W.r.t. Frame:\n\
-This dropdown allows you to specify the frame of reference for the velocities (it can be \"world\" or \"end-effector\"), ensuring consistency in how the velocities are calculated and displayed."
+        diffkine_menu_title = submenus_titles[0]
+        diffkine_menu_info = f"--- {diffkine_menu_title} ---\n" + submenus_descriptions[0]
         diffkine_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = diffkine_menu_title, info = diffkine_menu_info, row = 1, column = 0, width = self.menus_background_width, height = self.menus_background_height * 1 / 2, \
                                         rows = 10, bg_color = "black", title_font = 15, options_font = 11, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
         # create the inverse differential kinematics sub menu
-        invdiffkine_menu_title = "Inverse differential kinematics"
-        invdiffkine_menu_info = f"--- {invdiffkine_menu_title} ---\n\
-Inverse differential kinematics is the process of determining the joint velocities required to achieve a specific end-effector velocity. The elements in this submenu include:\n\
-• Get Differential Kinematics Analysis Result:\n\
-This button retrieves results from the differential kinematics analysis to use as a starting point for the inverse calculations.\n\
-• Send Inverse Differential Kinematics Analysis Result:\n\
-This action submits the currently found inverse differential kinematics result (joints velocities) to the differential kinematics submenu.\n\
-• End-Effector Linear and Angular Velocity:\n\
-These fields allow users to input desired values for the linear and angular velocities of the end-effector. The system will then compute the necessary joint velocities to achieve these values.\n\
-• Velocities Defined W.r.t. Frame:\n\
-This dropdown allows you to specify the frame of reference for the velocities (it can be \"world\" or \"end-effector\"), ensuring consistency in how the velocities are calculated and displayed.\n\
-• Joints Velocities:\n\
-The resulting joint velocities needed to achieve the specified end-effector velocities are displayed here. If a valid solution is found, these fields will show the computed values.\n\
-If no solution is found, a warning or notification will indicate that the system was unable to compute a valid set of joint velocities for the given end-effector velocity."
+        invdiffkine_menu_title = submenus_titles[1]
+        invdiffkine_menu_info = f"--- {invdiffkine_menu_title} ---\n" + submenus_descriptions[1]
         invdiffkine_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = invdiffkine_menu_title, info = invdiffkine_menu_info, row = 2, column = 0, width = self.menus_background_width, height = self.menus_background_height * 1 / 2, \
                                             rows = 9, bg_color = "black", title_font = 15, options_font = 11, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
         # generate the sub menus
@@ -1575,53 +1505,14 @@ If no solution is found, a warning or notification will indicate that the system
         joints_velocities_indicator_x = 3/5; self.joints_velocities_indicator = gbl.menu_label(menu_frame, "joints velocities", f"Calibri {menu_properties['options_font']} bold", menu_properties['indicators_color'], menu_properties['bg_color'], joints_velocities_indicator_x * menu_properties['width'], joints_velocities_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
         # show_invdiffkine_info_button_x = 19/20; self.show_invdiffkine_info_button = gbl.menu_button(menu_frame, "🕮", f"Calibri {menu_properties['options_font']+5} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_invdiffkine_info_button_x * menu_properties['width'], show_invdiffkine_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.show_invdiffkine_info).button
         self.update_inverse_differential_kinematics_indicators()  # update the indicators of the inverse differential kinematics of the robotic manipulator
-    def build_control_robotic_manipulator_menus(self, event = None):  # build the sub menus for the main menu that controls the robotic manipulator
+    def build_control_robotic_manipulator_menus(self, submenus_titles, submenus_descriptions, event = None):  # build the sub menus for the main menu that controls the robotic manipulator
         self.clear_menus_background()  # clear the menus background
-        connection_menu_title = "Establish communication with arduino microcontroller"
-        connection_menu_info = f"--- {connection_menu_title} ---\n\
-This submenu allows the user to set up and manage the serial connection between the software and the Arduino microcontroller. The elements include:\n\
-• Serial Port:\n\
-A dropdown menu to select the appropriate serial port that the Arduino is connected to on the computer.\n\
-• Baud Rate:\n\
-This dropdown allows the user to select the baud rate for the serial communication. A baud rate of 115200 bps is a common speed for such communications.\n\
-• Serial Connection State:\n\
-This indicator shows whether the software is currently connected to the Arduino microcontroller, what is the state of the robotic arm etc.\n\
-• Connect:\n\
-This button is available to establish the connection. Once clicked, the software attempts to initiate communication between the computer and the Arduino."
-        monitor_menu_title = "Serial monitor / Console"
-        monitor_menu_info = f"--- {monitor_menu_title} ---\n\
-The serial monitor or console serves as the interface for sending and receiving data between the computer and the Arduino. This submenu includes:\n\
-• Main Console Area:\n\
-This large text area displays incoming data from the Arduino and any outgoing commands that have been sent. It is useful for debugging and monitoring real-time communication.\n\
-• Command Input:\n\
-This field allows the user to type in specific commands to be sent directly to the Arduino.\n\
-• Status Indicators:\n\
-Indicators labeled as \"OK\" and \"Status\" suggest the presence of a system that confirms successful command execution or displays messages about the current status of the robotic system.\n\
-• Expand submenu:\n\
-The arrow pointing upwards expands the submenu to enlarge the main console area for better visibility.\n\
-• Clear main console area:\n\
-The trash bin clears the main console of all text, providing a clean area for new messages.\n\
-• Command Starting and Ending Text:\n\
-These fields can be used to define a standard starting or ending string for the commands, potentially simplifying the command structure by automatically adding predefined text to each command sent.\n\
-• Send:\n\
-After typing a command in the input field, the user can click the \"Send\" button to transmit it to the Arduino microcontroller."
-        control_menu_title = "Control joints and end-effector motors"
-        control_menu_info = f"--- {control_menu_title} ---\n\
-This submenu is used for controlling the movement of the robot's joints and the end-effector directly:\n\
-• Joint Number and Joint Motors:\n\
-Dropdown menus to select the specific joint to be controlled, as well as the motors names assigned to that joint. This allows for individual control of each joint.\n\
-The type of the joint (revolute or prismatic) is displayed, along with its current value.\n\
-• Motors Factors (for commands):\n\
-This field allows the user to input motors multiplication factors, which can adjust the motors commands outputs (practically, they are scaling factors for movement precision).\n\
-• Joint Variable Control:\n\
-Sliders and buttons in this section allow the user to manually adjust the position of the selected joint by small or large increments.\n\
-The button labeled \"set joints to 0\" enables the user to reset the joints to zero.\n\
-• End-Effector Control:\n\
-Similar to joint control, this section allows direct control of the end-effector, with an option to set its value to zero.\n\
-There are fields to input the motor name and motor factor specifically for controlling the end-effector.\n\
-• Control Mode:\n\
-The user can choose between different control modes, such as \"manual\" control, where the user needs to press additional buttons to execute the movement, or \"automatic\" control, where the movement is executed immediately after the user adjusts the sliders.\n\
-Buttons labeled \"GO joints\", \"GO end-effector\" and \"GO ALL\" are options to move either the joints or the end-effector separately, or to execute all movements simultaneously."
+        connection_menu_title = submenus_titles[0]
+        connection_menu_info = f"--- {connection_menu_title} ---\n" + submenus_descriptions[0]
+        monitor_menu_title = submenus_titles[1]
+        monitor_menu_info = f"--- {monitor_menu_title} ---\n" + submenus_descriptions[1]
+        control_menu_title = submenus_titles[2]
+        control_menu_info = f"--- {control_menu_title} ---\n" + submenus_descriptions[2]
         if not self.expanded_serial_monitor:  # if the user does not choose the expanded serial monitor
             # create the establish connection sub menu
             connection_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = connection_menu_title, info = connection_menu_info, row = 1, column = 0, width = self.menus_background_width, height = self.menus_background_height * 1 / 6, \
@@ -1801,35 +1692,141 @@ Buttons labeled \"GO joints\", \"GO end-effector\" and \"GO ALL\" are options to
         send_command_end_effector_button_x = 4/6; self.send_command_end_effector_button = gbl.menu_button(menu_frame, "GO\nend-effector", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], send_command_end_effector_button_x * menu_properties['width'], send_command_end_effector_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.send_command_to_end_effector).button
         send_command_all_motors_button_x = 5/6; self.send_command_all_motors_button = gbl.menu_button(menu_frame, "GO ALL", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], send_command_all_motors_button_x * menu_properties['width'], send_command_all_motors_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.send_command_to_all_motors).button
         self.update_control_variables_indicators()  # update the indicators of the control variables of the robotic manipulator
-    def build_workspace_obstacles_menus(self, event = None):  # build the sub menus of the main menu that creates the workspace obstacles
+    def build_camera_control_menus(self, submenus_titles, submenus_descriptions, event = None):  # build the sub menus of the main menu that controls the camera
+        self.clear_menus_background()
+        # create the camera control sub menu
+        camera_menu_title = submenus_titles[0]
+        camera_menu_info = f"--- {camera_menu_title} ---\n" + submenus_descriptions[0]
+        camera_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = camera_menu_title, info = camera_menu_info, row = 1, column = 0, width = self.menus_background_width, height = self.menus_background_height * 1 / 1, \
+                                        rows = 17, bg_color = "black", title_font = 15, options_font = 11, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
+        # generate the sub menus
+        self.generate_camera_control_menu(self.create_static_menu_frame(camera_menu_properties), camera_menu_properties)
+    def generate_camera_control_menu(self, menu_frame, menu_properties, event = None):  # build the camera control menu
+        # options order
+        menu_title_ord = 1
+        menu_info_button_ord = 1
+        define_camera_label_ord = 3
+        open_close_camera_button_ord = define_camera_label_ord
+        determine_camera_label_ord = define_camera_label_ord-1.0
+        determine_camera_button_ord = define_camera_label_ord
+        choose_aspect_ratio_label_ord = define_camera_label_ord-1.0
+        choose_aspect_ratios_combobox_ord = define_camera_label_ord
+        choose_resolution_label_ord = define_camera_label_ord-1.0
+        choose_resolution_combobox_ord = define_camera_label_ord
+        choose_windows_size_factor_label_ord = define_camera_label_ord-1.0
+        choose_windows_size_factor_slider_ord = define_camera_label_ord
+        choose_dFoV_label_ord = define_camera_label_ord+1.3
+        choose_dFoV_button_ord = choose_dFoV_label_ord
+        find_min_dist_2d_plane_label_ord = define_camera_label_ord+1.3
+        find_min_dist_2d_plane_indicator_ord = find_min_dist_2d_plane_label_ord
+        convert_to_grayscale_label_ord = 6
+        choose_luminance_threshold_label_ord = convert_to_grayscale_label_ord-0.5
+        choose_luminance_threshold_slider_ord = convert_to_grayscale_label_ord+0.5
+        show_grayscale_image_button_ord = convert_to_grayscale_label_ord
+        define_camera_pose_label_ord = 8
+        choose_ArUco_marker_label_ord = define_camera_pose_label_ord+1
+        choose_ArUco_marker_combobox_ord = choose_ArUco_marker_label_ord+1
+        estimate_camera_pose_button_ord = choose_ArUco_marker_label_ord-0.1
+        estimate_obst_plane_pose_button_ord = estimate_camera_pose_button_ord
+        apply_moving_average_filter_label_ord = estimate_camera_pose_button_ord+1.3
+        apply_moving_average_filter_button_ord = apply_moving_average_filter_label_ord
+        camera_transformation_label_ord = define_camera_pose_label_ord+1.5
+        camera_transformation_indicator_ord = camera_transformation_label_ord
+        camera_optical_axis_label_ord = define_camera_pose_label_ord+3.3
+        camera_optical_axis_button_ord = camera_optical_axis_label_ord
+        camera_translation_label_ord = camera_optical_axis_button_ord+1
+        camera_translation_button_ord = camera_translation_label_ord
+        camera_orientation_label_ord = camera_translation_button_ord+1
+        camera_orientation_button_ord = camera_orientation_label_ord
+        z_rotate_camera_label_ord = camera_optical_axis_label_ord+0.3
+        z_rotate_camera_slider_ord = z_rotate_camera_label_ord+1.3
+        normal_translate_camera_label_ord = z_rotate_camera_label_ord
+        normal_translate_camera_slider_ord = normal_translate_camera_label_ord+1.3
+        camera_capture_workspacelabel_ord = 14.5
+        recalibrate_camera_label_ord = camera_capture_workspacelabel_ord+1
+        recalibrate_camera_button_ord = recalibrate_camera_label_ord+0.8
+        show_camera_parameters_button_ord = recalibrate_camera_button_ord+0.8
+        show_workspace_image_label_ord = recalibrate_camera_label_ord+0.4
+        show_workspace_image_combobox_ord = show_workspace_image_label_ord+0.8
+        show_workspace_image_button_ord = show_workspace_image_label_ord-0.4
+        rename_workspace_image_button_ord = show_workspace_image_button_ord+0.8
+        delete_workspace_image_button_ord = rename_workspace_image_button_ord+0.8
+        draw_2d_plane_button_ord = show_workspace_image_label_ord
+        capture_workspace_image_button_ord = show_workspace_image_label_ord+1.2
+        # create the options
+        menu_title_x = 1/2; gbl.menu_label(menu_frame, menu_properties['sub_menu_title'], f"Calibri {menu_properties['title_font']} bold underline", "gold", menu_properties['bg_color'], menu_title_x * menu_properties['width'], menu_title_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        menu_info_button_x = 1/20; gbl.menu_button(menu_frame, "ⓘ", f"Calibri {menu_properties['title_font'] - 5} bold", "white", menu_properties['bg_color'], menu_info_button_x * menu_properties['width'], menu_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), lambda event: ms.showinfo(menu_properties['sub_menu_title'], menu_properties['info'], master = self.root)).button
+        define_camera_label_x = 1/8; gbl.menu_label(menu_frame, "Define the\ncamera object:", f"Calibri {menu_properties['options_font']} bold", menu_properties['subtitles_color'], menu_properties['bg_color'], define_camera_label_x * menu_properties['width'], define_camera_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        open_close_camera_button_x = 7/8; self.open_close_camera_button = gbl.menu_button(menu_frame, ["open\ncamera", "close\ncamera"][[False, True].index(self.camera_thread_flag)], f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], open_close_camera_button_x * menu_properties['width'], open_close_camera_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.open_close_camera).button
+        determine_camera_label_x = 2/7; gbl.menu_label(menu_frame, "Camera device:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], determine_camera_label_x * menu_properties['width'], determine_camera_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        determine_camera_button_x = determine_camera_label_x; self.determine_camera_button = gbl.menu_button(menu_frame, self.camera_choice, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], determine_camera_button_x * menu_properties['width'], determine_camera_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.determine_camera).button
+        choose_aspect_ratio_label_x = 3/7; gbl.menu_label(menu_frame, "Aspect ratio:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_aspect_ratio_label_x * menu_properties['width'], choose_aspect_ratio_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        self.choose_aspect_ratio_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "readonly", width = 5, values = self.camera_aspect_ratios_list, justify = "center")
+        choose_aspect_ratio_combobox_x = choose_aspect_ratio_label_x; self.choose_aspect_ratio_combobox.place(x = choose_aspect_ratio_combobox_x * menu_properties['width'], y = choose_aspect_ratios_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
+        self.choose_aspect_ratio_combobox.bind("<<ComboboxSelected>>", self.change_camera_aspect_ratio)
+        choose_resolution_label_x = 4/7; gbl.menu_label(menu_frame, "Resolution:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_resolution_label_x * menu_properties['width'], choose_resolution_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        self.choose_resolution_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "readonly", width = 5, values = self.camera_resolutions_list[self.camera_aspect_ratios_values.index(self.camera_aspect_ratio)], justify = "center")
+        choose_resolution_combobox_x = choose_resolution_label_x; self.choose_resolution_combobox.place(x = choose_resolution_combobox_x * menu_properties['width'], y = choose_resolution_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
+        self.choose_resolution_combobox.bind("<<ComboboxSelected>>", self.change_camera_resolution)
+        choose_windows_size_factor_label_x = 5/7; gbl.menu_label(menu_frame, "Image size (%):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_windows_size_factor_label_x * menu_properties['width'], choose_windows_size_factor_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        self.choose_windows_size_factor_slider = tk.Scale(menu_frame, font = f"Arial {menu_properties['options_font']-3}", orient = tk.HORIZONTAL, from_ = 0, to = 100, resolution = 1, length = menu_properties['width'] / 10.0, bg = menu_properties['bg_color'], fg = "white", troughcolor = "brown", highlightbackground = menu_properties['bg_color'], highlightcolor = menu_properties['bg_color'], highlightthickness = 2, sliderlength = 25, command = self.change_windows_size_factor_slider)
+        choose_windows_size_factor_slider_x = choose_windows_size_factor_label_x; self.choose_windows_size_factor_slider.place(x = choose_windows_size_factor_slider_x * menu_properties['width'], y = choose_windows_size_factor_slider_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
+        camera_dFoV_label_x = 2/7; gbl.menu_label(menu_frame, "Diagonal FoV (°):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], camera_dFoV_label_x * menu_properties['width'], choose_dFoV_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        camera_dFoV_button_x = 3/7; self.choose_dFoV_button = gbl.menu_button(menu_frame, f"{self.camera_dFoV:.1f}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], camera_dFoV_button_x * menu_properties['width'], choose_dFoV_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_camera_dFoV).button
+        find_min_dist_label_x = 4/7; gbl.menu_label(menu_frame, "Min distance (m)\nfrom 2D plane:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], find_min_dist_label_x * menu_properties['width'], find_min_dist_2d_plane_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        find_min_dist_indicator_x = 5/7; self.find_min_dist_2d_plane_indicator = gbl.menu_label(menu_frame, "min\ndistance", f"Calibri {menu_properties['options_font']} bold", menu_properties['indicators_color'], menu_properties['bg_color'], find_min_dist_indicator_x * menu_properties['width'], find_min_dist_2d_plane_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
+        convert_frame_black_white_label_x = 1/6; gbl.menu_label(menu_frame, "Convert frames to\nblack & white:", f"Calibri {menu_properties['options_font']} bold", menu_properties['subtitles_color'], menu_properties['bg_color'], convert_frame_black_white_label_x * menu_properties['width'], convert_to_grayscale_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        choose_luminance_threshold_label_x = 1/2; gbl.menu_label(menu_frame, "Luminance threshold:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_luminance_threshold_label_x * menu_properties['width'], choose_luminance_threshold_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        self.choose_luminance_threshold_slider = tk.Scale(menu_frame, font = f"Arial {menu_properties['options_font']-3}", orient = tk.HORIZONTAL, from_ = self.luminance_threshold_limits[0], to = self.luminance_threshold_limits[1], length = menu_properties['width'] / 5.0, bg = menu_properties['bg_color'], fg = "white", troughcolor = "brown", highlightbackground = menu_properties['bg_color'], highlightcolor = menu_properties['bg_color'], highlightthickness = 2, sliderlength = 25, command = self.change_luminance_threshold_slider)
+        choose_luminance_threshold_slider_x = 1/2; self.choose_luminance_threshold_slider.place(x = choose_luminance_threshold_slider_x * menu_properties['width'], y = choose_luminance_threshold_slider_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
+        show_grayscale_image_button_x = 4/5; self.show_grayscale_image_button = gbl.menu_button(menu_frame, "show\ngrayscale image", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_grayscale_image_button_x * menu_properties['width'], show_grayscale_image_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.show_grayscale_image).button
+        define_camera_pose_label_x = 1/2; gbl.menu_label(menu_frame, "Define the camera pose:", f"Calibri {menu_properties['options_font']} bold", menu_properties['subtitles_color'], menu_properties['bg_color'], define_camera_pose_label_x * menu_properties['width'], define_camera_pose_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        choose_ArUco_marker_label_x = 7/16; gbl.menu_label(menu_frame, "ArUco marker:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_ArUco_marker_label_x * menu_properties['width'], choose_ArUco_marker_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        self.choose_ArUco_marker_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", values = self.saved_ArUco_markers_list, state = "normal", width = 15, justify = "center")
+        choose_ArUco_marker_combobox_x = choose_ArUco_marker_label_x; self.choose_ArUco_marker_combobox.place(x = choose_ArUco_marker_combobox_x * menu_properties['width'], y = choose_ArUco_marker_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
+        self.choose_ArUco_marker_combobox.bind("<<ComboboxSelected>>", self.change_ArUco_marker)
+        self.choose_ArUco_marker_combobox.bind("<Return>", self.change_ArUco_marker)
+        estimate_camera_pose_button_x = 1/9; self.camera_estimate_pose_button = gbl.menu_button(menu_frame, "estimate\ncamera pose", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], estimate_camera_pose_button_x * menu_properties['width'], estimate_camera_pose_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.estimate_camera_pose).button
+        estimate_obst_plane_pose_button_x = 1/4; self.estimate_obst_plane_pose_button = gbl.menu_button(menu_frame, "estimate\nplane pose", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], estimate_obst_plane_pose_button_x * menu_properties['width'], estimate_obst_plane_pose_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.estimate_obstacles_plane_pose).button
+        apply_moving_average_filter_label_x = 1/9; gbl.menu_label(menu_frame, "Apply moving\naverage filter:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], apply_moving_average_filter_label_x * menu_properties['width'], apply_moving_average_filter_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        apply_moving_average_filter_button_x = 1/4; self.apply_moving_average_filter_button = gbl.menu_button(menu_frame, ["no", "yes"][[False, True].index(self.apply_moving_average_poses_estimation)], f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], apply_moving_average_filter_button_x * menu_properties['width'], apply_moving_average_filter_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.apply_moving_average_filter).button
+        camera_transformation_label_x = 5/8; gbl.menu_label(menu_frame, "Camera\ntransformation\n(w.r.t. world):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], camera_transformation_label_x * menu_properties['width'], camera_transformation_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        camera_transformation_indicator_x = 5/6; self.camera_transformation_indicator = gbl.menu_label(menu_frame, "transformation", f"Calibri {menu_properties['options_font']} bold", menu_properties['indicators_color'], menu_properties['bg_color'], camera_transformation_indicator_x * menu_properties['width'], camera_transformation_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
+        camera_translation_label_x = 1/8; gbl.menu_label(menu_frame, "Translation (m):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], camera_translation_label_x * menu_properties['width'], camera_translation_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        camera_translation_button_x = 2/6; self.choose_camera_translation_button = gbl.menu_button(menu_frame, str([np.round(self.camera_translation[k], 3) for k in range(len(self.camera_translation))]), f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], camera_translation_button_x * menu_properties['width'], camera_translation_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.choose_camera_translation).button
+        camera_optical_axis_label_x = 1/8; gbl.menu_label(menu_frame, "Optical axis:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], camera_optical_axis_label_x * menu_properties['width'], camera_optical_axis_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        camera_optical_axis_button_x = 2/6; self.choose_camera_optical_axis_button = gbl.menu_button(menu_frame, str([np.round(self.camera_optical_axis[k], 3) for k in range(len(self.camera_optical_axis))]), f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], camera_optical_axis_button_x * menu_properties['width'], camera_optical_axis_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.choose_camera_optical_axis).button
+        camera_orientation_label_x = 1/8; gbl.menu_label(menu_frame, "Orientation (°):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], camera_orientation_label_x * menu_properties['width'], camera_orientation_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        camera_orientation_button_x = 2/6; self.choose_camera_orientation_button = gbl.menu_button(menu_frame, f"{self.camera_orientation:.1f}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], camera_orientation_button_x * menu_properties['width'], camera_orientation_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.choose_camera_orientation).button
+        z_rotate_camera_label_x = 7/12; gbl.menu_label(menu_frame, "Rotation around\nz-axis (°):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], z_rotate_camera_label_x * menu_properties['width'], z_rotate_camera_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        self.z_rotate_camera_slider = tk.Scale(menu_frame, font = f"Arial {menu_properties['options_font']-3}", orient = tk.HORIZONTAL, from_ = 0, to = 360, resolution = 10**(-self.angles_precision), length = menu_properties['width'] / 5.0, bg = menu_properties['bg_color'], fg = "white", troughcolor = "brown", highlightbackground = menu_properties['bg_color'], highlightcolor = menu_properties['bg_color'], highlightthickness = 2, sliderlength = 25, command = self.change_camera_move_sliders)
+        z_rotate_camera_slider_x = z_rotate_camera_label_x; self.z_rotate_camera_slider.place(x = z_rotate_camera_slider_x * menu_properties['width'], y = z_rotate_camera_slider_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
+        self.z_rotate_camera_slider.bind("<ButtonRelease-3>", self.reset_camera_sliders)
+        normal_translate_camera_label_x = 5/6; gbl.menu_label(menu_frame, "Translation along\noptical axis (m):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], normal_translate_camera_label_x * menu_properties['width'], normal_translate_camera_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        self.normal_translate_camera_slider = tk.Scale(menu_frame, font = f"Arial {menu_properties['options_font']-3}", orient = tk.HORIZONTAL, from_ = -1, to = 1, resolution = 0.001, length = menu_properties['width'] / 5.0, bg = menu_properties['bg_color'], fg = "white", troughcolor = "brown", highlightbackground = menu_properties['bg_color'], highlightcolor = menu_properties['bg_color'], highlightthickness = 2, sliderlength = 25, command = self.change_camera_move_sliders)
+        normal_translate_camera_slider_x = normal_translate_camera_label_x; self.normal_translate_camera_slider.place(x = normal_translate_camera_slider_x * menu_properties['width'], y = normal_translate_camera_slider_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
+        self.normal_translate_camera_slider.bind("<ButtonRelease-3>", self.reset_camera_sliders)
+        camera_capture_workspacelabel_x = 1/2; gbl.menu_label(menu_frame, "Operations for capturing the workspace image using the camera:", f"Calibri {menu_properties['options_font']} bold", menu_properties['subtitles_color'], menu_properties['bg_color'], camera_capture_workspacelabel_x * menu_properties['width'], camera_capture_workspacelabel_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        recalibrate_camera_label_x = 1/6; gbl.menu_label(menu_frame, "Camera calibration:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], recalibrate_camera_label_x * menu_properties['width'], recalibrate_camera_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        recalibrate_camera_button_x = recalibrate_camera_label_x; self.recalibrate_camera_button = gbl.menu_button(menu_frame, "recalibrate camera", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], recalibrate_camera_button_x * menu_properties['width'], recalibrate_camera_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.recalibrate_camera).button
+        show_camera_parameters_button_x = recalibrate_camera_label_x; self.show_camera_parameters_button = gbl.menu_button(menu_frame, "show camera parameters", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_camera_parameters_button_x * menu_properties['width'], show_camera_parameters_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.show_camera_parameters).button
+        draw_2d_plane_button_x = 5/11; self.draw_2d_plane_button = gbl.menu_button(menu_frame, "draw 2D plane\non frame", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], draw_2d_plane_button_x * menu_properties['width'], draw_2d_plane_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.draw_2d_plane_on_image).button
+        capture_workspace_image_button_x = draw_2d_plane_button_x; self.capture_workspace_image_button = gbl.menu_button(menu_frame, "capture image", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], capture_workspace_image_button_x * menu_properties['width'], capture_workspace_image_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.capture_workspace_image).button
+        show_workspace_image_label_x = 7/10; gbl.menu_label(menu_frame, "Workspace images:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], show_workspace_image_label_x * menu_properties['width'], show_workspace_image_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        self.show_workspace_image_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "normal", width = 13, values = self.saved_workspace_images_list, justify = "center")
+        show_workspace_image_combobox_x = show_workspace_image_label_x; self.show_workspace_image_combobox.place(x = show_workspace_image_combobox_x * menu_properties['width'], y = show_workspace_image_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
+        self.show_workspace_image_combobox.bind("<<ComboboxSelected>>", self.change_shown_workspace_image)
+        self.show_workspace_image_combobox.bind("<Return>", self.change_shown_workspace_image)
+        show_workspace_image_button_x = 8/9; self.show_workspace_image_button = gbl.menu_button(menu_frame, "show image", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_workspace_image_button_x * menu_properties['width'], show_workspace_image_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.show_workspace_image).button
+        rename_workspace_image_button_x = show_workspace_image_button_x; self.rename_workspace_image_button = gbl.menu_button(menu_frame, "rename image", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], rename_workspace_image_button_x * menu_properties['width'], rename_workspace_image_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.rename_workspace_image).button
+        delete_workspace_image_button_x = show_workspace_image_button_x; self.delete_workspace_image_button = gbl.menu_button(menu_frame, "delete image", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], delete_workspace_image_button_x * menu_properties['width'], delete_workspace_image_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.delete_workspace_image).button
+        self.update_camera_control_indicators()  # update the indicators of the camera control
+        self.change_shown_workspace_image()  # change the shown workspace image
+    def build_workspace_obstacles_menus(self, submenus_titles, submenus_descriptions, event = None):  # build the sub menus of the main menu that creates the workspace obstacles
         self.clear_menus_background()
         # create the workspace obstacles sub menu
-        obstacles_menu_title = "Workspace obstacles"
-        obstacles_menu_info = f"--- {obstacles_menu_title} ---\n\
-This submenu allows the user to create the workspace obstacles and the 2D plane where they are located, detect the obstacles boundaries, and save them as STL files.\n\
-- Create the Obstacles Transformation:\n\
-• 2D Plane x Length (m) / 2D Plane y Length (m): Fields to input the dimensions of the plane in meters.\n\
-• Normal Vector: Input the normal vector of the plane.\n\
-• Translation (m): Set the translation of the 2D plane in 3D space.\n\
-• Orientation (°): Specify the plane's orientation (the rotation angle around the normal vector).\n\
-• Rotation around z-axis (°) / Translation along Normal Vector (m): Sliders to adjust the plane's rotation around the z-axis and its translation along the normal vector.\n\
-• Camera-Plane z-axis Alignment: Indicates the alignment between the camera's z-axis and the plane's normal vector.\n\
-• Obstacles Transformation (w.r.t. World): Matrix showing the transformation of the obstacles in the world coordinate system.\n\
-• ArUco Pose on Plane: Options to define the \"Position\" and \"Orientation\" of the ArUco marker on the 2D plane.\n\
-- Find Singularities on Obstacles Plane:\n\
-• Tolerance / Samples: Input fields to set the tolerance and the number of samples (points divisions of the plane) for the singularities detection.\n\
-• Find Kinematic Singularities: Button to initiate the process of finding kinematic singularities for the robotic manipulator on the plane.\n\
-• Load Plane: Dropdown to select a plane configuration to load.\n\
-• Save Plane: Option to save the current plane configuration.\n\
-- Build Workspace Obstacles:\n\
-• Load Workspace Image: Dropdown to select a saved captured workspace image.\n\
-• Obstacles Saved Height (mm) / Obstacles Height (mm) for Detection: Input fields to set the obstacles' height (in millimeters) used for their detection and the one that is saved.\n\
-• Precision / Vertices Limit: Sliders to adjust the precision of the obstacles' detection and the minimum vertices number of their polygonal approximations.\n\
-• Detect Boundaries: Button to detect the boundaries (outer and inner) of the obstacles within the loaded workspace image.\n\
-• Load Obstacle Data: Dropdown to select a predefined obstacle's data.\n\
-• XY-axis resolution, Z-axis resolution: Adjust the XY-axis resolution and Z-axis resolution points for the creation of the obstacles meshes.\n\
-• Create STL file: Build an STL file for the current obstacle mesh.\n\
-• Create all STL files: Build STL files for all obstacles meshes."
+        obstacles_menu_title = submenus_titles[0]
+        obstacles_menu_info = f"--- {obstacles_menu_title} ---\n" + submenus_descriptions[0]
         obstacles_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = obstacles_menu_title, info = obstacles_menu_info, row = 1, column = 0, width = self.menus_background_width, height = self.menus_background_height * 1 / 1, \
                                             rows = 17, bg_color = "black", title_font = 15, options_font = 11, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
         # generate the sub menus
@@ -1968,195 +1965,11 @@ This submenu allows the user to create the workspace obstacles and the 2D plane 
         create_all_obstacles_stl_button_x = create_obstacle_mesh_stl_button_x; self.create_all_obstacles_stl_button = gbl.menu_button(menu_frame, "create all stl files", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], create_all_obstacles_stl_button_x * menu_properties['width'], create_all_obstacles_stl_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.create_all_obstacles_stl).button
         self.update_workspace_obstacles_indicators()  # update the indicators of the workspace obstacles
         self.load_workspace_image_for_detection()  # change the chosen workspace image
-    def build_camera_control_menus(self, event = None):  # build the sub menus of the main menu that controls the camera
-        self.clear_menus_background()
-        # create the camera control sub menu
-        camera_menu_title = "Camera control"
-        camera_menu_info = f"--- {camera_menu_title} ---\n\
-This submenu allows the user to configure the camera device, calibrate it, and capture images of the robot's workspace. The following options are available:\n\
-- Define the Camera Object:\n\
-• Camera Device: Dropdown to select the camera device being used, choosing between the internal camera or an external one.\n\
-• Aspect Ratio: Allows the user to choose the aspect ratio of the camera, with options like 16/9.\n\
-• Resolution: Dropdown to set the camera's resolution, such as 720p.\n\
-• Image Size (%): Slider to adjust the size of the image frames shown on the screen, relative to the camera's resolution.\n\
-• Open/Close Camera Button: Button to open or close the camera device.\n\
-• Diagonal FoV (°): Displays the diagonal field of view of the camera in degrees.\n\
-• Min Distance (m) from 2D Plane: Displays the minimum distance (in meters) between the camera and the 2D plane (in order for the camera to capture the entire plane).\n\
-- Convert Frames to Black & White:\n\
-• Luminance threshold: Slider to adjust the cutoff between black and white in the captured image.\n\
-• Show grayscale image: Button to convert the captured image to black and white.\n\
-- Define the Camera Pose:\n\
-• Estimate camera pose: Button to estimate the camera's pose in real time using ArUco markers.\n\
-• Estimate plane pose: Button to estimate the 2D obstacles plane's pose in real time using ArUco markers.\n\
-• Apply moving average filter: Button to apply a moving average filter to smooth the measurements of the camera or plane pose.\n\
-• ArUco Marker: Dropdown to select the type of ArUco marker being used for pose estimation, for example 4X4 grid with 100mm size.\n\
-• Camera Transformation (w.r.t. World): Displays the camera's transformation matrix relative to the world coordinate system.\n\
-• Optical Axis, Translation (m), Orientation (°): Buttons to define the optical axis vector, the translation vector, and the orientation angle (around the optical axis) of the object camera relative to the world coordinate system.\n\
-• Rotation around Z-axis (°), Translation along Optical Axis (m): Sliders to rotate the camera object around the world's z-axis and translate it along the optical axis.\n\
-- Operations for Capturing the Workspace Image Using the Camera:\n\
-• Camera Calibration: Buttons to recalibrate the camera (\"recalibrate camera\") and display the camera intrinsic matrix and distortion coefficients (\"show camera parameters\").\n\
-• Draw 2D Plane on Frame: Option to overlay a 2D plane on the camera frame, which is useful for aligning the camera with the workspace.\n\
-• Capture Image: Button to capture the current view of the workspace.\n\
-• Workspace Images: Dropdown to select from previously captured workspace images.\n\
-• Show Image: Button to display the selected workspace image.\n\
-• Delete Image: Button to delete the selected workspace image."
-        camera_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = camera_menu_title, info = camera_menu_info, row = 1, column = 0, width = self.menus_background_width, height = self.menus_background_height * 1 / 1, \
-                                        rows = 17, bg_color = "black", title_font = 15, options_font = 11, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
-        # generate the sub menus
-        self.generate_camera_control_menu(self.create_static_menu_frame(camera_menu_properties), camera_menu_properties)
-    def generate_camera_control_menu(self, menu_frame, menu_properties, event = None):  # build the camera control menu
-        # options order
-        menu_title_ord = 1
-        menu_info_button_ord = 1
-        define_camera_label_ord = 3
-        open_close_camera_button_ord = define_camera_label_ord
-        determine_camera_label_ord = define_camera_label_ord-1.0
-        determine_camera_button_ord = define_camera_label_ord
-        choose_aspect_ratio_label_ord = define_camera_label_ord-1.0
-        choose_aspect_ratios_combobox_ord = define_camera_label_ord
-        choose_resolution_label_ord = define_camera_label_ord-1.0
-        choose_resolution_combobox_ord = define_camera_label_ord
-        choose_windows_size_factor_label_ord = define_camera_label_ord-1.0
-        choose_windows_size_factor_slider_ord = define_camera_label_ord
-        choose_dFoV_label_ord = define_camera_label_ord+1.3
-        choose_dFoV_button_ord = choose_dFoV_label_ord
-        find_min_dist_2d_plane_label_ord = define_camera_label_ord+1.3
-        find_min_dist_2d_plane_indicator_ord = find_min_dist_2d_plane_label_ord
-        convert_to_grayscale_label_ord = 6
-        choose_luminance_threshold_label_ord = convert_to_grayscale_label_ord-0.5
-        choose_luminance_threshold_slider_ord = convert_to_grayscale_label_ord+0.5
-        show_grayscale_image_button_ord = convert_to_grayscale_label_ord
-        define_camera_pose_label_ord = 8
-        choose_ArUco_marker_label_ord = define_camera_pose_label_ord+1
-        choose_ArUco_marker_combobox_ord = choose_ArUco_marker_label_ord+1
-        estimate_camera_pose_button_ord = choose_ArUco_marker_label_ord-0.1
-        estimate_obst_plane_pose_button_ord = estimate_camera_pose_button_ord
-        apply_moving_average_filter_label_ord = estimate_camera_pose_button_ord+1.3
-        apply_moving_average_filter_button_ord = apply_moving_average_filter_label_ord
-        camera_transformation_label_ord = define_camera_pose_label_ord+1.5
-        camera_transformation_indicator_ord = camera_transformation_label_ord
-        camera_optical_axis_label_ord = define_camera_pose_label_ord+3.3
-        camera_optical_axis_button_ord = camera_optical_axis_label_ord
-        camera_translation_label_ord = camera_optical_axis_button_ord+1
-        camera_translation_button_ord = camera_translation_label_ord
-        camera_orientation_label_ord = camera_translation_button_ord+1
-        camera_orientation_button_ord = camera_orientation_label_ord
-        z_rotate_camera_label_ord = camera_optical_axis_label_ord+0.3
-        z_rotate_camera_slider_ord = z_rotate_camera_label_ord+1.3
-        normal_translate_camera_label_ord = z_rotate_camera_label_ord
-        normal_translate_camera_slider_ord = normal_translate_camera_label_ord+1.3
-        camera_capture_workspacelabel_ord = 14.5
-        recalibrate_camera_label_ord = camera_capture_workspacelabel_ord+1
-        recalibrate_camera_button_ord = recalibrate_camera_label_ord+0.8
-        show_camera_parameters_button_ord = recalibrate_camera_button_ord+0.8
-        show_workspace_image_label_ord = recalibrate_camera_label_ord+0.4
-        show_workspace_image_combobox_ord = show_workspace_image_label_ord+0.8
-        show_workspace_image_button_ord = show_workspace_image_label_ord-0.4
-        rename_workspace_image_button_ord = show_workspace_image_button_ord+0.8
-        delete_workspace_image_button_ord = rename_workspace_image_button_ord+0.8
-        draw_2d_plane_button_ord = show_workspace_image_label_ord
-        capture_workspace_image_button_ord = show_workspace_image_label_ord+1.2
-        # create the options
-        menu_title_x = 1/2; gbl.menu_label(menu_frame, menu_properties['sub_menu_title'], f"Calibri {menu_properties['title_font']} bold underline", "gold", menu_properties['bg_color'], menu_title_x * menu_properties['width'], menu_title_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        menu_info_button_x = 1/20; gbl.menu_button(menu_frame, "ⓘ", f"Calibri {menu_properties['title_font'] - 5} bold", "white", menu_properties['bg_color'], menu_info_button_x * menu_properties['width'], menu_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), lambda event: ms.showinfo(menu_properties['sub_menu_title'], menu_properties['info'], master = self.root)).button
-        define_camera_label_x = 1/8; gbl.menu_label(menu_frame, "Define the\ncamera object:", f"Calibri {menu_properties['options_font']} bold", menu_properties['subtitles_color'], menu_properties['bg_color'], define_camera_label_x * menu_properties['width'], define_camera_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        open_close_camera_button_x = 7/8; self.open_close_camera_button = gbl.menu_button(menu_frame, ["open\ncamera", "close\ncamera"][[False, True].index(self.camera_thread_flag)], f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], open_close_camera_button_x * menu_properties['width'], open_close_camera_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.open_close_camera).button
-        determine_camera_label_x = 2/7; gbl.menu_label(menu_frame, "Camera device:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], determine_camera_label_x * menu_properties['width'], determine_camera_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        determine_camera_button_x = determine_camera_label_x; self.determine_camera_button = gbl.menu_button(menu_frame, self.camera_choice, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], determine_camera_button_x * menu_properties['width'], determine_camera_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.determine_camera).button
-        choose_aspect_ratio_label_x = 3/7; gbl.menu_label(menu_frame, "Aspect ratio:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_aspect_ratio_label_x * menu_properties['width'], choose_aspect_ratio_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        self.choose_aspect_ratio_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "readonly", width = 5, values = self.camera_aspect_ratios_list, justify = "center")
-        choose_aspect_ratio_combobox_x = choose_aspect_ratio_label_x; self.choose_aspect_ratio_combobox.place(x = choose_aspect_ratio_combobox_x * menu_properties['width'], y = choose_aspect_ratios_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
-        self.choose_aspect_ratio_combobox.bind("<<ComboboxSelected>>", self.change_camera_aspect_ratio)
-        choose_resolution_label_x = 4/7; gbl.menu_label(menu_frame, "Resolution:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_resolution_label_x * menu_properties['width'], choose_resolution_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        self.choose_resolution_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "readonly", width = 5, values = self.camera_resolutions_list[self.camera_aspect_ratios_values.index(self.camera_aspect_ratio)], justify = "center")
-        choose_resolution_combobox_x = choose_resolution_label_x; self.choose_resolution_combobox.place(x = choose_resolution_combobox_x * menu_properties['width'], y = choose_resolution_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
-        self.choose_resolution_combobox.bind("<<ComboboxSelected>>", self.change_camera_resolution)
-        choose_windows_size_factor_label_x = 5/7; gbl.menu_label(menu_frame, "Image size (%):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_windows_size_factor_label_x * menu_properties['width'], choose_windows_size_factor_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        self.choose_windows_size_factor_slider = tk.Scale(menu_frame, font = f"Arial {menu_properties['options_font']-3}", orient = tk.HORIZONTAL, from_ = 0, to = 100, resolution = 1, length = menu_properties['width'] / 10.0, bg = menu_properties['bg_color'], fg = "white", troughcolor = "brown", highlightbackground = menu_properties['bg_color'], highlightcolor = menu_properties['bg_color'], highlightthickness = 2, sliderlength = 25, command = self.change_windows_size_factor_slider)
-        choose_windows_size_factor_slider_x = choose_windows_size_factor_label_x; self.choose_windows_size_factor_slider.place(x = choose_windows_size_factor_slider_x * menu_properties['width'], y = choose_windows_size_factor_slider_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
-        camera_dFoV_label_x = 2/7; gbl.menu_label(menu_frame, "Diagonal FoV (°):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], camera_dFoV_label_x * menu_properties['width'], choose_dFoV_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        camera_dFoV_button_x = 3/7; self.choose_dFoV_button = gbl.menu_button(menu_frame, f"{self.camera_dFoV:.1f}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], camera_dFoV_button_x * menu_properties['width'], choose_dFoV_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_camera_dFoV).button
-        find_min_dist_label_x = 4/7; gbl.menu_label(menu_frame, "Min distance (m)\nfrom 2D plane:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], find_min_dist_label_x * menu_properties['width'], find_min_dist_2d_plane_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        find_min_dist_indicator_x = 5/7; self.find_min_dist_2d_plane_indicator = gbl.menu_label(menu_frame, "min\ndistance", f"Calibri {menu_properties['options_font']} bold", menu_properties['indicators_color'], menu_properties['bg_color'], find_min_dist_indicator_x * menu_properties['width'], find_min_dist_2d_plane_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
-        convert_frame_black_white_label_x = 1/6; gbl.menu_label(menu_frame, "Convert frames to\nblack & white:", f"Calibri {menu_properties['options_font']} bold", menu_properties['subtitles_color'], menu_properties['bg_color'], convert_frame_black_white_label_x * menu_properties['width'], convert_to_grayscale_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        choose_luminance_threshold_label_x = 1/2; gbl.menu_label(menu_frame, "Luminance threshold:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_luminance_threshold_label_x * menu_properties['width'], choose_luminance_threshold_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        self.choose_luminance_threshold_slider = tk.Scale(menu_frame, font = f"Arial {menu_properties['options_font']-3}", orient = tk.HORIZONTAL, from_ = self.luminance_threshold_limits[0], to = self.luminance_threshold_limits[1], length = menu_properties['width'] / 5.0, bg = menu_properties['bg_color'], fg = "white", troughcolor = "brown", highlightbackground = menu_properties['bg_color'], highlightcolor = menu_properties['bg_color'], highlightthickness = 2, sliderlength = 25, command = self.change_luminance_threshold_slider)
-        choose_luminance_threshold_slider_x = 1/2; self.choose_luminance_threshold_slider.place(x = choose_luminance_threshold_slider_x * menu_properties['width'], y = choose_luminance_threshold_slider_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
-        show_grayscale_image_button_x = 4/5; self.show_grayscale_image_button = gbl.menu_button(menu_frame, "show\ngrayscale image", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_grayscale_image_button_x * menu_properties['width'], show_grayscale_image_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.show_grayscale_image).button
-        define_camera_pose_label_x = 1/2; gbl.menu_label(menu_frame, "Define the camera pose:", f"Calibri {menu_properties['options_font']} bold", menu_properties['subtitles_color'], menu_properties['bg_color'], define_camera_pose_label_x * menu_properties['width'], define_camera_pose_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        choose_ArUco_marker_label_x = 7/16; gbl.menu_label(menu_frame, "ArUco marker:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_ArUco_marker_label_x * menu_properties['width'], choose_ArUco_marker_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        self.choose_ArUco_marker_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", values = self.saved_ArUco_markers_list, state = "normal", width = 15, justify = "center")
-        choose_ArUco_marker_combobox_x = choose_ArUco_marker_label_x; self.choose_ArUco_marker_combobox.place(x = choose_ArUco_marker_combobox_x * menu_properties['width'], y = choose_ArUco_marker_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
-        self.choose_ArUco_marker_combobox.bind("<<ComboboxSelected>>", self.change_ArUco_marker)
-        self.choose_ArUco_marker_combobox.bind("<Return>", self.change_ArUco_marker)
-        estimate_camera_pose_button_x = 1/9; self.camera_estimate_pose_button = gbl.menu_button(menu_frame, "estimate\ncamera pose", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], estimate_camera_pose_button_x * menu_properties['width'], estimate_camera_pose_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.estimate_camera_pose).button
-        estimate_obst_plane_pose_button_x = 1/4; self.estimate_obst_plane_pose_button = gbl.menu_button(menu_frame, "estimate\nplane pose", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], estimate_obst_plane_pose_button_x * menu_properties['width'], estimate_obst_plane_pose_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.estimate_obstacles_plane_pose).button
-        apply_moving_average_filter_label_x = 1/9; gbl.menu_label(menu_frame, "Apply moving\naverage filter:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], apply_moving_average_filter_label_x * menu_properties['width'], apply_moving_average_filter_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        apply_moving_average_filter_button_x = 1/4; self.apply_moving_average_filter_button = gbl.menu_button(menu_frame, ["no", "yes"][[False, True].index(self.apply_moving_average_poses_estimation)], f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], apply_moving_average_filter_button_x * menu_properties['width'], apply_moving_average_filter_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.apply_moving_average_filter).button
-        camera_transformation_label_x = 5/8; gbl.menu_label(menu_frame, "Camera\ntransformation\n(w.r.t. world):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], camera_transformation_label_x * menu_properties['width'], camera_transformation_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        camera_transformation_indicator_x = 5/6; self.camera_transformation_indicator = gbl.menu_label(menu_frame, "transformation", f"Calibri {menu_properties['options_font']} bold", menu_properties['indicators_color'], menu_properties['bg_color'], camera_transformation_indicator_x * menu_properties['width'], camera_transformation_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
-        camera_translation_label_x = 1/8; gbl.menu_label(menu_frame, "Translation (m):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], camera_translation_label_x * menu_properties['width'], camera_translation_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        camera_translation_button_x = 2/6; self.choose_camera_translation_button = gbl.menu_button(menu_frame, str([np.round(self.camera_translation[k], 3) for k in range(len(self.camera_translation))]), f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], camera_translation_button_x * menu_properties['width'], camera_translation_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.choose_camera_translation).button
-        camera_optical_axis_label_x = 1/8; gbl.menu_label(menu_frame, "Optical axis:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], camera_optical_axis_label_x * menu_properties['width'], camera_optical_axis_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        camera_optical_axis_button_x = 2/6; self.choose_camera_optical_axis_button = gbl.menu_button(menu_frame, str([np.round(self.camera_optical_axis[k], 3) for k in range(len(self.camera_optical_axis))]), f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], camera_optical_axis_button_x * menu_properties['width'], camera_optical_axis_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.choose_camera_optical_axis).button
-        camera_orientation_label_x = 1/8; gbl.menu_label(menu_frame, "Orientation (°):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], camera_orientation_label_x * menu_properties['width'], camera_orientation_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        camera_orientation_button_x = 2/6; self.choose_camera_orientation_button = gbl.menu_button(menu_frame, f"{self.camera_orientation:.1f}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], camera_orientation_button_x * menu_properties['width'], camera_orientation_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.choose_camera_orientation).button
-        z_rotate_camera_label_x = 7/12; gbl.menu_label(menu_frame, "Rotation around\nz-axis (°):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], z_rotate_camera_label_x * menu_properties['width'], z_rotate_camera_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        self.z_rotate_camera_slider = tk.Scale(menu_frame, font = f"Arial {menu_properties['options_font']-3}", orient = tk.HORIZONTAL, from_ = 0, to = 360, resolution = 10**(-self.angles_precision), length = menu_properties['width'] / 5.0, bg = menu_properties['bg_color'], fg = "white", troughcolor = "brown", highlightbackground = menu_properties['bg_color'], highlightcolor = menu_properties['bg_color'], highlightthickness = 2, sliderlength = 25, command = self.change_camera_move_sliders)
-        z_rotate_camera_slider_x = z_rotate_camera_label_x; self.z_rotate_camera_slider.place(x = z_rotate_camera_slider_x * menu_properties['width'], y = z_rotate_camera_slider_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
-        self.z_rotate_camera_slider.bind("<ButtonRelease-3>", self.reset_camera_sliders)
-        normal_translate_camera_label_x = 5/6; gbl.menu_label(menu_frame, "Translation along\noptical axis (m):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], normal_translate_camera_label_x * menu_properties['width'], normal_translate_camera_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        self.normal_translate_camera_slider = tk.Scale(menu_frame, font = f"Arial {menu_properties['options_font']-3}", orient = tk.HORIZONTAL, from_ = -1, to = 1, resolution = 0.001, length = menu_properties['width'] / 5.0, bg = menu_properties['bg_color'], fg = "white", troughcolor = "brown", highlightbackground = menu_properties['bg_color'], highlightcolor = menu_properties['bg_color'], highlightthickness = 2, sliderlength = 25, command = self.change_camera_move_sliders)
-        normal_translate_camera_slider_x = normal_translate_camera_label_x; self.normal_translate_camera_slider.place(x = normal_translate_camera_slider_x * menu_properties['width'], y = normal_translate_camera_slider_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
-        self.normal_translate_camera_slider.bind("<ButtonRelease-3>", self.reset_camera_sliders)
-        camera_capture_workspacelabel_x = 1/2; gbl.menu_label(menu_frame, "Operations for capturing the workspace image using the camera:", f"Calibri {menu_properties['options_font']} bold", menu_properties['subtitles_color'], menu_properties['bg_color'], camera_capture_workspacelabel_x * menu_properties['width'], camera_capture_workspacelabel_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        recalibrate_camera_label_x = 1/6; gbl.menu_label(menu_frame, "Camera calibration:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], recalibrate_camera_label_x * menu_properties['width'], recalibrate_camera_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        recalibrate_camera_button_x = recalibrate_camera_label_x; self.recalibrate_camera_button = gbl.menu_button(menu_frame, "recalibrate camera", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], recalibrate_camera_button_x * menu_properties['width'], recalibrate_camera_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.recalibrate_camera).button
-        show_camera_parameters_button_x = recalibrate_camera_label_x; self.show_camera_parameters_button = gbl.menu_button(menu_frame, "show camera parameters", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_camera_parameters_button_x * menu_properties['width'], show_camera_parameters_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.show_camera_parameters).button
-        draw_2d_plane_button_x = 5/11; self.draw_2d_plane_button = gbl.menu_button(menu_frame, "draw 2D plane\non frame", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], draw_2d_plane_button_x * menu_properties['width'], draw_2d_plane_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.draw_2d_plane_on_image).button
-        capture_workspace_image_button_x = draw_2d_plane_button_x; self.capture_workspace_image_button = gbl.menu_button(menu_frame, "capture image", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], capture_workspace_image_button_x * menu_properties['width'], capture_workspace_image_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.capture_workspace_image).button
-        show_workspace_image_label_x = 7/10; gbl.menu_label(menu_frame, "Workspace images:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], show_workspace_image_label_x * menu_properties['width'], show_workspace_image_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        self.show_workspace_image_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "normal", width = 13, values = self.saved_workspace_images_list, justify = "center")
-        show_workspace_image_combobox_x = show_workspace_image_label_x; self.show_workspace_image_combobox.place(x = show_workspace_image_combobox_x * menu_properties['width'], y = show_workspace_image_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
-        self.show_workspace_image_combobox.bind("<<ComboboxSelected>>", self.change_shown_workspace_image)
-        self.show_workspace_image_combobox.bind("<Return>", self.change_shown_workspace_image)
-        show_workspace_image_button_x = 8/9; self.show_workspace_image_button = gbl.menu_button(menu_frame, "show image", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_workspace_image_button_x * menu_properties['width'], show_workspace_image_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.show_workspace_image).button
-        rename_workspace_image_button_x = show_workspace_image_button_x; self.rename_workspace_image_button = gbl.menu_button(menu_frame, "rename image", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], rename_workspace_image_button_x * menu_properties['width'], rename_workspace_image_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.rename_workspace_image).button
-        delete_workspace_image_button_x = show_workspace_image_button_x; self.delete_workspace_image_button = gbl.menu_button(menu_frame, "delete image", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], delete_workspace_image_button_x * menu_properties['width'], delete_workspace_image_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.delete_workspace_image).button
-        self.update_camera_control_indicators()  # update the indicators of the camera control
-        self.change_shown_workspace_image()  # change the shown workspace image
-    def build_solve_obstacles_avoidance_menus(self, event = None):  # build the sub menus of the main menu that solves the obstacles avoidance
+    def build_solve_obstacles_avoidance_menus(self, submenus_titles, submenus_descriptions, event = None):  # build the sub menus of the main menu that solves the obstacles avoidance
         self.clear_menus_background()
         # create the solve obstacles avoidance sub menu
-        solve_obstacles_avoidance_menu_title = "Obstacles avoidance solver"
-        solve_obstacles_avoidance_menu_info = f"--- {solve_obstacles_avoidance_menu_title} ---\n\
-- Load the Desired Workspace Image with All the Built Obstacles:\n\
-• Workspace Image: A dropdown menu allows the user to select a workspace image.\n\
-• Plot Obstacles Boundaries: Button or option to display the boundaries of obstacles within the selected workspace image.\n\
-• Workspace Plane Transformation: Indicates that the workspace plane's transformation data will be taken from the image.\n\
-• Obstacles Infos: Displays information about the obstacles, including the number of inner and outer boundaries and the obstacles' height (30.0 mm in this case).\n\
-- Define the Start and Target Positions of the Robot's End-Effector on the Workspace Plane:\n\
-• Start Position (m) / Target Position (m): Input fields for defining the start and target positions of the robot's end-effector, initially set to [0.0, 0.0] for both.\n\
-• Position Check: A system check that validates the start and target positions. If the positions are incorrect or not defined properly, a warning (Wrong! The start and/or target positions are not defined correctly! Choose new values!) is displayed.\n\
-- Transform the Real Workspace to the Unit Disk (Radius = 1) and then Back to R2 Plane:\n\
-• Start Mapping: Button to begin the mapping process\n\
-• Real Workspace → Unit Disk: The first transformation step where the real workspace is mapped onto a unit disk. Options to build and interact with the mapping.\n\
-• Unit Disk → R2 Plane: The second step where the unit disk is transformed back to the R2 plane. Options to build and interact with this transformation.\n\
-- Apply the Control Law for the Movement of the Robotic Manipulator:\n\
-• Control Law Parameters:\n\
-k_d, K, k_i, w_phi: Fields to set various control law parameters, affecting the robot's movement dynamics.\n\
-gamma (0.70): A parameter likely related to the control system's damping or gain.\n\
-e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thresholds.\n\
-• Save Parameters / Load Parameters: Options to save the current set of parameters or load a predefined set of parameters.\n\
-• Navigation Potential Field: Plot Function / Plot Gradients, Options to visualize the potential field functions or gradients that guide the robot's movement.\n\
-• Apply Control Law: Button to apply the defined control law to the robot.\n\
-• Compute Robot Velocities: Option to calculate the robot's velocities based on the control law and potential field.\n\
-• Points Divisions to Plot: Specifies the number of divisions or resolution for plotting points within the workspace, set to 200.\n\
-• Move Simulated Robot / Move Real Robot: Buttons to initiate movement for either a simulated version of the robot or the real physical robot.\n\
-• Time Step (s): Specifies the simulation or control time step, set to 0.001 seconds.\n\
-• Maximum Iterations: Defines the maximum number of iterations allowed for the solver, set to 1000.\n\
-• Error Tolerance (mm): Sets the permissible error tolerance for the robot's movement, set to 10.0 mm.\n\
-• Error Correction: Option to enable or disable error correction during the robot's operation."
+        solve_obstacles_avoidance_menu_title = submenus_titles[0]
+        solve_obstacles_avoidance_menu_info = f"--- {solve_obstacles_avoidance_menu_title} ---\n" + submenus_descriptions[0]
         solve_obstacles_avoidance_menu_properties = dict(main_menu_title = self.main_menus_build_details[self.main_menu_choice]['title'], sub_menu_title = solve_obstacles_avoidance_menu_title, info = solve_obstacles_avoidance_menu_info, row = 1, column = 0, width = self.menus_background_width, height = self.menus_background_height * 1 / 1, \
                                                             rows = 17, bg_color = "black", title_font = 15, options_font = 11, indicators_color = "yellow", subtitles_color = "magenta", labels_color = "lime", buttons_color = "white")
         # generate the sub menus
@@ -3194,7 +3007,7 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
                 self.invdiffkine_wrt_frame_button.configure(text = self.invdiffkine_wrt_frame)  # change the text of the button that allows the user to change the frame with respect to which the inverse differential kinematics is computed
                 # solve the inverse differential kinematics of the robotic manipulator for the chosen end-effector linear and angular velocities
                 end_effector_velocity = np.concatenate((self.chosen_invdiffkine_linear_vel, self.chosen_invdiffkine_angular_vel), axis = 0)  # the end-effector velocity
-                self.invdiffkine_joints_velocities, diffkine_success = kin.compute_inverse_differential_kinematics(self.built_robotic_manipulator, end_effector_velocity, self.invdiffkine_wrt_frame)  # compute the inverse differential kinematics of the robotic manipulator
+                self.invdiffkine_joints_velocities, diffkine_success = kin.compute_inverse_differential_kinematics(self.built_robotic_manipulator, self.built_robotic_manipulator.q, end_effector_velocity, self.invdiffkine_wrt_frame)  # compute the inverse differential kinematics of the robotic manipulator
                 joints_velocities = ""  # initialize the joints velocities indicator of the robotic manipulator
                 joints_velocities_columns_indicator = 5  # the number of rows of the joints velocities indicator
                 if diffkine_success:  # if the inverse differential kinematics analysis is successful
@@ -3567,6 +3380,405 @@ e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thre
             if not self.serial_connection_thread_flag:  # if the thread is stopped
                 break  # break the while loop
 
+    # for the main menu where the camera is controlled
+    def determine_camera(self, event = None):  # determine the camera to use
+        self.camera_choice = self.alternate_matrix_elements(self.camera_choices_list, self.camera_choice)  # change the camera choice
+        self.update_camera_control_indicators()  # update the indicators of the camera control
+    def change_camera_aspect_ratio(self, event = None):  # choose the camera aspect ratio
+        self.camera_aspect_ratio = self.camera_aspect_ratios_values[self.camera_aspect_ratios_list.index(self.choose_aspect_ratio_combobox.get())]  # change the camera aspect ratio
+        self.camera_resolution = self.camera_resolutions_list[self.camera_aspect_ratios_values.index(self.camera_aspect_ratio)][0]  # change the camera resolution
+        self.update_camera_control_indicators()  # update the indicators of the camera control
+    def change_camera_resolution(self, event = None):  # choose the camera resolution
+        self.camera_resolution = int(self.choose_resolution_combobox.get())  # change the camera resolution
+        self.update_camera_control_indicators()  # update the indicators of the camera control
+    def change_windows_size_factor_slider(self, event = None):  # change the windows size factor
+        self.images_size_factor = self.choose_windows_size_factor_slider.get() / 100.0  # change the windows size factor
+    def change_camera_dFoV(self, event = None):  # choose the camera diagonal field of view
+        camera_dFoV = sd.askfloat("Camera diagonal field of view", "Enter the diagonal field of view\nof the camera (in degrees):", initialvalue = self.camera_dFoV, minvalue = 10, maxvalue = 180, parent = self.menus_area)  # ask the user to enter the diagonal field of view of the camera
+        if camera_dFoV != None:  # if the user enters a number
+            self.camera_dFoV = camera_dFoV  # change the diagonal field of view of the camera
+        self.update_camera_control_indicators()  # update the indicators of the camera control
+    def change_luminance_threshold_slider(self, event = None):
+        self.luminance_threshold = self.choose_luminance_threshold_slider.get()  # change the luminance threshold
+    def open_close_camera(self, event = None):  # open or close the camera
+        if not self.camera_thread_flag:  # if the camera thread is not running
+            self.start_camera_thread()  # create and start a camera thread
+            if event != None or (self.original_image_is_shown or self.grayscale_image_is_shown or self.camera_pose_estimation_happening or self.obst_plane_pose_estimation_happening or self.draw_2d_plane_on_image_happening):
+                self.create_camera_capture_object()  # create the camera capture object
+        elif self.camera_thread_flag:  # if the camera thread is running
+            if not self.camera_frames_are_shown and (self.original_image_is_shown or self.grayscale_image_is_shown or self.camera_pose_estimation_happening or self.obst_plane_pose_estimation_happening or self.draw_2d_plane_on_image_happening):
+                self.create_camera_capture_object()  # create the camera capture object
+            if event != None:  # if the open/close camera is called by an event (the button is pressed)
+                self.kill_camera_thread()
+        self.update_camera_control_indicators()  # update the indicators of the camera control
+    def create_camera_capture_object(self, event = None):  # create the camera capture object
+        try:  # try to open the camera
+            self.camera_capture = cv2.VideoCapture([1, 0][self.camera_choices_list.index(self.camera_choice)], cv2.CAP_DSHOW)  # initialize the camera capture object, 0 for the default camera, 1 for the first external camera
+            self.camera_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.camera_resolution)  # set the height of the captured frame
+            self.camera_capture.set(cv2.CAP_PROP_FRAME_WIDTH, int(self.camera_aspect_ratio * self.camera_resolution))  # set the width of the captured frame
+            self.camera_frames_are_shown = True  # the camera frames are shown from now on
+            print("The camera has been opened successfully!")  # print a message to inform the user that the camera has been opened successfully
+        except Exception as e:  # if an error occurs
+            self.camera_frames_are_shown = False  # the camera frames are not shown from now on
+            ms.showerror("Error", f"Error opening the camera: {e}", parent = self.menus_area)  # show an error message
+            print(f"Error opening the camera: {e}")  # print the error message
+    def show_grayscale_image(self, event = None):  # show the grayscale image
+        if not self.grayscale_image_is_shown:  # if the grayscale image is not shown
+            self.grayscale_image_is_shown = True  # the grayscale image is shown from now on
+            self.open_close_camera()  # open the camera
+    def choose_camera_optical_axis(self, event = None):  # choose the optical axis of the camera
+        optical_axis_x = sd.askfloat("Camera optical axis", "Enter the x component of the optical axis\nof the camera (in meters):", initialvalue = self.camera_optical_axis[0], parent = self.menus_area)  # ask the user to enter the x component of the optical axis of the camera
+        if optical_axis_x != None:  # if the user enters a number
+            self.camera_optical_axis[0] = optical_axis_x  # change the x component of the optical axis of the camera
+        optical_axis_y = sd.askfloat("Camera optical axis", "Enter the y component of the optical axis\nof the camera (in meters):", initialvalue = self.camera_optical_axis[1], parent = self.menus_area)  # ask the user to enter the y component of the optical axis of the camera
+        if optical_axis_y != None:  # if the user enters a number
+            self.camera_optical_axis[1] = optical_axis_y  # change the y component of the optical axis of the camera
+        optical_axis_z = sd.askfloat("Camera optical axis", "Enter the z component of the optical axis\nof the camera (in meters):", initialvalue = self.camera_optical_axis[2], parent = self.menus_area)  # ask the user to enter the z component of the optical axis of the camera
+        if optical_axis_z != None:  # if the user enters a number
+            self.camera_optical_axis[2] = optical_axis_z  # change the z component of the optical axis of the camera
+        if np.linalg.norm(self.camera_optical_axis) != 0:  # if the optical axis of the camera is not the zero vector
+            self.camera_optical_axis = self.camera_optical_axis / np.linalg.norm(self.camera_optical_axis)  # normalize the optical axis of the camera
+        else:  # if the optical axis of the camera is the zero vector
+            self.camera_optical_axis = np.array([0, 0, 1])  # set the optical axis of the camera to the default value
+        self.reset_camera_sliders()  # initialize the sliders variables for the camera
+    def choose_camera_translation(self, event = None):  # choose the translation of the camera
+        camera_translation_x = sd.askfloat("Camera translation", "Enter the x component of the translation\nof the camera (in meters):", initialvalue = self.camera_translation[0], parent = self.menus_area)  # ask the user to enter the x component of the translation of the camera
+        if camera_translation_x != None:  # if the user enters a number
+            self.camera_translation[0] = camera_translation_x  # change the x component of the translation of the camera
+        camera_translation_y = sd.askfloat("Camera translation", "Enter the y component of the translation\nof the camera (in meters):", initialvalue = self.camera_translation[1], parent = self.menus_area)  # ask the user to enter the y component of the translation of the camera
+        if camera_translation_y != None:  # if the user enters a number
+            self.camera_translation[1] = camera_translation_y  # change the y component of the translation of the camera
+        camera_translation_z = sd.askfloat("Camera translation", "Enter the z component of the translation\nof the camera (in meters):", initialvalue = self.camera_translation[2], parent = self.menus_area)  # ask the user to enter the z component of the translation of the camera
+        if camera_translation_z != None:  # if the user enters a number
+            self.camera_translation[2] = camera_translation_z  # change the z component of the translation of the camera
+        self.reset_camera_sliders()  # initialize the sliders variables for the camera
+    def choose_camera_orientation(self, event = None):  # choose the orientation of the camera
+        orientation_angle = sd.askfloat("Camera orientation", "Enter the orientation angle of the camera,\naround its optical axis (in degrees):", initialvalue = self.camera_orientation, minvalue = -180, maxvalue = 180, parent = self.menus_area)  # ask the user to enter the angle of the orientation of the camera
+        if orientation_angle != None:  # if the user enters a number
+            self.camera_orientation = orientation_angle  # change the angle of the orientation of the camera
+        self.update_camera_control_indicators()  # update the indicators of the camera control variables
+    def change_camera_move_sliders(self, event = None):  # change the rotation of the camera around the z axis
+        self.camera_z_rotation = np.deg2rad(self.z_rotate_camera_slider.get())  # the rotation angle of the camera around the z axis
+        self.camera_translation_displacement = self.normal_translate_camera_slider.get()  # the translation displacement of the camera along its optical axis
+        Z_rot_mat = np.array([[np.cos(self.camera_z_rotation), -np.sin(self.camera_z_rotation), 0], [np.sin(self.camera_z_rotation), np.cos(self.camera_z_rotation), 0], [0, 0, 1]])  # the rotation matrix around the z axis
+        self.camera_optical_axis = Z_rot_mat @ self.camera_optical_axis_prev  # change the optical axis of the camera
+        self.camera_translation = Z_rot_mat @ (self.camera_translation_prev + self.camera_translation_displacement * self.camera_optical_axis_prev)  # change the translation of the camera
+        self.update_camera_control_indicators()  # update the indicators of the camera control variables
+    def reset_camera_sliders(self, event = None):  # reset the sliders variables for the camera
+        self.camera_optical_axis_prev = np.copy(self.camera_optical_axis)  # reset the optical axis of the camera
+        self.camera_translation_prev = np.copy(self.camera_translation)  # reset the translation of the camera
+        self.camera_z_rotation = 0; self.camera_translation_displacement = 0  # initialize the sliders variables for the camera
+        self.update_camera_control_indicators()  # update the indicators of the camera control variables
+    def change_ArUco_marker(self, event = None):  # change the ArUco marker
+        chosen_ArUco_marker = self.choose_ArUco_marker_combobox.get()  # change the ArUco marker
+        if chosen_ArUco_marker in self.saved_ArUco_markers_list:  # if the chosen ArUco marker exists
+            self.chosen_ArUco_marker = chosen_ArUco_marker  # change the chosen ArUco marker
+        else:  # if the chosen ArUco marker does not exist
+            ms.showerror("Error", f"The chosen ArUco marker \"{chosen_ArUco_marker}\" does not exist!", parent = self.menus_area)  # show an error message
+        self.update_camera_control_indicators()  # update the indicators of the camera control
+    def estimate_camera_pose(self, event = None):  # estimate the pose of the camera
+        if not self.camera_pose_estimation_happening and not self.obst_plane_pose_estimation_happening:  # if the camera pose estimation is not happening
+            self.camera_aspect_ratio = self.camera_aspect_ratios_values[0]; self.camera_resolution = self.camera_resolutions_list[0][0]  # set the values of the camera resolution and aspect ratio
+            self.camera_pose_estimation_happening = True  # the camera pose estimation is happening from now on
+            self.open_close_camera()  # open the camera
+    def estimate_obstacles_plane_pose(self, event = None):  # estimate the pose of the obstacles plane
+        if not self.obst_plane_pose_estimation_happening and not self.camera_pose_estimation_happening:  # if the obstacles plane pose estimation is not happening
+            self.obst_plane_pose_estimation_happening = True  # the obstacles plane pose estimation is happening from now on
+            self.open_close_camera()  # open the camera
+    def apply_moving_average_filter(self, event = None):  # apply the moving average filter for the camera and plane poses estimation
+        self.apply_moving_average_poses_estimation = not self.apply_moving_average_poses_estimation  # change the flag of applying the moving average filter
+        self.update_camera_control_indicators()  # update the indicators of the camera control
+    def recalibrate_camera(self, event = None):  # recalibrate the camera
+        calibration_images_paths = self.saved_camera_calibration_images_folder_path + r"/*.jpg"  # the paths of the calibration images
+        self.camera_intrinsic_matrix, self.camera_dist_coeffs, self.reprojection_error = cd.calibrate_camera(calibration_images_paths)  # calibrate the camera
+        if self.camera_intrinsic_matrix != None:  # if the camera has been calibrated successfully
+            cd.save_intrinsic_parameters(self.camera_intrinsic_matrix, self.camera_dist_coeffs, self.reprojection_error, self.camera_intrinsic_parameters_file_path)  # save the intrinsic matrix and distortion coefficients of the camera
+            ms.showinfo("Camera calibration", f"The camera has been calibrated successfully! The reprojection error is {np.round(self.reprojection_error, 5)} pixels!", parent = self.menus_area)  # show an info message
+        else:  # if the camera has not been calibrated
+            ms.showerror("Error", "The camera has not been calibrated! The previous calibration parameters are used.", parent = self.menus_area)  # show an error message
+    def show_camera_parameters(self, event = None):  # show the camera parameters
+        ms.showinfo("Camera parameters", f"• Intrinsic matrix (in pixels):\n{self.camera_intrinsic_matrix}\n\n\
+• Distortion coefficients (dimensionless):\n\
+- Radial distortion coefficients k1, k2, k3: {np.hstack((self.camera_dist_coeffs[:2], self.camera_dist_coeffs[-1]))}\n\
+- Tangential distortion coefficients p1, p2: {self.camera_dist_coeffs[2:4]}\n\n\
+• Reprojection error (in pixels): {self.reprojection_error}", parent = self.menus_area)  # show the intrinsic matrix and distortion coefficients of the camera
+    def draw_2d_plane_on_image(self, event = None):  # draw the 2D plane on the image
+        if not self.draw_2d_plane_on_image_happening:  # if the 2D plane is not being drawn on the image
+            self.draw_2d_plane_on_image_happening = True  # the 2D plane is being drawn on the image from now on
+            self.open_close_camera()  # open the camera
+    def change_shown_workspace_image(self, event = None):  # change the shown workspace image
+        shown_workspace_image_name = self.show_workspace_image_combobox.get()  # the name of the shown workspace image
+        if shown_workspace_image_name in self.saved_workspace_images_list:  # if the chosen workspace image exists
+            self.shown_workspace_image_name = shown_workspace_image_name  # change the shown workspace image
+            _, _, _, self.shown_workspace_image_plane_corners, _ = self.load_workspace_image_information(self.shown_workspace_image_name)  # load the information of the shown workspace image
+        else:  # if the chosen workspace image does not exist
+            ms.showerror("Error", f"The chosen workspace image \"{shown_workspace_image_name}\" does not exist!", parent = self.menus_area)  # show an error message
+        self.update_camera_control_indicators()  # update the indicators of the camera control
+    def show_workspace_image(self, event = None):  # show the specified workspace image
+        if self.shown_workspace_image_name in self.saved_workspace_images_list:  # if the chosen workspace image exists
+            if not self.workspace_image_is_shown:  # if the workspace image is not shown
+                self.workspace_image_is_shown = True  # the workspace image is shown from now on
+                self.open_close_camera()  # open the camera
+        else:  # if the chosen workspace image does not exist
+            ms.showerror("Error", f"The chosen workspace image \"{self.shown_workspace_image_name}\" does not exist!", parent = self.menus_area)
+    def rename_workspace_image(self, event = None):  # rename the specified workspace image
+        renamed_image = self.show_workspace_image_combobox.get()  # the name of the chosen workspace image
+        if renamed_image != "":  # if the user chooses a workspace image
+            new_image_name = sd.askstring("Rename workspace image", f"Enter the new name of the workspace image \"{renamed_image}\":", initialvalue = renamed_image, parent = self.menus_area)  # ask the user to enter the new name of the workspace image
+            if new_image_name != None:  # if the user enters a name
+                if new_image_name not in self.saved_workspace_images_list:  # if the new name of the workspace image does not exist
+                    os.rename(self.saved_workspace_images_infos_folder_path + fr"/{renamed_image}.jpg", self.saved_workspace_images_infos_folder_path + fr"/{new_image_name}.jpg")  # rename the workspace image
+                    os.rename(self.saved_workspace_images_infos_folder_path + fr"/{renamed_image}_info.txt", self.saved_workspace_images_infos_folder_path + fr"/{new_image_name}_info.txt")  # rename the information file of the workspace image
+                    os.rename(self.saved_obstacles_objects_infos_folder_path + fr"/{renamed_image}", self.saved_obstacles_objects_infos_folder_path + fr"/{new_image_name}")  # rename the folder of the obstacles objects detected in the workspace image
+                    self.saved_workspace_images_list[self.saved_workspace_images_list.index(renamed_image)] = new_image_name  # change the name of the chosen workspace image
+                    self.shown_workspace_image_name = new_image_name  # show the renamed workspace image
+                    self.chosen_detection_workspace_image_name = new_image_name  # choose the renamed workspace image as the detection workspace image
+                    if self.chosen_solver_workspace_image_name == renamed_image:  # if the chosen solver workspace image is the renamed image
+                        self.chosen_solver_workspace_image_name = new_image_name  # choose the renamed workspace image as the solver workspace image
+                    self.update_camera_control_indicators()  # update the indicators of the camera control
+                else:  # if the new name of the workspace image already exists
+                    ms.showerror("Error", f"The new name of the workspace image \"{new_image_name}\" already exists!", parent = self.menus_area)  # show an error message
+        else:  # if the user does not choose a workspace image
+            ms.showerror("Error", "Choose a workspace image to rename!", parent = self.menus_area)
+    def delete_workspace_image(self, event = None):  # delete the specified workspace image
+        self.workspace_image_is_shown = False  # the workspace image is not shown from now on
+        deleted_image = self.show_workspace_image_combobox.get()  # the name of the chosen workspace image
+        if deleted_image != "":  # if the user chooses a workspace image
+            delete_image_accept = ms.askyesno("Delete workspace image", f"Are you sure you want to delete\nthe workspace image \"{deleted_image}\"?", parent = self.menus_area)  # ask the user if they want to delete the chosen workspace image
+            if delete_image_accept:  # if the user wants to delete the chosen workspace image
+                os.remove(self.saved_workspace_images_infos_folder_path + fr"/{deleted_image}.jpg")  # delete the chosen workspace image
+                os.remove(self.saved_workspace_images_infos_folder_path + fr"/{deleted_image}_info.txt")  # delete the information file of the chosen workspace image
+                self.saved_workspace_images_list.remove(deleted_image)  # remove the chosen workspace image from the list of the saved workspace images
+                if len(self.saved_workspace_images_list) != 0:  # if there are saved workspace images
+                    self.shown_workspace_image_name = self.saved_workspace_images_list[0]  # show the first saved workspace image
+                    self.chosen_detection_workspace_image_name = self.saved_workspace_images_list[0]  # choose the first saved workspace image as the detection workspace image
+                else:  # if there are no saved workspace images
+                    self.shown_workspace_image_name = ""  # do not show any workspace image
+                    self.chosen_detection_workspace_image_name = ""  # do not choose any workspace image
+                if self.chosen_solver_workspace_image_name == deleted_image:  # if the chosen solver workspace image is the deleted image
+                    self.chosen_solver_workspace_image_name = self.chosen_detection_workspace_image_name  # choose the first saved workspace image as the solver workspace image
+                shutil.rmtree(self.saved_obstacles_objects_infos_folder_path + fr"/{deleted_image}")  # delete the folder of the obstacles objects detected in the workspace image
+        self.update_camera_control_indicators()  # update the indicators of the camera control
+    def capture_workspace_image(self, event = None):  # capture the workspace image using the camera
+        if not self.draw_2d_plane_on_image_happening:  # if the 2D plane is not being drawn on the image
+            self.grayscale_image_is_shown = True  # the grayscale image is shown from now on
+            self.obst_plane_pose_estimation_happening = True  # the obstacles plane pose estimation is happening from now on
+            self.draw_2d_plane_on_image_happening = True  # the 2D plane is being drawn on the image from now on
+            ms.showinfo("Workspace image capture instructions", "Capture the workspace image! The camera frame is considered to be fixed. The 2D plane pose is being estimated in order to be saved, along with the dimensions of the plane. \
+Press the \"s\" key to save the image (in grayscale format, the whole workspace 2D plane must be inside the frame)!", parent = self.menus_area)  # show an info message
+            self.open_close_camera()  # open the camera
+    def save_workspace_image_information(self, image, plane_frame_wrt_world, plane_x_length, plane_y_length, plane_corners_image_points, camera_frame_wrt_world, event = None):  # save the workspace image information
+        workspace_image_name = f"image_{len(self.saved_workspace_images_list) + 1}"  # the name of the workspace image
+        while os.path.exists(self.saved_workspace_images_infos_folder_path + fr"/{workspace_image_name}.jpg"):  # while the file with the same name exists
+            workspace_image_name = f"image_{int(workspace_image_name.split('_')[-1]) + 1}"  # change the name of the workspace image
+        grayscale_image = np.array(Image.fromarray(image).convert("L").point(lambda pixel: cd.convert_image_pixel_to_grayscale(pixel, [self.luminance_threshold])))  # convert the captured frame to black and white
+        cv2.imwrite(self.saved_workspace_images_infos_folder_path + fr"/{workspace_image_name}.jpg", grayscale_image)
+        with open(self.saved_workspace_images_infos_folder_path + fr"/{workspace_image_name}_info.txt", "w", encoding = "utf-8") as file:  # open the file in write mode
+            file.write("Plane frame wrt world transformation matrix:\n")  # write the transformation matrix of the plane frame wrt world to the file
+            np.savetxt(file, plane_frame_wrt_world, fmt = "%.5f", delimiter = " ")  # write the transformation matrix of the plane frame wrt world to the file
+            file.write("\nPlane x length (m):\n")  # write the x length of the plane to the file
+            file.write(f"{plane_x_length:.3f}\n")  # write the x length of the plane to the file
+            file.write("Plane y length (m):\n")  # write the y length of the plane to the file
+            file.write(f"{plane_y_length:.3f}\n")  # write the y length of the plane to the file
+            file.write("\nPlane corners image points (top-left, top-right, bottom-right, bottom-left) in pixels:\n")  # write the image points of the plane corners to the file
+            np.savetxt(file, np.int32(plane_corners_image_points), fmt = "%.0f", delimiter = " ")  # write the image points of the plane corners to the file
+            file.write("\nCamera frame wrt world transformation matrix:\n")  # write the transformation matrix of the camera frame wrt world to the file
+            np.savetxt(file, camera_frame_wrt_world, fmt = "%.5f", delimiter = " ")  # write the transformation matrix of the camera frame wrt world to the file
+            file.close()  # close the file
+        os.mkdir(self.saved_obstacles_objects_infos_folder_path + fr"/{workspace_image_name}")  # create a folder for the obstacles objects detected in the workspace image
+        if workspace_image_name not in self.saved_workspace_images_list:  # if the name of the saved file is not in the values of the combobox that contains the names of the saved files
+            self.saved_workspace_images_list.append(workspace_image_name)  # add the file name to the list of the saved files
+        ms.showinfo("Workspace image information saved!", f"The workspace image and its information have been saved successfully in the files \"{workspace_image_name}.jpg\" and \"{workspace_image_name}_info.txt\" respectively!", parent = self.menus_area)  # show an info message
+    def load_workspace_image_information(self, workspace_image_name, event = None):  # load the information of the workspace image
+        if workspace_image_name in self.saved_workspace_images_list:  # if the chosen workspace image exists
+            loaded_image_info_file = open(self.saved_workspace_images_infos_folder_path + fr"/{workspace_image_name}_info.txt", "r", encoding = "utf-8")  # open the information file of the chosen workspace image in read mode
+            loaded_image_info_lines = loaded_image_info_file.readlines()  # read all the lines of the information file
+            loaded_image_info_file.close()  # close the information file
+            plane_frame_wrt_world = np.array([np.array([float(k) for k in line.split()]) for line in loaded_image_info_lines[1:5]])  # the transformation matrix of the plane frame wrt world
+            plane_x_length = float(loaded_image_info_lines[7])  # the x length (in meters) of the plane
+            plane_y_length = float(loaded_image_info_lines[9])  # the y length (in meters) of the plane
+            plane_image_points = np.int32([np.array([float(k) for k in line.split()]) for line in loaded_image_info_lines[12:16]]).reshape(-1, 2)  # the image points (in pixels) of the plane corners
+            camera_frame_wrt_world = np.array([np.array([float(k) for k in line.split()]) for line in loaded_image_info_lines[18:]])  # the transformation matrix of the camera frame wrt world
+            return plane_frame_wrt_world, plane_x_length, plane_y_length, plane_image_points, camera_frame_wrt_world  # return the loaded information of the workspace image
+        else:  # if the chosen workspace image does not exist
+            ms.showerror("Error", f"The chosen workspace image \"{workspace_image_name}\" does not exist!", parent = self.menus_area)  # show an error message
+            return np.eye(4), 0, 0, np.zeros((4, 2)), np.eye(4)  # return the default values
+    def update_camera_control_indicators(self, event = None):  # update the indicators of the camera control variables
+        self.camera_wrt_world_transformation_matrix = gf.xy_plane_transformation(self.camera_optical_axis, self.camera_orientation, self.camera_translation)  # the total transformation matrix of the camera
+        try:
+            self.determine_camera_button.configure(text = self.camera_choice)  # change the text of the determine camera button
+            self.choose_resolution_combobox["values"] = self.camera_resolutions_list[self.camera_aspect_ratios_values.index(self.camera_aspect_ratio)]  # the available camera resolutions for the chosen camera aspect ratio
+            self.choose_aspect_ratio_combobox.set(self.camera_aspect_ratios_list[self.camera_aspect_ratios_values.index(self.camera_aspect_ratio)])  # set the value of the camera aspect ratio combobox
+            self.choose_resolution_combobox.set(self.camera_resolution)  # set the value of the camera resolution combobox
+            self.choose_windows_size_factor_slider.set(int(100.0 * self.images_size_factor))  # set the value of the windows size factor slider
+            self.choose_dFoV_button.configure(text = f"{self.camera_dFoV:.1f}")  # change the text of the choose camera dFoV button
+            min_dist_camera_2d_plane = cd.min_distance_from_camera(self.obstacles_2d_plane_x_length, self.obstacles_2d_plane_y_length, int(self.camera_aspect_ratio * self.camera_resolution), self.camera_resolution, self.camera_dFoV)  # calculate the minimum distance from camera to 2D plane
+            self.find_min_dist_2d_plane_indicator.configure(text = f"{min_dist_camera_2d_plane:.3f}")  # change the text of the find min dist 2D plane indicator
+            self.choose_luminance_threshold_slider.set(self.luminance_threshold)  # set the value of the luminance threshold slider
+            if self.camera_thread_flag:  # if the camera thread is running
+                self.open_close_camera_button.configure(text = "close\ncamera")  # change the text of the open/close camera button
+            else:  # if the camera is closed
+                self.open_close_camera_button.configure(text = "open\ncamera")  # change the text of the open/close camera button
+            self.camera_transformation_indicator.configure(text = str(np.round(self.camera_wrt_world_transformation_matrix, 3)))  # change the text of the camera transformation indicator
+            self.choose_camera_optical_axis_button.configure(text = str([np.round(self.camera_optical_axis[k], 3) for k in range(len(self.camera_optical_axis))]))  # change the text of the choose camera optical axis button
+            self.choose_camera_translation_button.configure(text = str([np.round(self.camera_translation[k], 3) for k in range(len(self.camera_translation))]))  # change the text of the choose camera translation button
+            self.choose_camera_orientation_button.configure(text = f"{self.camera_orientation:.1f}")  # change the text of the choose camera orientation button
+            self.z_rotate_camera_slider.set(np.rad2deg(self.camera_z_rotation))
+            self.normal_translate_camera_slider.set(self.camera_translation_displacement)
+            self.choose_ArUco_marker_combobox.set(self.chosen_ArUco_marker)  # set the value of the ArUco marker combobox
+            self.apply_moving_average_filter_button.configure(text = ["no", "yes"][[False, True].index(self.apply_moving_average_poses_estimation)])  # change the text of the moving average filter button
+            self.show_workspace_image_combobox["values"] = self.saved_workspace_images_list  # set the values of the show workspace image combobox
+            self.show_workspace_image_combobox.set(self.shown_workspace_image_name)  # set the value of the show workspace image combobox
+        except: pass
+        # except Exception as e:
+        #     if "invalid command name" not in str(e): print(f"Error in update_camera_control_indicators: {e}")
+
+    # the functions used for the thread that continuously captures the camera frames
+    def start_camera_thread(self, event = None):  # create and start a camera thread
+        self.camera_thread_flag = True  # let the camera thread run
+        self.camera_thread = threading.Thread(target = self.camera_thread_run_function)  # create the thread for the camera
+        self.camera_thread.start()  # start the camera thread
+    def kill_camera_thread(self, event = None):  # kill the existed and running camera thread
+        self.camera_thread_flag = False  # stop the camera thread
+        self.camera_frames_are_shown = False  # the camera frame is not shown from now on
+        self.original_image_is_shown = False  # the original image is not shown from now on
+        self.grayscale_image_is_shown = False  # the grayscale image is not shown from now on
+        self.workspace_image_is_shown = False  # the workspace image is not shown from now on
+        self.camera_pose_estimation_happening = False  # the camera pose estimation is not happening from now on
+        self.obst_plane_pose_estimation_happening = False  # the obstacles plane pose estimation is not happening from now on
+        self.draw_2d_plane_on_image_happening = False  # the 2D plane is not being drawn on the image from now on
+        self.obstacles_boundaries_are_shown = False  # the obstacles boundaries are not shown from now on
+        self.update_camera_control_indicators()  # update the indicators of the camera control
+        self.update_workspace_obstacles_indicators()  # update the indicators of the workspace obstacles
+    def camera_thread_run_function(self):  # the run function, it continuously captures and displays the camera frames
+        chosen_ArUco_marker = self.chosen_ArUco_marker  # the chosen ArUco marker
+        camera_intrinsic_matrix = self.camera_intrinsic_matrix  # the intrinsic matrix of the camera
+        camera_dist_coeffs = self.camera_dist_coeffs  # the distortion coefficients of the camera
+        ArUco_wrt_camera_transformation_matrix_prev = np.eye(4)  # the previous transformation matrix of the ArUco marker with respect to the camera frame
+        poses_estimations_counter = 0  # the counter for the estimations of the plane and camera poses
+        while True:  # while the thread is running
+            if self.workspace_image_is_shown:  # if the workspace image is shown
+                if self.shown_workspace_image_name in self.saved_workspace_images_list:  # if the shown workspace image exists
+                    workspace_image = cv2.imread(self.saved_workspace_images_infos_folder_path + fr"/{self.shown_workspace_image_name}.jpg")  # read the chosen workspace image
+                    for k in range(len(self.shown_workspace_image_plane_corners)):  # for each corner of the plane
+                        cv2.line(workspace_image, tuple(self.shown_workspace_image_plane_corners[k]), tuple(self.shown_workspace_image_plane_corners[(k + 1) % len(self.shown_workspace_image_plane_corners)]), (255, 0, 255), 2)  # draw the 2D plane on the workspace image
+                    cd.show_images_on_screen([workspace_image], [self.workspace_image_window_name], self.images_size_factor, True, False, 0)  # show the chosen workspace image
+            if self.obstacles_boundaries_are_shown:  # if the obstacles boundaries are shown
+                if self.chosen_detection_workspace_image_name in self.saved_workspace_images_list:  # if the chosen workspace image exists
+                    workspace_image = cv2.imread(self.saved_workspace_images_infos_folder_path + fr"/{self.chosen_detection_workspace_image_name}.jpg")  # read the chosen workspace image
+                    grayscale_image = np.array(Image.fromarray(workspace_image).convert("L").point(lambda pixel: cd.convert_image_pixel_to_grayscale(pixel, [self.luminance_threshold]))).astype(np.uint8)  # convert the chosen workspace image to black and white
+                    obstacles_boundaries_detected_image_points, outer_boundary_index, boundaries_image = cd.detect_image_boundaries(grayscale_image, self.workspace_image_plane_image_points, self.removed_boundaries_list, 10 ** (-self.boundaries_precision_parameter / 2.5), self.boundaries_minimum_vertices)  # detect the boundaries of the obstacles in the workspace image
+                    for k in range(len(self.workspace_image_plane_image_points)):  # for each corner of the plane
+                        cv2.line(boundaries_image, tuple(self.workspace_image_plane_image_points[k]), tuple(self.workspace_image_plane_image_points[(k + 1) % len(self.workspace_image_plane_image_points)]), (255, 0, 255), 2)  # draw the 2D plane on the boundaries image
+                    cv2.putText(boundaries_image, "Press the \"d\" key to save the detected boundaries", (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)  # write a message on the image frame
+                    cd.show_images_on_screen([boundaries_image], [self.obstacles_boundaries_window_name], self.images_size_factor, True, False, 0)  # show the boundaries of the obstacles on the workspace image
+                    cv2.setMouseCallback(self.obstacles_boundaries_window_name, self.remove_restore_boundaries, param = obstacles_boundaries_detected_image_points)  # set the mouse callback function for the obstacles boundaries window, to remove/restore boundaries
+            if self.camera_thread_flag and self.camera_frames_are_shown:  # if the camera thread is running
+                confirm_capture, frame = self.camera_capture.read()  # capture a frame using the camera capture object and store it in the variable frame
+                if confirm_capture:  # if the frame was captured successfully
+                    frame_height, frame_width = frame.shape[:2]  # the height and width of the captured frame
+                    cd.show_images_on_screen([frame], [self.camera_original_window_name], self.images_size_factor, True, False, 0)  # show the captured frame on the screen
+                    if not self.apply_moving_average_poses_estimation:  # if the moving average filter for poses estimation is not applied
+                        poses_estimations_counter = 0  # reset the counter of the estimations
+                    if self.camera_pose_estimation_happening or self.obst_plane_pose_estimation_happening or self.draw_2d_plane_on_image_happening:  # if the camera pose estimation or the obstacles plane pose estimation or the 2D plane drawing on the image is happening
+                        ArUco_wrt_camera_transformation_matrix, ArUco_marker_pose_image = cd.estimate_ArUco_marker_pose(frame, chosen_ArUco_marker, camera_intrinsic_matrix, camera_dist_coeffs)  # estimate the pose of the camera using an ArUco marker
+                        camera_ArUco_distance = np.linalg.norm(ArUco_wrt_camera_transformation_matrix[:3, 3])  # the distance between the camera and the ArUco marker
+                        cv2.putText(ArUco_marker_pose_image, f"Camera - ArUco marker distance: {camera_ArUco_distance:.3f} m", (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)  # write the distance between the camera and the ArUco marker on the image
+                        cd.show_images_on_screen([ArUco_marker_pose_image], [self.estimate_ArUco_pose_window_name], self.images_size_factor, True, False, 0)  # show the ArUco marker pose image on the screen
+                        if np.linalg.norm(ArUco_wrt_camera_transformation_matrix) == 0:  # if the pose of the ArUco marker is not estimated successfully
+                            ArUco_wrt_camera_transformation_matrix = ArUco_wrt_camera_transformation_matrix_prev  # keep the previous transformation matrix of the ArUco marker with respect to the camera frame
+                        else:  # if the pose of the ArUco marker is estimated successfully
+                            ArUco_wrt_camera_transformation_matrix = (ArUco_wrt_camera_transformation_matrix_prev * poses_estimations_counter + ArUco_wrt_camera_transformation_matrix) / (poses_estimations_counter + 1)  # smooth the transformation matrix of the ArUco marker with respect to the camera frame applying a moving average filter
+                            ArUco_wrt_camera_transformation_matrix_prev = ArUco_wrt_camera_transformation_matrix  # update the previous transformation matrix of the ArUco marker with respect to the camera frame
+                            poses_estimations_counter += 1  # increase the counter of the estimations
+                    if self.grayscale_image_is_shown:  # if the grayscale image is shown
+                        grayscale_image = np.array(Image.fromarray(frame).convert("L").point(lambda pixel: cd.convert_image_pixel_to_grayscale(pixel, [self.luminance_threshold])))  # convert the captured frame to black and white
+                        cd.show_images_on_screen([grayscale_image], [self.grayscale_image_window_name], self.images_size_factor, True, False, 0)  # show the grayscale image on the screen
+                    if self.camera_pose_estimation_happening:  # if the camera pose estimation is happening
+                        camera_wrt_world_transformation_matrix = self.obst_plane_wrt_world_transformation_matrix @ self.ArUco_wrt_plane_transformation_matrix @ np.linalg.inv(ArUco_wrt_camera_transformation_matrix)  # change the transformation matrix of the camera
+                        self.camera_optical_axis, self.camera_orientation, self.camera_translation = gf.get_components_from_xy_plane_transformation(camera_wrt_world_transformation_matrix)  # change the optical axis, orientation and translation of the camera
+                        self.reset_camera_sliders()  # reset the sliders variables for the camera
+                    if self.obst_plane_pose_estimation_happening:  # if the obstacles plane pose estimation is happening
+                        obst_plane_wrt_world_transformation_matrix = self.camera_wrt_world_transformation_matrix @ ArUco_wrt_camera_transformation_matrix @ np.linalg.inv(self.ArUco_wrt_plane_transformation_matrix)  # change the transformation matrix of the obstacles
+                        self.obstacles_2d_plane_normal_vector, self.obstacles_2d_plane_orientation, self.obstacles_2d_plane_translation = gf.get_components_from_xy_plane_transformation(obst_plane_wrt_world_transformation_matrix)  # change the normal vector, orientation and translation of the obstacles plane
+                        self.reset_2d_plane_sliders()  # reset the sliders variables for the 2D plane
+                    if self.draw_2d_plane_on_image_happening:  # if the 2D plane is being drawn on the image
+                        x_length = self.obstacles_2d_plane_x_length; y_length = self.obstacles_2d_plane_y_length  # the lengths of the 2D plane
+                        initial_obst_plane_points_wrt_ArUco = np.array([[-x_length/2, y_length/2, 0, 1], [x_length/2, y_length/2, 0, 1], [x_length/2, -y_length/2, 0, 1], [-x_length/2, -y_length/2, 0, 1]])
+                        transformed_obst_plane_points_wrt_ArUco = np.dot(np.linalg.inv(self.ArUco_wrt_plane_transformation_matrix), initial_obst_plane_points_wrt_ArUco.T).T[:, :3]  # the points of the 2D plane wrt the camera frame
+                        drawn_plane_corners_image_points, drawn_shape_image = cd.draw_shape_on_image_plane(frame, transformed_obst_plane_points_wrt_ArUco, ArUco_wrt_camera_transformation_matrix, camera_intrinsic_matrix, camera_dist_coeffs)  # draw the 2D plane on the image
+                        cv2.putText(drawn_shape_image, "Press the \"s\" key to save the grayscale image!", (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)  # write a message on the image frame
+                        cd.show_images_on_screen([drawn_shape_image], [self.draw_shape_image_window_name], self.images_size_factor, True, False, 0)  # show the frame with the 2D plane drawn on it
+                else:  # if the frame was not captured successfully
+                    self.kill_camera_thread()  # kill the existed and running camera thread
+                    ms.showerror("Error", "Couldn't capture frame with the camera!")  # show an error message
+                    print("Couldn't capture frame with the camera!")  # print a message to inform the user that the frame was not captured successfully
+            pressed_key = cv2.waitKey(1)  # wait for 1 millisecond for a key to be pressed
+            if (pressed_key == ord("a") or pressed_key == ord("A")) and self.grayscale_image_is_shown:  # if the user presses the "a" or "A" key
+                if self.luminance_threshold > self.luminance_threshold_limits[0]: self.luminance_threshold -= 1  # decrease the luminance threshold
+            elif (pressed_key == ord("w") or pressed_key == ord("W")) and self.grayscale_image_is_shown:  # if the user presses the "w" or "W" key
+                if self.luminance_threshold < self.luminance_threshold_limits[1]: self.luminance_threshold += 1  # increase the luminance threshold
+            elif (pressed_key == ord("e") or pressed_key == ord("E")) and self.obstacles_boundaries_are_shown:  # if the user presses the "e" or "E" key
+                if self.boundaries_precision_parameter > self.boundaries_precision_limits[0]: self.boundaries_precision_parameter -= 1  # decrease the boundaries precision parameter
+            elif (pressed_key == ord("r") or pressed_key == ord("R")) and self.obstacles_boundaries_are_shown:  # if the user presses the "r" or "R" key
+                if self.boundaries_precision_parameter < self.boundaries_precision_limits[1]: self.boundaries_precision_parameter += 1  # increase the boundaries precision parameter
+            elif (pressed_key == ord("t") or pressed_key == ord("T")) and self.obstacles_boundaries_are_shown:  # if the user presses the "t" or "T" key
+                if self.boundaries_minimum_vertices > self.boundaries_minimum_vertices_limits[0]: self.boundaries_minimum_vertices -= 1  # decrease the minimum number of vertices of the boundaries
+            elif (pressed_key == ord("y") or pressed_key == ord("Y")) and self.obstacles_boundaries_are_shown:  # if the user presses the "y" or "Y" key
+                if self.boundaries_minimum_vertices < self.boundaries_minimum_vertices_limits[1]: self.boundaries_minimum_vertices += 1  # increase the minimum number of vertices of the boundaries
+            elif (pressed_key == ord("f") or pressed_key == ord("F")) and (self.obst_plane_pose_estimation_happening or self.camera_pose_estimation_happening or self.draw_2d_plane_on_image_happening):  # if the user presses the "f" or "F" key
+                self.apply_moving_average_poses_estimation = not self.apply_moving_average_poses_estimation  # apply or not the moving average filter for poses estimation
+            elif (pressed_key == ord("s") or pressed_key == ord("S")) and self.draw_2d_plane_on_image_happening:  # if the user presses the "s" or "S" key
+                drawn_plane_corners_image_points_x_min = int(np.min(drawn_plane_corners_image_points[:, 0]))  # the minimum x coordinate of the plane corners image points
+                drawn_plane_corners_image_points_x_max = int(np.max(drawn_plane_corners_image_points[:, 0]))  # the maximum x coordinate of the plane corners image points
+                drawn_plane_corners_image_points_y_min = int(np.min(drawn_plane_corners_image_points[:, 1]))  # the minimum y coordinate of the plane corners image points
+                drawn_plane_corners_image_points_y_max = int(np.max(drawn_plane_corners_image_points[:, 1]))  # the maximum y coordinate of the plane corners image points
+                if drawn_plane_corners_image_points_x_min >= 0 and drawn_plane_corners_image_points_x_max < frame_width and drawn_plane_corners_image_points_y_min >= 0 and drawn_plane_corners_image_points_y_max < frame_height:  # if the 2D plane is inside the frame
+                    self.save_workspace_image_information(frame, self.obst_plane_wrt_world_transformation_matrix, self.obstacles_2d_plane_x_length, self.obstacles_2d_plane_y_length, drawn_plane_corners_image_points, self.camera_wrt_world_transformation_matrix)  # save the workspace image information
+                else:  # if the 2D plane is not inside the frame
+                    ms.showerror("Error while saving", "The whole workspace 2D plane must be inside the frame in order for the image to be saved!")  # show an error message
+            elif (pressed_key == ord("d") or pressed_key == ord("D")) and self.obstacles_boundaries_are_shown:  # if the user presses the "d" or "D" key
+                if outer_boundary_index != -1:  # if an outer boundary was detected
+                    # remove the excluded boundaries from the detected boundaries and move the outer boundary to the end of the list
+                    outer_boundary = obstacles_boundaries_detected_image_points[outer_boundary_index]  # get the outer boundary
+                    remaining_obstacles_boundaries_detected = [obstacles_boundaries_detected_image_points[k] for k in range(len(obstacles_boundaries_detected_image_points)) if k != outer_boundary_index and k not in self.removed_boundaries_list]  # remove the excluded boundaries and the outer boundary from the detected boundaries
+                    remaining_obstacles_boundaries_detected.append(outer_boundary)  # add the outer boundary to the end of the list
+                    # convert the obstacles boundaries image points to xy plane world points and save the obstacles objects detected in the workspace image
+                    obstacles_boundaries_detected_xy_obstplane_points = cd.convert_boundaries_image_points_to_obstplane_points(remaining_obstacles_boundaries_detected, self.workspace_image_plane_frame_wrt_world, self.workspace_obstacles_height_detection, \
+                                                                                                                        self.workspace_image_camera_frame_wrt_world, self.camera_intrinsic_matrix, self.camera_dist_coeffs)  # convert the obstacles boundaries image points to xy obstacles plane points
+                    obstacles_boundaries_to_be_saved = []  # the boundaries of the obstacles to be saved (need to remove the duplicate consecutive points)
+                    for boundary in obstacles_boundaries_detected_xy_obstplane_points:  # for each boundary of the obstacles
+                        obstacles_boundaries_to_be_saved.append([boundary[0]])  # add the first point of the current boundary to the list of the obstacles boundaries to be saved
+                        for k in range(1, len(boundary)):  # for each point of the current boundary
+                            if np.linalg.norm(boundary[k] - boundary[k - 1]) >= 0.0001:  # if the distance between the current point and the previous point is greater than or equal to 0.1 mm
+                                obstacles_boundaries_to_be_saved[-1].append(boundary[k])  # add the current point to the list of the obstacles boundaries to be saved
+                    shutil.rmtree(self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_detection_workspace_image_name}")  # delete the existing folder of the obstacles objects detected in the workspace image
+                    os.mkdir(self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_detection_workspace_image_name}")  # create a new folder for the obstacles objects detected in the workspace image
+                    inner_boundaries_counter = 0  # the counter for the inner boundaries
+                    for k in range(len(obstacles_boundaries_to_be_saved)):  # for each boundary of the obstacles
+                        if k == len(obstacles_boundaries_to_be_saved) - 1:  # if the boundary is the outer boundary
+                            file_name = "outer"  # the name of the file to save the outer boundary
+                        else:  # if the boundary is an inner boundary
+                            inner_boundaries_counter += 1  # increase the counter for the inner boundaries
+                            file_name = f"inner_{inner_boundaries_counter}"  # the name of the file to save the inner boundary
+                        with open(self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_detection_workspace_image_name}/{file_name}.txt", "w", encoding = "utf-8") as file:  # open the file in write mode 
+                            file.write(f"Boundary height (m): {self.workspace_obstacles_height_saved:.4f}\n")  # write the height of the boundary to the file
+                            file.write("\nBoundary (x, y) points transformed on the world xy plane (m):\n")  # write the points of the boundary to the file
+                            np.savetxt(file, np.array(obstacles_boundaries_to_be_saved[k]).reshape(-1, 2), fmt = "%.4f", delimiter = " ")  # write the points of the boundary to the file
+                            file.close()  # close the file
+                    self.chosen_workspace_saved_obstacles_objects_list = [file[:-4] for file in os.listdir(self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_detection_workspace_image_name}") if file.endswith(".txt")]  # the list to store the saved obstacles objects for the chosen workspace image
+                    ms.showinfo("Boundaries saved", "The detected obstacles have been saved successfully!")  # show an info message
+                else:  # if no outer boundary was detected
+                    ms.showerror("Error while saving", "The detected obstacles where not saved because there is no outer boundary detected (if it exists, it is drawn in red)! Try removing some boundaries!")  # show an error message
+            elif (pressed_key == ord("q") or pressed_key == ord("Q")) or not self.camera_thread_flag:  # if the user presses the "q" or "Q" key or the camera thread is stopped
+                self.kill_camera_thread()  # kill the existed and running camera thread
+                cv2.destroyAllWindows()  # close all OpenCV windows that were opened
+                if self.camera_frames_are_shown: self.camera_capture.release()  # release/free the camera capture object
+                print("The camera has been disconnected successfully!")  # print a message to inform the user that the camera has been disconnected successfully
+                break  # break the while loop
+            self.update_camera_control_indicators()  # update the indicators of the camera control
+            self.update_workspace_obstacles_indicators()  # update the indicators of the workspace obstacles
+
     # for the main menu where the workspace obstacles are created
     def choose_2d_plane_x_length(self, event = None):  # choose the x length of the 2D plane
         x_length = sd.askfloat("Obstacles 2D plane x length", "Enter the x length of the 2D plane in meters:", initialvalue = self.obstacles_2d_plane_x_length, minvalue = 0, parent = self.menus_area)  # ask the user to enter the x length of the 2D plane
@@ -3833,406 +4045,7 @@ You can also press left click on the number of a boundary to remove it and right
         except: pass
         # except Exception as e:
         #     if "invalid command name" not in str(e): print(f"Error in update_workspace_obstacles_indicators: {e}")
-
-    # for the main menu where the camera is controlled
-    def determine_camera(self, event = None):  # determine the camera to use
-        self.camera_choice = self.alternate_matrix_elements(self.camera_choices_list, self.camera_choice)  # change the camera choice
-        self.update_camera_control_indicators()  # update the indicators of the camera control
-    def change_camera_aspect_ratio(self, event = None):  # choose the camera aspect ratio
-        self.camera_aspect_ratio = self.camera_aspect_ratios_values[self.camera_aspect_ratios_list.index(self.choose_aspect_ratio_combobox.get())]  # change the camera aspect ratio
-        self.camera_resolution = self.camera_resolutions_list[self.camera_aspect_ratios_values.index(self.camera_aspect_ratio)][0]  # change the camera resolution
-        self.update_camera_control_indicators()  # update the indicators of the camera control
-    def change_camera_resolution(self, event = None):  # choose the camera resolution
-        self.camera_resolution = int(self.choose_resolution_combobox.get())  # change the camera resolution
-        self.update_camera_control_indicators()  # update the indicators of the camera control
-    def change_windows_size_factor_slider(self, event = None):  # change the windows size factor
-        self.images_size_factor = self.choose_windows_size_factor_slider.get() / 100.0  # change the windows size factor
-    def change_camera_dFoV(self, event = None):  # choose the camera diagonal field of view
-        camera_dFoV = sd.askfloat("Camera diagonal field of view", "Enter the diagonal field of view\nof the camera (in degrees):", initialvalue = self.camera_dFoV, minvalue = 10, maxvalue = 180, parent = self.menus_area)  # ask the user to enter the diagonal field of view of the camera
-        if camera_dFoV != None:  # if the user enters a number
-            self.camera_dFoV = camera_dFoV  # change the diagonal field of view of the camera
-        self.update_camera_control_indicators()  # update the indicators of the camera control
-    def change_luminance_threshold_slider(self, event = None):
-        self.luminance_threshold = self.choose_luminance_threshold_slider.get()  # change the luminance threshold
-    def open_close_camera(self, event = None):  # open or close the camera
-        if not self.camera_thread_flag:  # if the camera thread is not running
-            self.start_camera_thread()  # create and start a camera thread
-            if event != None or (self.original_image_is_shown or self.grayscale_image_is_shown or self.camera_pose_estimation_happening or self.obst_plane_pose_estimation_happening or self.draw_2d_plane_on_image_happening):
-                self.create_camera_capture_object()  # create the camera capture object
-        elif self.camera_thread_flag:  # if the camera thread is running
-            if not self.camera_frames_are_shown and (self.original_image_is_shown or self.grayscale_image_is_shown or self.camera_pose_estimation_happening or self.obst_plane_pose_estimation_happening or self.draw_2d_plane_on_image_happening):
-                self.create_camera_capture_object()  # create the camera capture object
-            if event != None:  # if the open/close camera is called by an event (the button is pressed)
-                self.kill_camera_thread()
-        self.update_camera_control_indicators()  # update the indicators of the camera control
-    def create_camera_capture_object(self, event = None):  # create the camera capture object
-        try:  # try to open the camera
-            self.camera_capture = cv2.VideoCapture([1, 0][self.camera_choices_list.index(self.camera_choice)], cv2.CAP_DSHOW)  # initialize the camera capture object, 0 for the default camera, 1 for the first external camera
-            self.camera_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.camera_resolution)  # set the height of the captured frame
-            self.camera_capture.set(cv2.CAP_PROP_FRAME_WIDTH, int(self.camera_aspect_ratio * self.camera_resolution))  # set the width of the captured frame
-            self.camera_frames_are_shown = True  # the camera frames are shown from now on
-            print("The camera has been opened successfully!")  # print a message to inform the user that the camera has been opened successfully
-        except Exception as e:  # if an error occurs
-            self.camera_frames_are_shown = False  # the camera frames are not shown from now on
-            ms.showerror("Error", f"Error opening the camera: {e}", parent = self.menus_area)  # show an error message
-            print(f"Error opening the camera: {e}")  # print the error message
-    def show_grayscale_image(self, event = None):  # show the grayscale image
-        if not self.grayscale_image_is_shown:  # if the grayscale image is not shown
-            self.grayscale_image_is_shown = True  # the grayscale image is shown from now on
-            self.open_close_camera()  # open the camera
-    def choose_camera_optical_axis(self, event = None):  # choose the optical axis of the camera
-        optical_axis_x = sd.askfloat("Camera optical axis", "Enter the x component of the optical axis\nof the camera (in meters):", initialvalue = self.camera_optical_axis[0], parent = self.menus_area)  # ask the user to enter the x component of the optical axis of the camera
-        if optical_axis_x != None:  # if the user enters a number
-            self.camera_optical_axis[0] = optical_axis_x  # change the x component of the optical axis of the camera
-        optical_axis_y = sd.askfloat("Camera optical axis", "Enter the y component of the optical axis\nof the camera (in meters):", initialvalue = self.camera_optical_axis[1], parent = self.menus_area)  # ask the user to enter the y component of the optical axis of the camera
-        if optical_axis_y != None:  # if the user enters a number
-            self.camera_optical_axis[1] = optical_axis_y  # change the y component of the optical axis of the camera
-        optical_axis_z = sd.askfloat("Camera optical axis", "Enter the z component of the optical axis\nof the camera (in meters):", initialvalue = self.camera_optical_axis[2], parent = self.menus_area)  # ask the user to enter the z component of the optical axis of the camera
-        if optical_axis_z != None:  # if the user enters a number
-            self.camera_optical_axis[2] = optical_axis_z  # change the z component of the optical axis of the camera
-        if np.linalg.norm(self.camera_optical_axis) != 0:  # if the optical axis of the camera is not the zero vector
-            self.camera_optical_axis = self.camera_optical_axis / np.linalg.norm(self.camera_optical_axis)  # normalize the optical axis of the camera
-        else:  # if the optical axis of the camera is the zero vector
-            self.camera_optical_axis = np.array([0, 0, 1])  # set the optical axis of the camera to the default value
-        self.reset_camera_sliders()  # initialize the sliders variables for the camera
-    def choose_camera_translation(self, event = None):  # choose the translation of the camera
-        camera_translation_x = sd.askfloat("Camera translation", "Enter the x component of the translation\nof the camera (in meters):", initialvalue = self.camera_translation[0], parent = self.menus_area)  # ask the user to enter the x component of the translation of the camera
-        if camera_translation_x != None:  # if the user enters a number
-            self.camera_translation[0] = camera_translation_x  # change the x component of the translation of the camera
-        camera_translation_y = sd.askfloat("Camera translation", "Enter the y component of the translation\nof the camera (in meters):", initialvalue = self.camera_translation[1], parent = self.menus_area)  # ask the user to enter the y component of the translation of the camera
-        if camera_translation_y != None:  # if the user enters a number
-            self.camera_translation[1] = camera_translation_y  # change the y component of the translation of the camera
-        camera_translation_z = sd.askfloat("Camera translation", "Enter the z component of the translation\nof the camera (in meters):", initialvalue = self.camera_translation[2], parent = self.menus_area)  # ask the user to enter the z component of the translation of the camera
-        if camera_translation_z != None:  # if the user enters a number
-            self.camera_translation[2] = camera_translation_z  # change the z component of the translation of the camera
-        self.reset_camera_sliders()  # initialize the sliders variables for the camera
-    def choose_camera_orientation(self, event = None):  # choose the orientation of the camera
-        orientation_angle = sd.askfloat("Camera orientation", "Enter the orientation angle of the camera,\naround its optical axis (in degrees):", initialvalue = self.camera_orientation, minvalue = -180, maxvalue = 180, parent = self.menus_area)  # ask the user to enter the angle of the orientation of the camera
-        if orientation_angle != None:  # if the user enters a number
-            self.camera_orientation = orientation_angle  # change the angle of the orientation of the camera
-        self.update_camera_control_indicators()  # update the indicators of the camera control variables
-    def change_camera_move_sliders(self, event = None):  # change the rotation of the camera around the z axis
-        self.camera_z_rotation = np.deg2rad(self.z_rotate_camera_slider.get())  # the rotation angle of the camera around the z axis
-        self.camera_translation_displacement = self.normal_translate_camera_slider.get()  # the translation displacement of the camera along its optical axis
-        Z_rot_mat = np.array([[np.cos(self.camera_z_rotation), -np.sin(self.camera_z_rotation), 0], [np.sin(self.camera_z_rotation), np.cos(self.camera_z_rotation), 0], [0, 0, 1]])  # the rotation matrix around the z axis
-        self.camera_optical_axis = Z_rot_mat @ self.camera_optical_axis_prev  # change the optical axis of the camera
-        self.camera_translation = Z_rot_mat @ (self.camera_translation_prev + self.camera_translation_displacement * self.camera_optical_axis_prev)  # change the translation of the camera
-        self.update_camera_control_indicators()  # update the indicators of the camera control variables
-    def reset_camera_sliders(self, event = None):  # reset the sliders variables for the camera
-        self.camera_optical_axis_prev = np.copy(self.camera_optical_axis)  # reset the optical axis of the camera
-        self.camera_translation_prev = np.copy(self.camera_translation)  # reset the translation of the camera
-        self.camera_z_rotation = 0; self.camera_translation_displacement = 0  # initialize the sliders variables for the camera
-        self.update_camera_control_indicators()  # update the indicators of the camera control variables
-    def change_ArUco_marker(self, event = None):  # change the ArUco marker
-        chosen_ArUco_marker = self.choose_ArUco_marker_combobox.get()  # change the ArUco marker
-        if chosen_ArUco_marker in self.saved_ArUco_markers_list:  # if the chosen ArUco marker exists
-            self.chosen_ArUco_marker = chosen_ArUco_marker  # change the chosen ArUco marker
-        else:  # if the chosen ArUco marker does not exist
-            ms.showerror("Error", f"The chosen ArUco marker \"{chosen_ArUco_marker}\" does not exist!", parent = self.menus_area)  # show an error message
-        self.update_camera_control_indicators()  # update the indicators of the camera control
-    def estimate_camera_pose(self, event = None):  # estimate the pose of the camera
-        if not self.camera_pose_estimation_happening and not self.obst_plane_pose_estimation_happening:  # if the camera pose estimation is not happening
-            self.camera_aspect_ratio = self.camera_aspect_ratios_values[0]; self.camera_resolution = self.camera_resolutions_list[0][0]  # set the values of the camera resolution and aspect ratio
-            self.camera_pose_estimation_happening = True  # the camera pose estimation is happening from now on
-            self.open_close_camera()  # open the camera
-    def estimate_obstacles_plane_pose(self, event = None):  # estimate the pose of the obstacles plane
-        if not self.obst_plane_pose_estimation_happening and not self.camera_pose_estimation_happening:  # if the obstacles plane pose estimation is not happening
-            self.obst_plane_pose_estimation_happening = True  # the obstacles plane pose estimation is happening from now on
-            self.open_close_camera()  # open the camera
-    def apply_moving_average_filter(self, event = None):  # apply the moving average filter for the camera and plane poses estimation
-        self.apply_moving_average_poses_estimation = not self.apply_moving_average_poses_estimation  # change the flag of applying the moving average filter
-        self.update_camera_control_indicators()  # update the indicators of the camera control
-    def recalibrate_camera(self, event = None):  # recalibrate the camera
-        calibration_images_paths = self.saved_camera_calibration_images_folder_path + r"/*.jpg"  # the paths of the calibration images
-        self.camera_intrinsic_matrix, self.camera_dist_coeffs, self.reprojection_error = cd.calibrate_camera(calibration_images_paths)  # calibrate the camera
-        if self.camera_intrinsic_matrix != None:  # if the camera has been calibrated successfully
-            cd.save_intrinsic_parameters(self.camera_intrinsic_matrix, self.camera_dist_coeffs, self.reprojection_error, self.camera_intrinsic_parameters_file_path)  # save the intrinsic matrix and distortion coefficients of the camera
-            ms.showinfo("Camera calibration", f"The camera has been calibrated successfully! The reprojection error is {np.round(self.reprojection_error, 5)} pixels!", parent = self.menus_area)  # show an info message
-        else:  # if the camera has not been calibrated
-            ms.showerror("Error", "The camera has not been calibrated! The previous calibration parameters are used.", parent = self.menus_area)  # show an error message
-    def show_camera_parameters(self, event = None):  # show the camera parameters
-        ms.showinfo("Camera parameters", f"• Intrinsic matrix (in pixels):\n{self.camera_intrinsic_matrix}\n\n\
-• Distortion coefficients (dimensionless):\n\
-- Radial distortion coefficients k1, k2, k3: {np.hstack((self.camera_dist_coeffs[:2], self.camera_dist_coeffs[-1]))}\n\
-- Tangential distortion coefficients p1, p2: {self.camera_dist_coeffs[2:4]}\n\n\
-• Reprojection error (in pixels): {self.reprojection_error}", parent = self.menus_area)  # show the intrinsic matrix and distortion coefficients of the camera
-    def draw_2d_plane_on_image(self, event = None):  # draw the 2D plane on the image
-        if not self.draw_2d_plane_on_image_happening:  # if the 2D plane is not being drawn on the image
-            self.draw_2d_plane_on_image_happening = True  # the 2D plane is being drawn on the image from now on
-            self.open_close_camera()  # open the camera
-    def change_shown_workspace_image(self, event = None):  # change the shown workspace image
-        shown_workspace_image_name = self.show_workspace_image_combobox.get()  # the name of the shown workspace image
-        if shown_workspace_image_name in self.saved_workspace_images_list:  # if the chosen workspace image exists
-            self.shown_workspace_image_name = shown_workspace_image_name  # change the shown workspace image
-            _, _, _, self.shown_workspace_image_plane_corners, _ = self.load_workspace_image_information(self.shown_workspace_image_name)  # load the information of the shown workspace image
-        else:  # if the chosen workspace image does not exist
-            ms.showerror("Error", f"The chosen workspace image \"{shown_workspace_image_name}\" does not exist!", parent = self.menus_area)  # show an error message
-        self.update_camera_control_indicators()  # update the indicators of the camera control
-    def show_workspace_image(self, event = None):  # show the specified workspace image
-        if self.shown_workspace_image_name in self.saved_workspace_images_list:  # if the chosen workspace image exists
-            if not self.workspace_image_is_shown:  # if the workspace image is not shown
-                self.workspace_image_is_shown = True  # the workspace image is shown from now on
-                self.open_close_camera()  # open the camera
-        else:  # if the chosen workspace image does not exist
-            ms.showerror("Error", f"The chosen workspace image \"{self.shown_workspace_image_name}\" does not exist!", parent = self.menus_area)
-    def rename_workspace_image(self, event = None):  # rename the specified workspace image
-        renamed_image = self.show_workspace_image_combobox.get()  # the name of the chosen workspace image
-        if renamed_image != "":  # if the user chooses a workspace image
-            new_image_name = sd.askstring("Rename workspace image", f"Enter the new name of the workspace image \"{renamed_image}\":", initialvalue = renamed_image, parent = self.menus_area)  # ask the user to enter the new name of the workspace image
-            if new_image_name != None:  # if the user enters a name
-                if new_image_name not in self.saved_workspace_images_list:  # if the new name of the workspace image does not exist
-                    os.rename(self.saved_workspace_images_infos_folder_path + fr"/{renamed_image}.jpg", self.saved_workspace_images_infos_folder_path + fr"/{new_image_name}.jpg")  # rename the workspace image
-                    os.rename(self.saved_workspace_images_infos_folder_path + fr"/{renamed_image}_info.txt", self.saved_workspace_images_infos_folder_path + fr"/{new_image_name}_info.txt")  # rename the information file of the workspace image
-                    os.rename(self.saved_obstacles_objects_infos_folder_path + fr"/{renamed_image}", self.saved_obstacles_objects_infos_folder_path + fr"/{new_image_name}")  # rename the folder of the obstacles objects detected in the workspace image
-                    self.saved_workspace_images_list[self.saved_workspace_images_list.index(renamed_image)] = new_image_name  # change the name of the chosen workspace image
-                    self.shown_workspace_image_name = new_image_name  # show the renamed workspace image
-                    self.chosen_detection_workspace_image_name = new_image_name  # choose the renamed workspace image as the detection workspace image
-                    if self.chosen_solver_workspace_image_name == renamed_image:  # if the chosen solver workspace image is the renamed image
-                        self.chosen_solver_workspace_image_name = new_image_name  # choose the renamed workspace image as the solver workspace image
-                    self.update_camera_control_indicators()  # update the indicators of the camera control
-                else:  # if the new name of the workspace image already exists
-                    ms.showerror("Error", f"The new name of the workspace image \"{new_image_name}\" already exists!", parent = self.menus_area)  # show an error message
-        else:  # if the user does not choose a workspace image
-            ms.showerror("Error", "Choose a workspace image to rename!", parent = self.menus_area)
-    def delete_workspace_image(self, event = None):  # delete the specified workspace image
-        self.workspace_image_is_shown = False  # the workspace image is not shown from now on
-        deleted_image = self.show_workspace_image_combobox.get()  # the name of the chosen workspace image
-        if deleted_image != "":  # if the user chooses a workspace image
-            delete_image_accept = ms.askyesno("Delete workspace image", f"Are you sure you want to delete\nthe workspace image \"{deleted_image}\"?", parent = self.menus_area)  # ask the user if they want to delete the chosen workspace image
-            if delete_image_accept:  # if the user wants to delete the chosen workspace image
-                os.remove(self.saved_workspace_images_infos_folder_path + fr"/{deleted_image}.jpg")  # delete the chosen workspace image
-                os.remove(self.saved_workspace_images_infos_folder_path + fr"/{deleted_image}_info.txt")  # delete the information file of the chosen workspace image
-                self.saved_workspace_images_list.remove(deleted_image)  # remove the chosen workspace image from the list of the saved workspace images
-                if len(self.saved_workspace_images_list) != 0:  # if there are saved workspace images
-                    self.shown_workspace_image_name = self.saved_workspace_images_list[0]  # show the first saved workspace image
-                    self.chosen_detection_workspace_image_name = self.saved_workspace_images_list[0]  # choose the first saved workspace image as the detection workspace image
-                else:  # if there are no saved workspace images
-                    self.shown_workspace_image_name = ""  # do not show any workspace image
-                    self.chosen_detection_workspace_image_name = ""  # do not choose any workspace image
-                if self.chosen_solver_workspace_image_name == deleted_image:  # if the chosen solver workspace image is the deleted image
-                    self.chosen_solver_workspace_image_name = self.chosen_detection_workspace_image_name  # choose the first saved workspace image as the solver workspace image
-                shutil.rmtree(self.saved_obstacles_objects_infos_folder_path + fr"/{deleted_image}")  # delete the folder of the obstacles objects detected in the workspace image
-        self.update_camera_control_indicators()  # update the indicators of the camera control
-    def capture_workspace_image(self, event = None):  # capture the workspace image using the camera
-        if not self.draw_2d_plane_on_image_happening:  # if the 2D plane is not being drawn on the image
-            self.grayscale_image_is_shown = True  # the grayscale image is shown from now on
-            self.obst_plane_pose_estimation_happening = True  # the obstacles plane pose estimation is happening from now on
-            self.draw_2d_plane_on_image_happening = True  # the 2D plane is being drawn on the image from now on
-            ms.showinfo("Workspace image capture instructions", "Capture the workspace image! The camera frame is considered to be fixed. The 2D plane pose is being estimated in order to be saved, along with the dimensions of the plane. \
-Press the \"s\" key to save the image (in grayscale format, the whole workspace 2D plane must be inside the frame)!", parent = self.menus_area)  # show an info message
-            self.open_close_camera()  # open the camera
-    def save_workspace_image_information(self, image, plane_frame_wrt_world, plane_x_length, plane_y_length, plane_corners_image_points, camera_frame_wrt_world, event = None):  # save the workspace image information
-        workspace_image_name = f"image_{len(self.saved_workspace_images_list) + 1}"  # the name of the workspace image
-        while os.path.exists(self.saved_workspace_images_infos_folder_path + fr"/{workspace_image_name}.jpg"):  # while the file with the same name exists
-            workspace_image_name = f"image_{int(workspace_image_name.split('_')[-1]) + 1}"  # change the name of the workspace image
-        grayscale_image = np.array(Image.fromarray(image).convert("L").point(lambda pixel: cd.convert_image_pixel_to_grayscale(pixel, [self.luminance_threshold])))  # convert the captured frame to black and white
-        cv2.imwrite(self.saved_workspace_images_infos_folder_path + fr"/{workspace_image_name}.jpg", grayscale_image)
-        with open(self.saved_workspace_images_infos_folder_path + fr"/{workspace_image_name}_info.txt", "w", encoding = "utf-8") as file:  # open the file in write mode
-            file.write("Plane frame wrt world transformation matrix:\n")  # write the transformation matrix of the plane frame wrt world to the file
-            np.savetxt(file, plane_frame_wrt_world, fmt = "%.5f", delimiter = " ")  # write the transformation matrix of the plane frame wrt world to the file
-            file.write("\nPlane x length (m):\n")  # write the x length of the plane to the file
-            file.write(f"{plane_x_length:.3f}\n")  # write the x length of the plane to the file
-            file.write("Plane y length (m):\n")  # write the y length of the plane to the file
-            file.write(f"{plane_y_length:.3f}\n")  # write the y length of the plane to the file
-            file.write("\nPlane corners image points (top-left, top-right, bottom-right, bottom-left) in pixels:\n")  # write the image points of the plane corners to the file
-            np.savetxt(file, np.int32(plane_corners_image_points), fmt = "%.0f", delimiter = " ")  # write the image points of the plane corners to the file
-            file.write("\nCamera frame wrt world transformation matrix:\n")  # write the transformation matrix of the camera frame wrt world to the file
-            np.savetxt(file, camera_frame_wrt_world, fmt = "%.5f", delimiter = " ")  # write the transformation matrix of the camera frame wrt world to the file
-            file.close()  # close the file
-        os.mkdir(self.saved_obstacles_objects_infos_folder_path + fr"/{workspace_image_name}")  # create a folder for the obstacles objects detected in the workspace image
-        if workspace_image_name not in self.saved_workspace_images_list:  # if the name of the saved file is not in the values of the combobox that contains the names of the saved files
-            self.saved_workspace_images_list.append(workspace_image_name)  # add the file name to the list of the saved files
-        ms.showinfo("Workspace image information saved!", f"The workspace image and its information have been saved successfully in the files \"{workspace_image_name}.jpg\" and \"{workspace_image_name}_info.txt\" respectively!", parent = self.menus_area)  # show an info message
-    def load_workspace_image_information(self, workspace_image_name, event = None):  # load the information of the workspace image
-        if workspace_image_name in self.saved_workspace_images_list:  # if the chosen workspace image exists
-            loaded_image_info_file = open(self.saved_workspace_images_infos_folder_path + fr"/{workspace_image_name}_info.txt", "r", encoding = "utf-8")  # open the information file of the chosen workspace image in read mode
-            loaded_image_info_lines = loaded_image_info_file.readlines()  # read all the lines of the information file
-            loaded_image_info_file.close()  # close the information file
-            plane_frame_wrt_world = np.array([np.array([float(k) for k in line.split()]) for line in loaded_image_info_lines[1:5]])  # the transformation matrix of the plane frame wrt world
-            plane_x_length = float(loaded_image_info_lines[7])  # the x length (in meters) of the plane
-            plane_y_length = float(loaded_image_info_lines[9])  # the y length (in meters) of the plane
-            plane_image_points = np.int32([np.array([float(k) for k in line.split()]) for line in loaded_image_info_lines[12:16]]).reshape(-1, 2)  # the image points (in pixels) of the plane corners
-            camera_frame_wrt_world = np.array([np.array([float(k) for k in line.split()]) for line in loaded_image_info_lines[18:]])  # the transformation matrix of the camera frame wrt world
-            return plane_frame_wrt_world, plane_x_length, plane_y_length, plane_image_points, camera_frame_wrt_world  # return the loaded information of the workspace image
-        else:  # if the chosen workspace image does not exist
-            ms.showerror("Error", f"The chosen workspace image \"{workspace_image_name}\" does not exist!", parent = self.menus_area)  # show an error message
-            return np.eye(4), 0, 0, np.zeros((4, 2)), np.eye(4)  # return the default values
-    def update_camera_control_indicators(self, event = None):  # update the indicators of the camera control variables
-        self.camera_wrt_world_transformation_matrix = gf.xy_plane_transformation(self.camera_optical_axis, self.camera_orientation, self.camera_translation)  # the total transformation matrix of the camera
-        try:
-            self.determine_camera_button.configure(text = self.camera_choice)  # change the text of the determine camera button
-            self.choose_resolution_combobox["values"] = self.camera_resolutions_list[self.camera_aspect_ratios_values.index(self.camera_aspect_ratio)]  # the available camera resolutions for the chosen camera aspect ratio
-            self.choose_aspect_ratio_combobox.set(self.camera_aspect_ratios_list[self.camera_aspect_ratios_values.index(self.camera_aspect_ratio)])  # set the value of the camera aspect ratio combobox
-            self.choose_resolution_combobox.set(self.camera_resolution)  # set the value of the camera resolution combobox
-            self.choose_windows_size_factor_slider.set(int(100.0 * self.images_size_factor))  # set the value of the windows size factor slider
-            self.choose_dFoV_button.configure(text = f"{self.camera_dFoV:.1f}")  # change the text of the choose camera dFoV button
-            min_dist_camera_2d_plane = cd.min_distance_from_camera(self.obstacles_2d_plane_x_length, self.obstacles_2d_plane_y_length, int(self.camera_aspect_ratio * self.camera_resolution), self.camera_resolution, self.camera_dFoV)  # calculate the minimum distance from camera to 2D plane
-            self.find_min_dist_2d_plane_indicator.configure(text = f"{min_dist_camera_2d_plane:.3f}")  # change the text of the find min dist 2D plane indicator
-            self.choose_luminance_threshold_slider.set(self.luminance_threshold)  # set the value of the luminance threshold slider
-            if self.camera_thread_flag:  # if the camera thread is running
-                self.open_close_camera_button.configure(text = "close\ncamera")  # change the text of the open/close camera button
-            else:  # if the camera is closed
-                self.open_close_camera_button.configure(text = "open\ncamera")  # change the text of the open/close camera button
-            self.camera_transformation_indicator.configure(text = str(np.round(self.camera_wrt_world_transformation_matrix, 3)))  # change the text of the camera transformation indicator
-            self.choose_camera_optical_axis_button.configure(text = str([np.round(self.camera_optical_axis[k], 3) for k in range(len(self.camera_optical_axis))]))  # change the text of the choose camera optical axis button
-            self.choose_camera_translation_button.configure(text = str([np.round(self.camera_translation[k], 3) for k in range(len(self.camera_translation))]))  # change the text of the choose camera translation button
-            self.choose_camera_orientation_button.configure(text = f"{self.camera_orientation:.1f}")  # change the text of the choose camera orientation button
-            self.z_rotate_camera_slider.set(np.rad2deg(self.camera_z_rotation))
-            self.normal_translate_camera_slider.set(self.camera_translation_displacement)
-            self.choose_ArUco_marker_combobox.set(self.chosen_ArUco_marker)  # set the value of the ArUco marker combobox
-            self.apply_moving_average_filter_button.configure(text = ["no", "yes"][[False, True].index(self.apply_moving_average_poses_estimation)])  # change the text of the moving average filter button
-            self.show_workspace_image_combobox["values"] = self.saved_workspace_images_list  # set the values of the show workspace image combobox
-            self.show_workspace_image_combobox.set(self.shown_workspace_image_name)  # set the value of the show workspace image combobox
-        except: pass
-        # except Exception as e:
-        #     if "invalid command name" not in str(e): print(f"Error in update_camera_control_indicators: {e}")
     
-    # the functions used for the thread that continuously captures the camera frames
-    def start_camera_thread(self, event = None):  # create and start a camera thread
-        self.camera_thread_flag = True  # let the camera thread run
-        self.camera_thread = threading.Thread(target = self.camera_thread_run_function)  # create the thread for the camera
-        self.camera_thread.start()  # start the camera thread
-    def kill_camera_thread(self, event = None):  # kill the existed and running camera thread
-        self.camera_thread_flag = False  # stop the camera thread
-        self.camera_frames_are_shown = False  # the camera frame is not shown from now on
-        self.original_image_is_shown = False  # the original image is not shown from now on
-        self.grayscale_image_is_shown = False  # the grayscale image is not shown from now on
-        self.workspace_image_is_shown = False  # the workspace image is not shown from now on
-        self.camera_pose_estimation_happening = False  # the camera pose estimation is not happening from now on
-        self.obst_plane_pose_estimation_happening = False  # the obstacles plane pose estimation is not happening from now on
-        self.draw_2d_plane_on_image_happening = False  # the 2D plane is not being drawn on the image from now on
-        self.obstacles_boundaries_are_shown = False  # the obstacles boundaries are not shown from now on
-        self.update_camera_control_indicators()  # update the indicators of the camera control
-        self.update_workspace_obstacles_indicators()  # update the indicators of the workspace obstacles
-    def camera_thread_run_function(self):  # the run function, it continuously captures and displays the camera frames
-        chosen_ArUco_marker = self.chosen_ArUco_marker  # the chosen ArUco marker
-        camera_intrinsic_matrix = self.camera_intrinsic_matrix  # the intrinsic matrix of the camera
-        camera_dist_coeffs = self.camera_dist_coeffs  # the distortion coefficients of the camera
-        ArUco_wrt_camera_transformation_matrix_prev = np.eye(4)  # the previous transformation matrix of the ArUco marker with respect to the camera frame
-        poses_estimations_counter = 0  # the counter for the estimations of the plane and camera poses
-        while True:  # while the thread is running
-            if self.workspace_image_is_shown:  # if the workspace image is shown
-                if self.shown_workspace_image_name in self.saved_workspace_images_list:  # if the shown workspace image exists
-                    workspace_image = cv2.imread(self.saved_workspace_images_infos_folder_path + fr"/{self.shown_workspace_image_name}.jpg")  # read the chosen workspace image
-                    for k in range(len(self.shown_workspace_image_plane_corners)):  # for each corner of the plane
-                        cv2.line(workspace_image, tuple(self.shown_workspace_image_plane_corners[k]), tuple(self.shown_workspace_image_plane_corners[(k + 1) % len(self.shown_workspace_image_plane_corners)]), (255, 0, 255), 2)  # draw the 2D plane on the workspace image
-                    cd.show_images_on_screen([workspace_image], [self.workspace_image_window_name], self.images_size_factor, True, False, 0)  # show the chosen workspace image
-            if self.obstacles_boundaries_are_shown:  # if the obstacles boundaries are shown
-                if self.chosen_detection_workspace_image_name in self.saved_workspace_images_list:  # if the chosen workspace image exists
-                    workspace_image = cv2.imread(self.saved_workspace_images_infos_folder_path + fr"/{self.chosen_detection_workspace_image_name}.jpg")  # read the chosen workspace image
-                    grayscale_image = np.array(Image.fromarray(workspace_image).convert("L").point(lambda pixel: cd.convert_image_pixel_to_grayscale(pixel, [self.luminance_threshold]))).astype(np.uint8)  # convert the chosen workspace image to black and white
-                    obstacles_boundaries_detected_image_points, outer_boundary_index, boundaries_image = cd.detect_image_boundaries(grayscale_image, self.workspace_image_plane_image_points, self.removed_boundaries_list, 10 ** (-self.boundaries_precision_parameter / 2.5), self.boundaries_minimum_vertices)  # detect the boundaries of the obstacles in the workspace image
-                    for k in range(len(self.workspace_image_plane_image_points)):  # for each corner of the plane
-                        cv2.line(boundaries_image, tuple(self.workspace_image_plane_image_points[k]), tuple(self.workspace_image_plane_image_points[(k + 1) % len(self.workspace_image_plane_image_points)]), (255, 0, 255), 2)  # draw the 2D plane on the boundaries image
-                    cv2.putText(boundaries_image, "Press the \"d\" key to save the detected boundaries", (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)  # write a message on the image frame
-                    cd.show_images_on_screen([boundaries_image], [self.obstacles_boundaries_window_name], self.images_size_factor, True, False, 0)  # show the boundaries of the obstacles on the workspace image
-                    cv2.setMouseCallback(self.obstacles_boundaries_window_name, self.remove_restore_boundaries, param = obstacles_boundaries_detected_image_points)  # set the mouse callback function for the obstacles boundaries window, to remove/restore boundaries
-            if self.camera_thread_flag and self.camera_frames_are_shown:  # if the camera thread is running
-                confirm_capture, frame = self.camera_capture.read()  # capture a frame using the camera capture object and store it in the variable frame
-                if confirm_capture:  # if the frame was captured successfully
-                    frame_height, frame_width = frame.shape[:2]  # the height and width of the captured frame
-                    cd.show_images_on_screen([frame], [self.camera_original_window_name], self.images_size_factor, True, False, 0)  # show the captured frame on the screen
-                    if not self.apply_moving_average_poses_estimation:  # if the moving average filter for poses estimation is not applied
-                        poses_estimations_counter = 0  # reset the counter of the estimations
-                    if self.camera_pose_estimation_happening or self.obst_plane_pose_estimation_happening or self.draw_2d_plane_on_image_happening:  # if the camera pose estimation or the obstacles plane pose estimation or the 2D plane drawing on the image is happening
-                        ArUco_wrt_camera_transformation_matrix, ArUco_marker_pose_image = cd.estimate_ArUco_marker_pose(frame, chosen_ArUco_marker, camera_intrinsic_matrix, camera_dist_coeffs)  # estimate the pose of the camera using an ArUco marker
-                        camera_ArUco_distance = np.linalg.norm(ArUco_wrt_camera_transformation_matrix[:3, 3])  # the distance between the camera and the ArUco marker
-                        cv2.putText(ArUco_marker_pose_image, f"Camera - ArUco marker distance: {camera_ArUco_distance:.3f} m", (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)  # write the distance between the camera and the ArUco marker on the image
-                        cd.show_images_on_screen([ArUco_marker_pose_image], [self.estimate_ArUco_pose_window_name], self.images_size_factor, True, False, 0)  # show the ArUco marker pose image on the screen
-                        if np.linalg.norm(ArUco_wrt_camera_transformation_matrix) == 0:  # if the pose of the ArUco marker is not estimated successfully
-                            ArUco_wrt_camera_transformation_matrix = ArUco_wrt_camera_transformation_matrix_prev  # keep the previous transformation matrix of the ArUco marker with respect to the camera frame
-                        else:  # if the pose of the ArUco marker is estimated successfully
-                            ArUco_wrt_camera_transformation_matrix = (ArUco_wrt_camera_transformation_matrix_prev * poses_estimations_counter + ArUco_wrt_camera_transformation_matrix) / (poses_estimations_counter + 1)  # smooth the transformation matrix of the ArUco marker with respect to the camera frame applying a moving average filter
-                            ArUco_wrt_camera_transformation_matrix_prev = ArUco_wrt_camera_transformation_matrix  # update the previous transformation matrix of the ArUco marker with respect to the camera frame
-                            poses_estimations_counter += 1  # increase the counter of the estimations
-                    if self.grayscale_image_is_shown:  # if the grayscale image is shown
-                        grayscale_image = np.array(Image.fromarray(frame).convert("L").point(lambda pixel: cd.convert_image_pixel_to_grayscale(pixel, [self.luminance_threshold])))  # convert the captured frame to black and white
-                        cd.show_images_on_screen([grayscale_image], [self.grayscale_image_window_name], self.images_size_factor, True, False, 0)  # show the grayscale image on the screen
-                    if self.camera_pose_estimation_happening:  # if the camera pose estimation is happening
-                        camera_wrt_world_transformation_matrix = self.obst_plane_wrt_world_transformation_matrix @ self.ArUco_wrt_plane_transformation_matrix @ np.linalg.inv(ArUco_wrt_camera_transformation_matrix)  # change the transformation matrix of the camera
-                        self.camera_optical_axis, self.camera_orientation, self.camera_translation = gf.get_components_from_xy_plane_transformation(camera_wrt_world_transformation_matrix)  # change the optical axis, orientation and translation of the camera
-                        self.reset_camera_sliders()  # reset the sliders variables for the camera
-                    if self.obst_plane_pose_estimation_happening:  # if the obstacles plane pose estimation is happening
-                        obst_plane_wrt_world_transformation_matrix = self.camera_wrt_world_transformation_matrix @ ArUco_wrt_camera_transformation_matrix @ np.linalg.inv(self.ArUco_wrt_plane_transformation_matrix)  # change the transformation matrix of the obstacles
-                        self.obstacles_2d_plane_normal_vector, self.obstacles_2d_plane_orientation, self.obstacles_2d_plane_translation = gf.get_components_from_xy_plane_transformation(obst_plane_wrt_world_transformation_matrix)  # change the normal vector, orientation and translation of the obstacles plane
-                        self.reset_2d_plane_sliders()  # reset the sliders variables for the 2D plane
-                    if self.draw_2d_plane_on_image_happening:  # if the 2D plane is being drawn on the image
-                        x_length = self.obstacles_2d_plane_x_length; y_length = self.obstacles_2d_plane_y_length  # the lengths of the 2D plane
-                        initial_obst_plane_points_wrt_ArUco = np.array([[-x_length/2, y_length/2, 0, 1], [x_length/2, y_length/2, 0, 1], [x_length/2, -y_length/2, 0, 1], [-x_length/2, -y_length/2, 0, 1]])
-                        transformed_obst_plane_points_wrt_ArUco = np.dot(np.linalg.inv(self.ArUco_wrt_plane_transformation_matrix), initial_obst_plane_points_wrt_ArUco.T).T[:, :3]  # the points of the 2D plane wrt the camera frame
-                        drawn_plane_corners_image_points, drawn_shape_image = cd.draw_shape_on_image_plane(frame, transformed_obst_plane_points_wrt_ArUco, ArUco_wrt_camera_transformation_matrix, camera_intrinsic_matrix, camera_dist_coeffs)  # draw the 2D plane on the image
-                        cv2.putText(drawn_shape_image, "Press the \"s\" key to save the grayscale image!", (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)  # write a message on the image frame
-                        cd.show_images_on_screen([drawn_shape_image], [self.draw_shape_image_window_name], self.images_size_factor, True, False, 0)  # show the frame with the 2D plane drawn on it
-                else:  # if the frame was not captured successfully
-                    self.kill_camera_thread()  # kill the existed and running camera thread
-                    ms.showerror("Error", "Couldn't capture frame with the camera!")  # show an error message
-                    print("Couldn't capture frame with the camera!")  # print a message to inform the user that the frame was not captured successfully
-            pressed_key = cv2.waitKey(1)  # wait for 1 millisecond for a key to be pressed
-            if (pressed_key == ord("a") or pressed_key == ord("A")) and self.grayscale_image_is_shown:  # if the user presses the "a" or "A" key
-                if self.luminance_threshold > self.luminance_threshold_limits[0]: self.luminance_threshold -= 1  # decrease the luminance threshold
-            elif (pressed_key == ord("w") or pressed_key == ord("W")) and self.grayscale_image_is_shown:  # if the user presses the "w" or "W" key
-                if self.luminance_threshold < self.luminance_threshold_limits[1]: self.luminance_threshold += 1  # increase the luminance threshold
-            elif (pressed_key == ord("e") or pressed_key == ord("E")) and self.obstacles_boundaries_are_shown:  # if the user presses the "e" or "E" key
-                if self.boundaries_precision_parameter > self.boundaries_precision_limits[0]: self.boundaries_precision_parameter -= 1  # decrease the boundaries precision parameter
-            elif (pressed_key == ord("r") or pressed_key == ord("R")) and self.obstacles_boundaries_are_shown:  # if the user presses the "r" or "R" key
-                if self.boundaries_precision_parameter < self.boundaries_precision_limits[1]: self.boundaries_precision_parameter += 1  # increase the boundaries precision parameter
-            elif (pressed_key == ord("t") or pressed_key == ord("T")) and self.obstacles_boundaries_are_shown:  # if the user presses the "t" or "T" key
-                if self.boundaries_minimum_vertices > self.boundaries_minimum_vertices_limits[0]: self.boundaries_minimum_vertices -= 1  # decrease the minimum number of vertices of the boundaries
-            elif (pressed_key == ord("y") or pressed_key == ord("Y")) and self.obstacles_boundaries_are_shown:  # if the user presses the "y" or "Y" key
-                if self.boundaries_minimum_vertices < self.boundaries_minimum_vertices_limits[1]: self.boundaries_minimum_vertices += 1  # increase the minimum number of vertices of the boundaries
-            elif (pressed_key == ord("f") or pressed_key == ord("F")) and (self.obst_plane_pose_estimation_happening or self.camera_pose_estimation_happening or self.draw_2d_plane_on_image_happening):  # if the user presses the "f" or "F" key
-                self.apply_moving_average_poses_estimation = not self.apply_moving_average_poses_estimation  # apply or not the moving average filter for poses estimation
-            elif (pressed_key == ord("s") or pressed_key == ord("S")) and self.draw_2d_plane_on_image_happening:  # if the user presses the "s" or "S" key
-                drawn_plane_corners_image_points_x_min = int(np.min(drawn_plane_corners_image_points[:, 0]))  # the minimum x coordinate of the plane corners image points
-                drawn_plane_corners_image_points_x_max = int(np.max(drawn_plane_corners_image_points[:, 0]))  # the maximum x coordinate of the plane corners image points
-                drawn_plane_corners_image_points_y_min = int(np.min(drawn_plane_corners_image_points[:, 1]))  # the minimum y coordinate of the plane corners image points
-                drawn_plane_corners_image_points_y_max = int(np.max(drawn_plane_corners_image_points[:, 1]))  # the maximum y coordinate of the plane corners image points
-                if drawn_plane_corners_image_points_x_min >= 0 and drawn_plane_corners_image_points_x_max < frame_width and drawn_plane_corners_image_points_y_min >= 0 and drawn_plane_corners_image_points_y_max < frame_height:  # if the 2D plane is inside the frame
-                    self.save_workspace_image_information(frame, self.obst_plane_wrt_world_transformation_matrix, self.obstacles_2d_plane_x_length, self.obstacles_2d_plane_y_length, drawn_plane_corners_image_points, self.camera_wrt_world_transformation_matrix)  # save the workspace image information
-                else:  # if the 2D plane is not inside the frame
-                    ms.showerror("Error while saving", "The whole workspace 2D plane must be inside the frame in order for the image to be saved!")  # show an error message
-            elif (pressed_key == ord("d") or pressed_key == ord("D")) and self.obstacles_boundaries_are_shown:  # if the user presses the "d" or "D" key
-                if outer_boundary_index != -1:  # if an outer boundary was detected
-                    # remove the excluded boundaries from the detected boundaries and move the outer boundary to the end of the list
-                    outer_boundary = obstacles_boundaries_detected_image_points[outer_boundary_index]  # get the outer boundary
-                    remaining_obstacles_boundaries_detected = [obstacles_boundaries_detected_image_points[k] for k in range(len(obstacles_boundaries_detected_image_points)) if k != outer_boundary_index and k not in self.removed_boundaries_list]  # remove the excluded boundaries and the outer boundary from the detected boundaries
-                    remaining_obstacles_boundaries_detected.append(outer_boundary)  # add the outer boundary to the end of the list
-                    # convert the obstacles boundaries image points to xy plane world points and save the obstacles objects detected in the workspace image
-                    obstacles_boundaries_detected_xy_world_points = cd.convert_boundaries_image_points_to_world_points(remaining_obstacles_boundaries_detected, self.workspace_image_plane_frame_wrt_world, self.workspace_obstacles_height_detection, \
-                                                                                                                        self.workspace_image_camera_frame_wrt_world, self.camera_intrinsic_matrix, self.camera_dist_coeffs)  # convert the obstacles boundaries image points to xy plane world points
-                    obstacles_boundaries_to_be_saved = []  # the boundaries of the obstacles to be saved (need to remove the duplicate consecutive points)
-                    for boundary in obstacles_boundaries_detected_xy_world_points:  # for each boundary of the obstacles
-                        obstacles_boundaries_to_be_saved.append([boundary[0]])  # add the first point of the current boundary to the list of the obstacles boundaries to be saved
-                        for k in range(1, len(boundary)):  # for each point of the current boundary
-                            if np.linalg.norm(boundary[k] - boundary[k - 1]) >= 0.0001:  # if the distance between the current point and the previous point is greater than or equal to 0.1 mm
-                                obstacles_boundaries_to_be_saved[-1].append(boundary[k])  # add the current point to the list of the obstacles boundaries to be saved
-                    shutil.rmtree(self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_detection_workspace_image_name}")  # delete the existing folder of the obstacles objects detected in the workspace image
-                    os.mkdir(self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_detection_workspace_image_name}")  # create a new folder for the obstacles objects detected in the workspace image
-                    inner_boundaries_counter = 0  # the counter for the inner boundaries
-                    for k in range(len(obstacles_boundaries_to_be_saved)):  # for each boundary of the obstacles
-                        if k == len(obstacles_boundaries_to_be_saved) - 1:  # if the boundary is the outer boundary
-                            file_name = "outer"  # the name of the file to save the outer boundary
-                        else:  # if the boundary is an inner boundary
-                            inner_boundaries_counter += 1  # increase the counter for the inner boundaries
-                            file_name = f"inner_{inner_boundaries_counter}"  # the name of the file to save the inner boundary
-                        with open(self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_detection_workspace_image_name}/{file_name}.txt", "w", encoding = "utf-8") as file:  # open the file in write mode 
-                            file.write(f"Boundary height (m): {self.workspace_obstacles_height_saved:.4f}\n")  # write the height of the boundary to the file
-                            file.write("\nBoundary (x, y) points transformed on the world xy plane (m):\n")  # write the points of the boundary to the file
-                            np.savetxt(file, np.array(obstacles_boundaries_to_be_saved[k]).reshape(-1, 2), fmt = "%.4f", delimiter = " ")  # write the points of the boundary to the file
-                            file.close()  # close the file
-                    self.chosen_workspace_saved_obstacles_objects_list = [file[:-4] for file in os.listdir(self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_detection_workspace_image_name}") if file.endswith(".txt")]  # the list to store the saved obstacles objects for the chosen workspace image
-                    ms.showinfo("Boundaries saved", "The detected obstacles have been saved successfully!")  # show an info message
-                else:  # if no outer boundary was detected
-                    ms.showerror("Error while saving", "The detected obstacles where not saved because there is no outer boundary detected (if it exists, it is drawn in red)! Try removing some boundaries!")  # show an error message
-            elif (pressed_key == ord("q") or pressed_key == ord("Q")) or not self.camera_thread_flag:  # if the user presses the "q" or "Q" key or the camera thread is stopped
-                self.kill_camera_thread()  # kill the existed and running camera thread
-                cv2.destroyAllWindows()  # close all OpenCV windows that were opened
-                if self.camera_frames_are_shown: self.camera_capture.release()  # release/free the camera capture object
-                print("The camera has been disconnected successfully!")  # print a message to inform the user that the camera has been disconnected successfully
-                break  # break the while loop
-            self.update_camera_control_indicators()  # update the indicators of the camera control
-            self.update_workspace_obstacles_indicators()  # update the indicators of the workspace obstacles
-
     # for the main menu where the obstalces avoidance problem is solved
     def load_workspace_obstacles_infos_for_solver(self, event = None):  # load the information (the boundaries more specifically) of the chosen workspace obstacles
         if event != None or (event == None and len(self.obstacles_boundaries_for_solver) == 0):  # if the function is called by the user or there are no obstacles boundaries detected yet
@@ -4244,6 +4057,7 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
                 self.transformations_are_built = False  # the workspace transformations are not built
                 self.hntf2d_solver = None  # the solver for the 2D obstacles avoidance problem gets initialized to the default value
                 self.obstacles_boundaries_for_solver = []  # initialize the boundaries of the obstacles for the solver
+                self.obstacles_height_for_solver = 0.0  # initialize the height of the obstacles for the solver
                 self.reset_control_law_outputs()  # reset the control law outputs
                 self.chosen_workspace_saved_obstacles_objects_list = [file[:-4] for file in os.listdir(self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_solver_workspace_image_name}") if file.endswith(".txt")]  # the list to store the saved obstacles objects for the chosen workspace image
                 if len(self.chosen_workspace_saved_obstacles_objects_list) != 0:  # if there are saved obstacles objects for the chosen workspace image
@@ -4252,10 +4066,10 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
                         chosen_obstacle_file_lines = open(obstacle_object_path + ".txt", "r", encoding = "utf-8").readlines()  # read the lines of the chosen obstacle object file
                         obstacle_boundary_points = np.array([[float(k) for k in line.split(" ")] for line in chosen_obstacle_file_lines[3:]]).reshape(-1, 2)  # the boundary points of the obstacle mesh in millimeters
                         self.obstacles_boundaries_for_solver.append(obstacle_boundary_points)  # add the obstacle boundary points to the list of the obstacles boundaries for the solver
-                        self.workspace_obstacles_height_saved = float(chosen_obstacle_file_lines[0].split(": ")[1])  # the height of the obstacle mesh
+                    self.obstacles_height_for_solver = float(open(self.saved_obstacles_objects_infos_folder_path + fr"/{self.chosen_solver_workspace_image_name}/{self.chosen_workspace_saved_obstacles_objects_list[0]}.txt", "r", encoding = "utf-8").readlines()[0].split(": ")[1])  # the height of the obstacles for the solver
                     inner_boundaries_number = len(self.chosen_workspace_saved_obstacles_objects_list) - 1  # the number of the inner boundaries (total minus the outer boundary)
                     self.boundaries_are_detected = True  # the boundaries of the obstacles are detected
-                    self.obstacles_infos_text = f"✓ {inner_boundaries_number} inner and 1 outer boundaries\nObstacles height: {1000.0 * self.workspace_obstacles_height_saved} mm"  # the text to show the obstacles information
+                    self.obstacles_infos_text = f"✓ {inner_boundaries_number} inner and 1 outer boundaries\nObstacles height: {1000.0 * self.obstacles_height_for_solver} mm"  # the text to show the obstacles information
                 else:  # if there are no saved obstacles objects for the chosen workspace image
                     self.boundaries_are_detected = False  # the boundaries of the obstacles are not detected
                     self.obstacles_infos_text = "✗ No obstacles have been detected\nyet for this workspace image!"  # the text to show that no obstacles have been detected for the chosen workspace image
@@ -4269,6 +4083,7 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def plot_obstacles_objects(self, event = None):  # plot the obstacles objects of the workspace with their real world dimensions
         if self.boundaries_are_detected:  # if the boundaries of the obstacles are detected
+            chosen_solver_workspace_image_name = self.load_workspace_obstacles_objects_combobox.get()  # the name of the chosen workspace image
             p_x_length = 100.0 * self.obstacles_2d_plane_x_length; p_y_length = 100.0 * self.obstacles_2d_plane_y_length  # the lengths of the 2D obstacles plane in centimeters
             start_pos_workspace_plane = 100.0 * (self.start_pos_workspace_plane + np.array([self.obstacles_2d_plane_x_length / 2.0, self.obstacles_2d_plane_y_length / 2.0]))  # the start position of the robot's end-effector on the 2D workspace plane in centimeters
             target_pos_workspace_plane = 100.0 * (self.target_pos_workspace_plane + np.array([self.obstacles_2d_plane_x_length / 2.0, self.obstacles_2d_plane_y_length / 2.0]))  # the target position of the robot's end-effector on the 2D workspace plane in centimeters
@@ -4288,7 +4103,7 @@ Press the \"s\" key to save the image (in grayscale format, the whole workspace 
                 ax.legend([plane_plot, outer_plot, inner_plot], ["Obstacles plane", "Outer boundary", "Inner boundaries"], fontsize = 8, loc = "upper right")  # show the legend of the plot
             else:  # if there are no inner obstacles boundaries and there is only the outer boundary
                 ax.legend([plane_plot, outer_plot], ["Obstacles plane", "Outer boundary"], fontsize = 8, loc = "upper right")  # show the legend of the plot
-            ax.set_title("Obstacles objects on the real workspace, with their real dimensions in centimeters\n(The bottom-left corner of the plane is considered to be the point (0, 0) here)\n(use mouse left and right click to mark the start and target positions)")  # set the title of the plot
+            ax.set_title(f"Obstacles objects on the real workspace of the image \"{chosen_solver_workspace_image_name}\", with their real dimensions in cm\n(The bottom-left corner of the plane is considered to be the point (0, 0) here)\n(use mouse left and right click to mark the start and target positions)")  # set the title of the plot
             ax.set_xlabel("x (cm)"); ax.set_ylabel("y (cm)"); ax.set_aspect("equal")  # set the labels of the x and y axis and the aspect ratio of the plot to be equal
             ax.grid(True)  # show the grid
             fig.canvas.mpl_connect("button_press_event", lambda event: self.mark_points_on_obstacles_plot(event, ax))  # connect a function to the plot
@@ -4777,6 +4592,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                     self.realws_velocities_control_law_output.append((self.hntf2d_solver.p_d - p_list[-1]) / self.solver_time_step_dt)  # append the target velocity to the proper list of the control law output
                     self.unit_disk_path_control_law_output.append(self.hntf2d_solver.q_d_disk)  # append the target position on the unit disk to the proper list of the control law output
                     self.R2_plane_path_control_law_output.append(self.hntf2d_solver.q_d)  # append the target position on the R2 plane to the proper list of the control law output
+                self.real_ws_paths_list.append(self.realws_path_control_law_output)  # append the real workspace path to the list of the real workspace paths
             else:
                 ms.showerror("Error", "The workspace transformations have not been built yet and/or the start and target positions are not set correctly!", parent = self.menus_area)  # show an error message
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
@@ -4788,35 +4604,84 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
         self.robot_joints_control_law_output = []  # reset the robot joints control law output
     def compute_robot_trajectory_obstacles_avoidance(self, event = None):  # compute the robot trajectory for the obstacles avoidance
         if not self.robot_control_thread_flag:  # if the robot control thread is not running
-            if self.robotic_manipulator_is_built: # if a robotic manipulator is built
-                self.control_or_kinematics_variables_visualization = self.control_or_kinematics_variables_visualization_list[0]  # choose the control variables for visualization
+            if self.robotic_manipulator_is_built:  # if a robotic manipulator is built
+                self.plot_robot_joints_trajectories()  # plot the robot's joints trajectories for the obstacles avoidance
                 if len(self.realws_velocities_control_law_output) != 0 and len(self.robot_joints_control_law_output) == 0:  # if the control law has been applied but the robot joints for the robot's motion have not been computed yet
-
-                    self.robot_joints_control_law_output.append(np.array(self.control_joints_variables))  # append the forward kinematics variables to the list of the control law output
+                    self.control_or_kinematics_variables_visualization = self.control_or_kinematics_variables_visualization_list[0]  # choose the control variables for visualization
                     # compute the start configuration of the end-effector on the workspace plane
                     obstacles_2d_plane_normal_vector, obstacles_2d_plane_orientation, obstacles_2d_plane_translation = gf.get_components_from_xy_plane_transformation(self.obst_plane_wrt_world_transformation_matrix)  # get the components of the obstacles 2D plane transformation
-                    end_effector_start_configuration = gf.xy_plane_transformation(-obstacles_2d_plane_normal_vector, obstacles_2d_plane_orientation, obstacles_2d_plane_translation)  # initialize the transformation matrix of the end-effector on the workspace plane
-                    end_effector_start_position = self.obst_plane_wrt_world_transformation_matrix @ np.array([self.start_pos_workspace_plane[0], self.start_pos_workspace_plane[1], 0.0, 1.0])  # the start position of the end-effector on the workspace plane
-                    end_effector_start_configuration[:, 3] = end_effector_start_position  # the transformation matrix of the end-effector on the workspace plane
-                    # compute the start configuration of the joints
-                    q_joints_start_configuration, invkine_success = kin.compute_inverse_kinematics(self.built_robotic_manipulator, end_effector_start_configuration, self.invkine_tolerance)  # compute the robot's joints configuration (if possible) for the start end-effector configuration
-                    if invkine_success:  # if the inverse kinematics gave a feasible solution
-                        self.robot_joints_control_law_output.append(q_joints_start_configuration)  # append the start configuration of the joints to the list of the control law output
-                        R_plane = self.obst_plane_wrt_world_transformation_matrix[0:3, 0:3]  # the rotation matrix of the workspace plane wrt the world frame
-                        for k in range(len(self.realws_velocities_control_law_output)):  # loop through all the velocities of the real workspace path, generated by the control law
-                            p_dot = self.realws_velocities_control_law_output[k]  # the velocity of the real workspace path
-                            qr = self.robot_joints_control_law_output[-1]  # the last configuration of the robot's joints
-                            pe_dot = R_plane @ np.array([p_dot[0], p_dot[1], 0.0])  # the velocity of the end-effector on the workspace plane wrt the world frame
-                            ve_dot = np.concatenate((pe_dot, np.zeros(3)), axis = 0)  # the velocity of the end-effector wrt the world frame
-                            qr_dot, J0_is_full_rank = kin.compute_inverse_differential_kinematics(self.built_robotic_manipulator, self.robot_joints_control_law_output[-1], ve_dot, "world")  # compute the joints velocities
-                            qr_new = qr + qr_dot * self.solver_time_step_dt  # the new configuration of the robot's joints
-                            self.robot_joints_control_law_output.append(qr_new)  # append the new configuration of the robot's joints to the list of the control law output
+                    obst_top_plane_position = obstacles_2d_plane_translation + obstacles_2d_plane_normal_vector * self.obstacles_height_for_solver  # the position of the top plane of the obstacles
+                    obst_top_plane_wrt_world_transformation_matrix = gf.xy_plane_transformation(obstacles_2d_plane_normal_vector, obstacles_2d_plane_orientation, obst_top_plane_position)  # the transformation matrix of the top plane of the obstacles wrt the world frame
+                    end_effector_start_position_1 = self.obst_plane_wrt_world_transformation_matrix @ np.array([self.start_pos_workspace_plane[0], self.start_pos_workspace_plane[1], 0.0, 1.0])  # the start position of the end-effector on the workspace plane
+                    end_effector_start_configuration_1 = gf.xy_plane_transformation(-obstacles_2d_plane_normal_vector, obstacles_2d_plane_orientation, obstacles_2d_plane_translation)  # initialize the transformation matrix of the end-effector on the workspace plane
+                    end_effector_start_configuration_1[:, 3] = end_effector_start_position_1  # the transformation matrix of the end-effector on the workspace plane
+                    end_effector_start_position_2 = obst_top_plane_wrt_world_transformation_matrix @ np.array([self.start_pos_workspace_plane[0], self.start_pos_workspace_plane[1], 0.0, 1.0])  # the start position of the end-effector on the plane tangent to the obstacles
+                    end_effector_start_configuration_2 = gf.xy_plane_transformation(-obstacles_2d_plane_normal_vector, obstacles_2d_plane_orientation, obst_top_plane_position)  # initialize the transformation matrix of the end-effector on the plane tangent to the obstacles
+                    end_effector_start_configuration_2[:, 3] = end_effector_start_position_2  # the transformation matrix of the end-effector on the plane tangent to the obstacles
+                    # check if the start configurations of the end-effector on the workspace plane can be achieved by the robot
+                    self.robot_joints_control_law_output.append(np.array(self.control_joints_variables))  # append the current control joints variables to the list of the control law output
+                    invkine_success = False  # the flag to check if the inverse kinematics has succeeded or not
+                    invkine_tolerance = self.invkine_tolerance  # the tolerance of the inverse kinematics
+                    while not invkine_success and invkine_tolerance <= 1e-3:  # while the inverse kinematics has not succeeded
+                        qr_joints_start_configuration_1, invkine_success_1 = kin.compute_inverse_kinematics(self.built_robotic_manipulator, end_effector_start_configuration_1, invkine_tolerance)  # compute the robot's joints configuration (if possible)
+                        qr_joints_start_configuration_2, invkine_success_2 = kin.compute_inverse_kinematics(self.built_robotic_manipulator, end_effector_start_configuration_2, invkine_tolerance)  # compute the robot's joints configuration (if possible)
+                        invkine_success = invkine_success_1 and invkine_success_2  # check if the inverse kinematics has succeeded
+                        if not invkine_success: invkine_tolerance *= 10.0  # increase the tolerance of the inverse kinematics if it has not succeeded
+                    if invkine_success:  # if the inverse kinematics has succeeded
+                        # choose a start joints configuration for the robot, based on the distance of the joints values from their limits
+                        invkine_tries = []  # the tries of the inverse kinematics for the start configuration of the end-effector on the workspace plane
+                        for k in range(20):  # loop through the maximum number of tries for the inverse kinematics
+                            qr_joints_start_configuration, _ = kin.compute_inverse_kinematics(self.built_robotic_manipulator, end_effector_start_configuration_1, invkine_tolerance)  # compute the robot's joints configuration (if possible) for the start end-effector configuration
+                            check_qr_joints_limits, joints_limits_distance = kin.check_joints_limits(self.built_robotic_manipulator, qr_joints_start_configuration)  # check the joints limits
+                            invkine_tries.append([qr_joints_start_configuration, check_qr_joints_limits])  # append the tries of the inverse kinematics for the start configuration of the end-effector on the workspace plane
+                        invkine_tries.sort(key = lambda x: x[1], reverse = True)  # sort the tries of the inverse kinematics based on the distance of the joints values from their limits, in a descending order
+                        # if (np.linalg.inv(obst_top_plane_wrt_world_transformation_matrix) @ end_effector_start_position) == self.start_pos_workspace_plane:  # if the start position of the end-effector on the workspace plane is correct
+                        #     pass
+                        for k in range(len(invkine_tries)):  # loop through all the tries of the inverse kinematics for the start configuration of the end-effector on the workspace plane
+                            qr_joints_start_configuration = invkine_tries[k][0]  # the chosen start configuration of the joints
+                            self.robot_joints_control_law_output.append(qr_joints_start_configuration)  # append the start configuration of the joints to the list of the control law output
+                            R_plane = self.obst_plane_wrt_world_transformation_matrix[0:3, 0:3]  # the rotation matrix of the workspace plane wrt the world frame
+                            for k in range(len(self.realws_velocities_control_law_output)):  # loop through all the velocities of the real workspace path, generated by the control law
+                                p_dot = self.realws_velocities_control_law_output[k]  # the velocity of the real workspace path
+                                qr = self.robot_joints_control_law_output[-1]  # the last configuration of the robot's joints
+                                pe_dot = R_plane @ np.array([p_dot[0], p_dot[1], 0.0])  # the velocity of the end-effector on the workspace plane wrt the world frame
+                                ve_dot = np.concatenate((pe_dot, np.zeros(3)), axis = 0)  # the velocity of the end-effector wrt the world frame
+                                qr_dot, J0_is_full_rank = kin.compute_inverse_differential_kinematics(self.built_robotic_manipulator, self.robot_joints_control_law_output[-1], ve_dot, "world")  # compute the joints velocities
+                                qr_new = qr + qr_dot * self.solver_time_step_dt  # the new configuration of the robot's joints
+                                self.robot_joints_control_law_output.append(qr_new)  # append the new configuration of the robot's joints to the list of the control law output
+                                # check_qr_joints_limits, joints_limits_distance = kin.check_joints_limits(self.built_robotic_manipulator, qr_joints_start_configuration)  # check the joints limits
                     else:
-                        pass
-                    # check_robot_joints_limits, joints_limits_distance = kin.check_joints_limits(self.built_robotic_manipulator, self.built_robotic_manipulator.q)  # check the joints limits
+                        ms.showerror("Error", "The inverse kinematics has failed to find a feasible solution for the start configuration of the end-effector on the workspace plane!", parent = self.menus_area)  # show an error message
             else:  # if no robotic manipulator is built yet
                 ms.showerror("Error", "Please build a robotic manipulator first!", parent = self.menus_area)  # show an error message
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
+    def plot_robot_joints_trajectories(self, event = None):  # plot the robot's joints trajectories for the obstacles avoidance
+        if len(self.robot_joints_control_law_output) != 0:  # if the robot's joints trajectories have been computed
+            revolute_joints_indexes = [k for k in range(len(self.joints_types)) if self.joints_types[k] == self.joints_types_list[0]]  # the indexes of the revolute joints
+            prismatic_joints_indexes = [k for k in range(len(self.joints_types)) if self.joints_types[k] == self.joints_types_list[1]]  # the indexes of the prismatic joints
+            trajectory_linewidth = 2; text_fontsize = 8; legend_fontsize = 7
+            fig = plt.figure()
+            if len(revolute_joints_indexes) != 0: ax1 = fig.add_subplot(111)  # if there are revolute joints create a subplot
+            if len(prismatic_joints_indexes) != 0: ax2 = fig.add_subplot(111)  # if there are prismatic joints create a subplot
+            if len(revolute_joints_indexes) != 0 and len(prismatic_joints_indexes) != 0:  # if there are both revolute and prismatic joints
+                ax1 = fig.add_subplot(211); ax2 = fig.add_subplot(212)  # create two subplots
+            if len(revolute_joints_indexes) != 0:  # if there are prismatic joints
+                for k in revolute_joints_indexes:  # loop through all the revolute joints
+                    joint_trajectory = [np.rad2deg(self.robot_joints_control_law_output[j][k]) for j in range(len(self.robot_joints_control_law_output))]  # the trajectory of the k-th joint
+                    ax1.plot(np.arange(0, len(joint_trajectory) * self.move_robot_time_step_dt, self.solver_time_step_dt), joint_trajectory, linewidth = trajectory_linewidth, label = f"q{k+1}")
+                    ax1.text(len(joint_trajectory) * self.move_robot_time_step_dt, joint_trajectory[-1], f"q_{k+1}", fontsize = text_fontsize)
+                ax1.legend(fontsize = legend_fontsize, loc = "upper left")
+                ax1.set_title("Robot's revolute joints trajectories")
+                ax1.set_xlabel("Time (sec)"); ax1.set_ylabel("Joint angles (degrees)")
+            if len(prismatic_joints_indexes) != 0:  # if there are prismatic joints
+                for k in prismatic_joints_indexes:  # loop through all the prismatic joints
+                    joint_trajectory = [self.robot_joints_control_law_output[j][k] for j in range(len(self.robot_joints_control_law_output))]  # the trajectory of the k-th joint
+                    ax2.plot(np.arange(0, len(joint_trajectory) * self.move_robot_time_step_dt, self.solver_time_step_dt), joint_trajectory, linewidth = trajectory_linewidth, label = f"q{k+1}")
+                    ax2.text(len(joint_trajectory) * self.move_robot_time_step_dt, joint_trajectory[-1], f"q_{k+1}", fontsize = text_fontsize)
+                ax2.legend(fontsize = legend_fontsize, loc = "upper left")
+                ax2.set_title("Robot's prismatic joints trajectories")
+                ax2.set_xlabel("Time (sec)"); ax2.set_ylabel("Joint displacements (m)")
+            plt.show()   
     def move_simulated_robot_obstacles_avoidance(self, event = None):  # control the simulated robotic manipulator for the obstacles avoidance
         if not self.robot_control_thread_flag:  # if the robot control thread is not running
             if self.robotic_manipulator_is_built: # if a robotic manipulator is built

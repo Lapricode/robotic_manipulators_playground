@@ -1,0 +1,20 @@
+This submenu allows the user to customize how the robotic manipulator and its environment are visualized within the software:
+- Robotic Manipulator Visualization:
+• Frame: Selects which frame of the robot to visualize (e.g. base, frame 0, end-effector).
+• Frame Color: Allows the user to set a color for the selected frame, with an option to apply the same color to all frames.
+• Frame Size: Sets the size of the frame visualization, with an option to apply the same size to all frames.
+• Joint Position (m): Specifies the position of the joint along its axis in meters.
+• Link: Selects which link of the robot to visualize (e.g., link 1).
+• Link Color: Allows the user to set a color for the selected link, with an option to apply the same color to all links.
+• Link Size: Sets the size of the link visualization, with an option to apply the same size to all links.
+• Link Length (m): Displays the length of the link in meters.
+- Workspace Visualization:
+• Canvas: Customizes the background color of the workspace.
+• Terrain: Adjusts the color and appearance of the simulated ground.
+• Axis: Sets the color and size of the axis visualization within the workspace.
+• 2D Plane: Configures the color and size of the 2D obstacles plane shown in the workspace.
+• Obstacles: Sets the color and size of the obstacles located on the 2D plane, if any are present.
+- Simulators:
+Provides options for different simulators to visualize the robotic manipulator:
+• Matplotlib: A simple, interactive visualization only for the robotic manipulator.
+• Swift: The online Swift simulator for real-time and more advanced visualizations of the robotic manipulator and its environment.

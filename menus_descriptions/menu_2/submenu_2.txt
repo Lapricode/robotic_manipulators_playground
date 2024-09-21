@@ -1,0 +1,12 @@
+Inverse kinematics is the process of determining the joint parameters needed to achieve a specific position and orientation of the end-effector. The operations in this submenu include:
+• Get Forward Kinematics Analysis Result:
+This option allows you to retrieve the results from the forward kinematics analysis, which will serve as input for the inverse kinematics analysis.
+• Send Inverse Kinematics Analysis Result:
+It submits the currently found inverse kinematics result (joints configuration) to the forward kinematics submenu.
+• End-Effector Position and Orientation:
+Input fields where you can specify the desired position and orientation of the end-effector wrt the world.
+• Numerical Solver Maximum Allowed Error (Tolerance):
+This field allows you to specify the tolerance level for the numerical solver, which impacts the precision of the inverse kinematics solution. Lower tolerance values yield more precise results but may require more computation time.
+• Joints Configuration:
+Displays the resulting joint configurations that achieve the specified end-effector position and orientation.
+A warning or notification indicates if the specified configuration is not achievable within the robot's workspace.

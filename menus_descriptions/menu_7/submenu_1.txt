@@ -1,0 +1,27 @@
+- Load the Desired Workspace Image with All the Built Obstacles:
+• Workspace Image: A dropdown menu allows the user to select a workspace image.
+• Plot Obstacles Boundaries: Button or option to display the boundaries of obstacles within the selected workspace image.
+• Workspace Plane Transformation: Indicates that the workspace plane's transformation data will be taken from the image.
+• Obstacles Infos: Displays information about the obstacles, including the number of inner and outer boundaries and the obstacles' height (30.0 mm in this case).
+- Define the Start and Target Positions of the Robot's End-Effector on the Workspace Plane:
+• Start Position (m) / Target Position (m): Input fields for defining the start and target positions of the robot's end-effector, initially set to [0.0, 0.0] for both.
+• Position Check: A system check that validates the start and target positions. If the positions are incorrect or not defined properly, a warning (Wrong! The start and/or target positions are not defined correctly! Choose new values!) is displayed.
+- Transform the Real Workspace to the Unit Disk (Radius = 1) and then Back to R2 Plane:
+• Start Mapping: Button to begin the mapping process
+• Real Workspace → Unit Disk: The first transformation step where the real workspace is mapped onto a unit disk. Options to build and interact with the mapping.
+• Unit Disk → R2 Plane: The second step where the unit disk is transformed back to the R2 plane. Options to build and interact with this transformation.
+- Apply the Control Law for the Movement of the Robotic Manipulator:
+• Control Law Parameters:
+k_d, K, k_i, w_phi: Fields to set various control law parameters, affecting the robot's movement dynamics.
+gamma (0.70): A parameter likely related to the control system's damping or gain.
+e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thresholds.
+• Save Parameters / Load Parameters: Options to save the current set of parameters or load a predefined set of parameters.
+• Navigation Potential Field: Plot Function / Plot Gradients, Options to visualize the potential field functions or gradients that guide the robot's movement.
+• Apply Control Law: Button to apply the defined control law to the robot.
+• Compute Robot Velocities: Option to calculate the robot's velocities based on the control law and potential field.
+• Points Divisions to Plot: Specifies the number of divisions or resolution for plotting points within the workspace, set to 200.
+• Move Simulated Robot / Move Real Robot: Buttons to initiate movement for either a simulated version of the robot or the real physical robot.
+• Time Step (s): Specifies the simulation or control time step, set to 0.001 seconds.
+• Maximum Iterations: Defines the maximum number of iterations allowed for the solver, set to 1000.
+• Error Tolerance (mm): Sets the permissible error tolerance for the robot's movement, set to 10.0 mm.
+• Error Correction: Option to enable or disable error correction during the robot's operation.

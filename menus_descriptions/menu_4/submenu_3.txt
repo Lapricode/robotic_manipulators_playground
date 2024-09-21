@@ -1,0 +1,15 @@
+This submenu is used for controlling the movement of the robot's joints and the end-effector directly:
+• Joint Number and Joint Motors:
+Dropdown menus to select the specific joint to be controlled, as well as the motors names assigned to that joint. This allows for individual control of each joint.
+The type of the joint (revolute or prismatic) is displayed, along with its current value.
+• Motors Factors (for commands):
+This field allows the user to input motors multiplication factors, which can adjust the motors commands outputs (practically, they are scaling factors for movement precision).
+• Joint Variable Control:
+Sliders and buttons in this section allow the user to manually adjust the position of the selected joint by small or large increments.
+The button labeled "set joints to 0" enables the user to reset the joints to zero.
+• End-Effector Control:
+Similar to joint control, this section allows direct control of the end-effector, with an option to set its value to zero.
+There are fields to input the motor name and motor factor specifically for controlling the end-effector.
+• Control Mode:
+The user can choose between different control modes, such as "manual" control, where the user needs to press additional buttons to execute the movement, or "automatic" control, where the movement is executed immediately after the user adjusts the sliders.
+Buttons labeled "GO joints", "GO end-effector" and "GO ALL" are options to move either the joints or the end-effector separately, or to execute all movements simultaneously.

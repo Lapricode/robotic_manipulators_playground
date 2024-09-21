@@ -1,0 +1,12 @@
+Differential kinematics is used to determine the velocity of the end-effector based on the velocities of the individual joints. This submenu of the interface includes the following elements:
+• Joint Number and Joint Velocity:
+You can select a specific joint (e.g., joint 1) from a dropdown menu and input its velocity, which is typically expressed in degrees per second (°/s) for revolute joints.
+Sliders are provided for each joint to adjust their respective velocities. These sliders allow users to see the effect of different joint velocities on the overall system.
+• End-Effector Linear Velocity (m/s):
+This displays the calculated linear velocity of the end-effector in meters per second (m/s). This value is computed based on the current joint velocities.
+• End-Effector Angular Velocity (°/s):
+This field shows the angular velocity of the end-effector in degrees per second (°/s), reflecting how fast the end-effector is rotating.
+• Configuration:
+This setting (it can be "control" or "kinematics") indicates the current joints configuration mode, which may affect how the velocities are interpreted.
+• W.r.t. Frame:
+This dropdown allows you to specify the frame of reference for the velocities (it can be "world" or "end-effector"), ensuring consistency in how the velocities are calculated and displayed.

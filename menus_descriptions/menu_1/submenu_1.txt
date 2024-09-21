@@ -1,0 +1,22 @@
+This submenu allows the user to define the kinematic properties of the robotic manipulator:
+• Model Name: You can nput a name for the robotic model.
+• Joints Number (n): This field specifies the number of joints in the robotic manipulator.
+- Denavit-Hartenberg Parameters:
+These parameters are critical for defining the geometry and structure of the robot:
+• Joint Number: A dropdown menu allows to select the joint to configure.
+• Joint Type:  Choose the type of joint (e.g., revolute or prismatic) from a dropdown menu.
+• a (meters): The distance between the previous joint axis and the current joint axis, measured along the previous joint axis.
+• alpha (degrees): The twist angle, which defines the angle between the previous and current joint axes.
+• d (meters): The offset along the previous joint axis to the current joint, which is the variable for prismatic joints.
+• theta (degrees): The rotation angle around the current joint axis, which is the variable for revolute joints.
+• Variable Limits: These fields define the minimum and maximum limits for the joint variables, in degrees or meters depending on the joint type. This is crucial for constraining the motion of the robot.
+- Base and End-Effector Systems:
+• World → Base → Frame "0": This section defines the position and orientation of the base frame relative to the world coordinate system and of the first joint frame relative to the base frame.
+• Frame "n" → End-Effector: This section defines the position and orientation of the end-effector relative to the last joint frame.
+- Robot control operations:
+• Show Current Robot Info: Displays detailed information about the current robot configuration.
+• Save Robot: Saves the current robot configuration to a text file.
+• Delete Robot: Allows the user to delete a previously saved robot model.
+• Build Robot: Constructs the robot model based on the defined parameters.
+• Destroy Robot: Dismantles or deletes the currently built robot model.
+• Load Robot Model: A dropdown to select and load a previously saved robot model.

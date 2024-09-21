@@ -1,0 +1,27 @@
+This submenu allows the user to configure the camera device, calibrate it, and capture images of the robot's workspace. The following options are available:
+- Define the Camera Object:
+• Camera Device: Dropdown to select the camera device being used, choosing between the internal camera or an external one.
+• Aspect Ratio: Allows the user to choose the aspect ratio of the camera, with options like 16/9.
+• Resolution: Dropdown to set the camera's resolution, such as 720p.
+• Image Size (%): Slider to adjust the size of the image frames shown on the screen, relative to the camera's resolution.
+• Open/Close Camera Button: Button to open or close the camera device.
+• Diagonal FoV (°): Displays the diagonal field of view of the camera in degrees.
+• Min Distance (m) from 2D Plane: Displays the minimum distance (in meters) between the camera and the 2D plane (in order for the camera to capture the entire plane).
+- Convert Frames to Black & White:
+• Luminance threshold: Slider to adjust the cutoff between black and white in the captured image.
+• Show grayscale image: Button to convert the captured image to black and white.
+- Define the Camera Pose:
+• Estimate camera pose: Button to estimate the camera's pose in real time using ArUco markers.
+• Estimate plane pose: Button to estimate the 2D obstacles plane's pose in real time using ArUco markers.
+• Apply moving average filter: Button to apply a moving average filter to smooth the measurements of the camera or plane pose.
+• ArUco Marker: Dropdown to select the type of ArUco marker being used for pose estimation, for example 4X4 grid with 100mm size.
+• Camera Transformation (w.r.t. World): Displays the camera's transformation matrix relative to the world coordinate system.
+• Optical Axis, Translation (m), Orientation (°): Buttons to define the optical axis vector, the translation vector, and the orientation angle (around the optical axis) of the object camera relative to the world coordinate system.
+• Rotation around Z-axis (°), Translation along Optical Axis (m): Sliders to rotate the camera object around the world's z-axis and translate it along the optical axis.
+- Operations for Capturing the Workspace Image Using the Camera:
+• Camera Calibration: Buttons to recalibrate the camera ("recalibrate camera") and display the camera intrinsic matrix and distortion coefficients ("show camera parameters").
+• Draw 2D Plane on Frame: Option to overlay a 2D plane on the camera frame, which is useful for aligning the camera with the workspace.
+• Capture Image: Button to capture the current view of the workspace.
+• Workspace Images: Dropdown to select from previously captured workspace images.
+• Show Image: Button to display the selected workspace image.
+• Delete Image: Button to delete the selected workspace image.

@@ -1,0 +1,24 @@
+This submenu allows the user to create the workspace obstacles and the 2D plane where they are located, detect the obstacles boundaries, and save them as STL files.
+- Create the Obstacles Transformation:
+• 2D Plane x Length (m) / 2D Plane y Length (m): Fields to input the dimensions of the plane in meters.
+• Normal Vector: Input the normal vector of the plane.
+• Translation (m): Set the translation of the 2D plane in 3D space.
+• Orientation (°): Specify the plane's orientation (the rotation angle around the normal vector).
+• Rotation around z-axis (°) / Translation along Normal Vector (m): Sliders to adjust the plane's rotation around the z-axis and its translation along the normal vector.
+• Camera-Plane z-axis Alignment: Indicates the alignment between the camera's z-axis and the plane's normal vector.
+• Obstacles Transformation (w.r.t. World): Matrix showing the transformation of the obstacles in the world coordinate system.
+• ArUco Pose on Plane: Options to define the "Position" and "Orientation" of the ArUco marker on the 2D plane.
+- Find Singularities on Obstacles Plane:
+• Tolerance / Samples: Input fields to set the tolerance and the number of samples (points divisions of the plane) for the singularities detection.
+• Find Kinematic Singularities: Button to initiate the process of finding kinematic singularities for the robotic manipulator on the plane.
+• Load Plane: Dropdown to select a plane configuration to load.
+• Save Plane: Option to save the current plane configuration.
+- Build Workspace Obstacles:
+• Load Workspace Image: Dropdown to select a saved captured workspace image.
+• Obstacles Saved Height (mm) / Obstacles Height (mm) for Detection: Input fields to set the obstacles' height (in millimeters) used for their detection and the one that is saved.
+• Precision / Vertices Limit: Sliders to adjust the precision of the obstacles' detection and the minimum vertices number of their polygonal approximations.
+• Detect Boundaries: Button to detect the boundaries (outer and inner) of the obstacles within the loaded workspace image.
+• Load Obstacle Data: Dropdown to select a predefined obstacle's data.
+• XY-axis resolution, Z-axis resolution: Adjust the XY-axis resolution and Z-axis resolution points for the creation of the obstacles meshes.
+• Create STL file: Build an STL file for the current obstacle mesh.
+• Create all STL files: Build STL files for all obstacles meshes.

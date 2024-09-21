@@ -1,0 +1,9 @@
+This submenu allows the user to set up and manage the serial connection between the software and the Arduino microcontroller. The elements include:
+• Serial Port:
+A dropdown menu to select the appropriate serial port that the Arduino is connected to on the computer.
+• Baud Rate:
+This dropdown allows the user to select the baud rate for the serial communication. A baud rate of 115200 bps is a common speed for such communications.
+• Serial Connection State:
+This indicator shows whether the software is currently connected to the Arduino microcontroller, what is the state of the robotic arm etc.
+• Connect:
+This button is available to establish the connection. Once clicked, the software attempts to initiate communication between the computer and the Arduino.

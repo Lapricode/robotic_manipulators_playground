@@ -1,0 +1,15 @@
+The serial monitor or console serves as the interface for sending and receiving data between the computer and the Arduino. This submenu includes:
+• Main Console Area:
+This large text area displays incoming data from the Arduino and any outgoing commands that have been sent. It is useful for debugging and monitoring real-time communication.
+• Command Input:
+This field allows the user to type in specific commands to be sent directly to the Arduino.
+• Status Indicators:
+Indicators labeled as "OK" and "Status" suggest the presence of a system that confirms successful command execution or displays messages about the current status of the robotic system.
+• Expand submenu:
+The arrow pointing upwards expands the submenu to enlarge the main console area for better visibility.
+• Clear main console area:
+The trash bin clears the main console of all text, providing a clean area for new messages.
+• Command Starting and Ending Text:
+These fields can be used to define a standard starting or ending string for the commands, potentially simplifying the command structure by automatically adding predefined text to each command sent.
+• Send:
+After typing a command in the input field, the user can click the "Send" button to transmit it to the Arduino microcontroller.
