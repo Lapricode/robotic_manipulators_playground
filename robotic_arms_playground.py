@@ -396,6 +396,7 @@ class robotic_manipulators_playground_window():
         self.solver_enable_error_correction = False  # the flag to enable the error correction of the control law for the obstacles avoidance solver
         self.solver_maximum_iterations = 500  # the maximum number of iterations of the control law for the obstacles avoidance solver
         self.solver_maximum_iterations_limits = [1.0, 1e4]  # the limits of the maximum number of iterations of the control law for the obstacles avoidance solver
+        self.paths_parameters_list = []  # the list of the paths parameters for the obstacles avoidance solver
         self.realws_path_control_law_output = []  # the path on the real workspace found by the control law for the obstacles avoidance solver
         self.realws_paths_list = []  # the list of the total paths on the real workspace
         self.unit_disk_path_control_law_output = []  # the path on the unit disk found by the control law for the obstacles avoidance solver
@@ -4055,6 +4056,9 @@ You can also press left click on the number of a boundary to remove it and right
     
     # for the main menu where the obstalces avoidance problem is solved
     def load_workspace_obstacles_infos_for_solver(self, event = None):  # load the information (the boundaries more specifically) of the chosen workspace obstacles
+        if event != None:  # if the function is called by an event
+            self.clear_control_law_outputs_list()  # clear the control law outputs list
+            self.reset_control_law_outputs()  # reset the control law outputs
         if event != None or (event == None and len(self.obstacles_boundaries_for_solver) == 0):  # if the function is called by the user or there are no obstacles boundaries detected yet
             chosen_solver_workspace_image_name = self.load_workspace_obstacles_objects_combobox.get()  # the name of the chosen workspace image
             if chosen_solver_workspace_image_name in self.saved_workspace_images_list:  # if the chosen workspace image exists
@@ -4292,7 +4296,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
     def unit_disk_to_R2_plot_interact(self, event = None):  # show the details of the transformation from the unit disk to the R2 plane
         if self.hntf2d_solver != None:  # if the hntf2d control law object has been created
             if self.hntf2d_solver.dtp_transformation_is_built:  # if the transformation from the unit disk to the R2 plane is built
-                text_margin = 0.01; text_fontsize = 8; legend_fontsize = 7; outer_boundaries_linewidth = 1; inner_boundaries_linewidth = 1; positions_markersize = 5; punctures_markersize = 4  # some plot parameters
+                text_margin = 0.01; text_fontsize = 8; legend_fontsize = 7; unit_circle_linewidth = 1; positions_markersize = 5; punctures_markersize = 4  # some plot parameters
                 path_linewidth = 2; path_fontsize = text_fontsize+1; path_positions_markersize = positions_markersize+1  # some plot parameters
                 fig = plt.figure()
                 # plot the unit disk
@@ -4417,13 +4421,20 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             self.realws_paths_list.remove(self.realws_paths_list[removed_path_index])  # remove the chosen path from the list of the real workspace paths
             self.unit_disk_paths_list.remove(self.unit_disk_paths_list[removed_path_index])  # remove the chosen path from the list of the unit disk paths
             self.R2_plane_paths_list.remove(self.R2_plane_paths_list[removed_path_index])  # remove the chosen path from the list of the R2 plane paths
-            self.realws_velocities_sequences_list.remove(self.realws_velocities_sequences_list[removed_path_index])  # remove the chosen path from the list of the real workspace velocities
+            self.realws_velocities_sequences_list.remove(self.realws_velocities_sequences_list[removed_path_index])  # remove the chosen path velocities from the list of the real workspace velocities
+            self.paths_parameters_list.remove(self.paths_parameters_list[removed_path_index])  # remove the chosen path parameters from the list of the paths parameters
     def reset_control_law_outputs(self, event = None):  # reset the control law outputs
         self.realws_path_control_law_output = []  # reset the real workspace path control law output
         self.unit_disk_path_control_law_output = []  # reset the unit disk path control law output
         self.R2_plane_path_control_law_output = []  # reset the R2 plane path control law output
         self.realws_velocities_control_law_output = []  # reset the real workspace velocities control law output
         self.robot_joints_control_law_output = []  # reset the robot joints control law output
+    def clear_control_law_outputs_list(self, event = None):  # clear the control law outputs list
+        self.realws_paths_list = []  # clear the list of the real workspace paths
+        self.unit_disk_paths_list = []  # clear the list of the unit disk paths
+        self.R2_plane_paths_list = []  # clear the list of the R2 plane paths
+        self.realws_velocities_sequences_list = []  # clear the list of the real workspace velocities
+        self.paths_parameters_list = []  # clear the list of the paths parameters
     def show_chosen_path_information(self, chosen_path_index, event = None):  # show some information about the chosen path
         if chosen_path_index < len(self.realws_paths_list):  # if the chosen path index is valid
             chosen_path = self.realws_paths_list[chosen_path_index]  # the chosen path
@@ -4433,11 +4444,18 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             solver_time_step_dt = float(np.linalg.norm(chosen_path[1] - path_start) / np.linalg.norm(self.realws_velocities_sequences_list[chosen_path_index][0]))  # the solver time step dt
             if not self.solver_enable_error_correction:  # if the error correction is not enabled
                 chosen_path = chosen_path[:-1]  # remove the desired target-position
+            kd, ki, w_phi, dp_min, vp_max = self.paths_parameters_list[chosen_path_index]  # the control law parameters
             info_text = f"• Initial pos (cm): {np.round(100.0 * path_start, 1)}, Target pos (cm): {np.round(100.0 * pd, 1)}\n\
-• Convergence error = {100.0 * (np.linalg.norm(pd - path_stop)):.2f} cm\n\
+• Control law parameters:\n\
+  - kd = {kd:.2f}\n\
+  - ki = {np.round(ki, 2)}\n\
+  - w_phi = {w_phi:.2f}\n\
+  - dp_min (cm) = {100.0 * dp_min:.1f}\n\
+  - vp_max (cm/sec)= {100.0 * vp_max:.1f}\n\
 • Number of iterations = {len(chosen_path)}\n\
-• Total path time = {np.round(len(chosen_path) * solver_time_step_dt, 3)} sec\n\
-• Total path length = {np.round(100.0 * np.sum([np.linalg.norm(chosen_path[k] - chosen_path[k - 1]) for k in range(1, len(chosen_path))]), 1)} cm"
+• Convergence error (cm) = {100.0 * (np.linalg.norm(pd - path_stop)):.2f}\n\
+• Total path time (sec) = {np.round(len(chosen_path) * solver_time_step_dt, 3)}\n\
+• Total path length (cm) = {np.round(100.0 * np.sum([np.linalg.norm(chosen_path[k] - chosen_path[k - 1]) for k in range(1, len(chosen_path))]), 1)}"
             return info_text  # return the chosen path information
         else:  # if the chosen path index is not valid
             return "The path is not valid!"  # return an error message
@@ -4679,6 +4697,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                     self.unit_disk_paths_list.append(q_disk_list + [self.hntf2d_solver.q_d_disk])  # append the unit disk path to the list of the unit disk paths
                     self.R2_plane_paths_list.append(q_list + [self.hntf2d_solver.q_d])  # append the R2 plane path to the list of the R2 plane paths
                     self.realws_velocities_sequences_list.append(p_dot_list + [(self.hntf2d_solver.p_d - p_list[-1]) / self.solver_time_step_dt])  # append the real workspace velocities to the list of the real workspace velocities
+                    self.paths_parameters_list.append([self.k_d, self.k_i, self.w_phi, self.dp_min, self.vp_max])  # append the control law parameters to the list of the control law parameters
                 self.path_chosen = len(self.realws_paths_list) - 1  # choose the last path in the list of the real workspace paths
                 self.choose_result_from_control_law_outputs(self.path_chosen)  # choose the last path in the list of the control law outputs
                 if control_law_success:  # if the control law is successful
