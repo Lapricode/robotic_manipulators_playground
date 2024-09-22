@@ -103,9 +103,9 @@ class robotic_manipulators_playground_window():
                                                             build_function = self.build_robotic_manipulator_differential_kinematics_menus)  # a dictionary to store the details of the differential kinematics menu
         control_robotic_manipulator_menu_build_details = dict(title = "Control the robotic manipulator", submenus_titles = submenus_titles[3], submenus_descriptions = submenus_descriptions[3], \
                                                                 build_function = self.build_control_robotic_manipulator_menus)  # a dictionary to store the details of the control robotic manipulator menu
-        camera_control_menu_build_details = dict(title = "Control the camera", submenus_titles = submenus_titles[5], submenus_descriptions = submenus_descriptions[4], \
+        camera_control_menu_build_details = dict(title = "Control the camera", submenus_titles = submenus_titles[4], submenus_descriptions = submenus_descriptions[4], \
                                                     build_function = self.build_camera_control_menus)  # a dictionary to store the details of the camera control menu
-        workspace_obstacles_menu_build_details = dict(title = "Create workspace obstacles", submenus_titles = submenus_titles[4], submenus_descriptions = submenus_descriptions[5], \
+        workspace_obstacles_menu_build_details = dict(title = "Create workspace obstacles", submenus_titles = submenus_titles[5], submenus_descriptions = submenus_descriptions[5], \
                                                         build_function = self.build_workspace_obstacles_menus)  # a dictionary to store the details of the workspace obstacles menu
         solve_obstacles_avoidance_menu_build_details = dict(title = "Solve obstacles avoidance", submenus_titles = submenus_titles[6], submenus_descriptions = submenus_descriptions[6], \
                                                             build_function = self.build_solve_obstacles_avoidance_menus)  # a dictionary to store the details of the solve obstacles avoidance menu
@@ -397,10 +397,17 @@ class robotic_manipulators_playground_window():
         self.solver_maximum_iterations = 500  # the maximum number of iterations of the control law for the obstacles avoidance solver
         self.solver_maximum_iterations_limits = [1.0, 1e4]  # the limits of the maximum number of iterations of the control law for the obstacles avoidance solver
         self.realws_path_control_law_output = []  # the path on the real workspace found by the control law for the obstacles avoidance solver
-        self.real_ws_paths_list = []  # the list of the paths on the real workspace found by the control law for the obstacles avoidance solver
-        self.realws_velocities_control_law_output = []  # the velocities on the real workspace found by the control law for the obstacles avoidance solver
+        self.realws_paths_list = []  # the list of the total paths on the real workspace
         self.unit_disk_path_control_law_output = []  # the path on the unit disk found by the control law for the obstacles avoidance solver
+        self.unit_disk_paths_list = []  # the list of the total paths on the unit disk
         self.R2_plane_path_control_law_output = []  # the path on the R2 plane found by the control law for the obstacles avoidance solver
+        self.R2_plane_paths_list = []  # the list of the total paths on the R2 plane
+        self.path_chosen = 0  # the number of the chosen path on the real workspace
+        self.all_paths_are_shown = False  # the flag to check if all the paths on the real workspace are shown
+        self.max_paths_stored = 9  # the maximum total number of stored paths allowed
+        self.paths_colors = ["#ff0000", "#00ff00", "#0000ff", "#ffa500", "#800080", "#ffff00", "#a52a2a", "#ff00ff", "#32cd32"]  # the colors of the paths
+        self.realws_velocities_control_law_output = []  # the velocities on the real workspace found by the control law for the obstacles avoidance solver
+        self.realws_velocities_sequences_list = []  # the list of the total velocities sequences on the real workspace
         self.robot_joints_control_law_output = []  # the robot joints found by the control law for the obstacles avoidance solver
         self.move_robot_time_step_dt = self.solver_time_step_dt  # the time step for the robot control (in seconds)
         self.move_real_robot_joints_vel_limits = [[1.0, 0.001], [45.0, 0.200]]  # the minimum and maximum velocities (for the revolute -degrees/sec- and prismatic -meters/sec- joints respectively) of the robotic manipulator joints for the obstacles avoidance solver
@@ -4121,7 +4128,7 @@ You can also press left click on the number of a boundary to remove it and right
                 self.start_point_plot, = fig_ax.plot(x, y, "mo", markersize = 5)  # plot the start position of the robot's end-effector on the 2D workspace plane
                 self.start_point_plot_text = fig_ax.text(x, y, "Start", fontsize = 7, color = "m")  # write the text of the start position of the robot's end-effector on the 2D workspace plane
                 self.start_pos_workspace_plane = np.array([x / 100.0 - self.obstacles_2d_plane_x_length / 2.0, y / 100.0 - self.obstacles_2d_plane_y_length / 2.0])  # change the start position of the robot's end-effector on the 2D workspace plane
-                self.reset_control_law_outputs()  # reset the control law outputs
+                # self.reset_control_law_outputs()  # reset the control law outputs
             elif event.button == 3:  # if the user presses mouse right click
                 try:
                     self.target_point_plot.remove()  # try to remove the plotted target point
@@ -4130,7 +4137,7 @@ You can also press left click on the number of a boundary to remove it and right
                 self.target_point_plot, = fig_ax.plot(x, y, "go", markersize = 5)  # plot the target position of the robot's end-effector on the 2D workspace plane
                 self.target_point_plot_text = fig_ax.text(x, y, "Target", fontsize = 7, color = "g")  # write the text of the target position of the robot's end-effector on the 2D workspace plane
                 self.target_pos_workspace_plane = np.array([x / 100.0 - self.obstacles_2d_plane_x_length / 2.0, y / 100.0 - self.obstacles_2d_plane_y_length / 2.0])  # change the target position of the robot's end-effector on the 2D workspace plane
-                self.reset_control_law_outputs()  # reset the control law outputs
+                # self.reset_control_law_outputs()  # reset the control law outputs
             elif event.button == 2:  # if the user presses mouse middle click
                 try:
                     self.random_point_plot.remove()  # try to remove the plotted random point
@@ -4206,71 +4213,6 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
         else:  # if the hntf2d control law object has not been created yet
             ms.showerror("Error", "Press the \"start\" button first to begin building the workspace transformations (following the defined order)!")  # show an error message
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
-    def realws_to_unit_disk_plot_interact(self, event = None):  # show the details of the transformation from the real workspace to the unit disk
-        if self.hntf2d_solver != None:  # if the hntf2d control law object has been created
-            if self.hntf2d_solver.wtd_transformation_is_built:  # if the transformation from the real workspace to the unit disk is built
-                text_margin = 0.01; text_fontsize = 8; legend_fontsize = 7; outer_boundaries_linewidth = 1; inner_boundaries_linewidth = 1; control_law_path_linewidth = 2; positions_fontsize = 5; punctures_fontsize = 4  # some plot parameters
-                fig = plt.figure()
-                ax1 = fig.add_subplot(121)
-                p_init_plot, = ax1.plot(self.hntf2d_solver.p_init[0], self.hntf2d_solver.p_init[1], "magenta", marker = "s", markersize = positions_fontsize)
-                p_d_plot, = ax1.plot(self.hntf2d_solver.p_d[0], self.hntf2d_solver.p_d[1], "green", marker = "s", markersize = positions_fontsize)
-                outer_plot, = ax1.plot(self.hntf2d_solver.outer_boundary[:, 0], self.hntf2d_solver.outer_boundary[:, 1], "red", linewidth = outer_boundaries_linewidth)
-                for i in range(len(self.hntf2d_solver.inner_boundaries)):
-                    inner_plot, = ax1.plot(self.hntf2d_solver.inner_boundaries[i][:, 0], self.hntf2d_solver.inner_boundaries[i][:, 1], "blue", linewidth = inner_boundaries_linewidth)
-                    ax1.text(np.mean(self.hntf2d_solver.inner_boundaries[i][:, 0]), np.mean(self.hntf2d_solver.inner_boundaries[i][:, 1]), f"{i+1}", fontsize = text_fontsize)
-                if len(self.realws_path_control_law_output) != 0:  # if a path (on the real workspace) has been calculated by the control law
-                    realws_path_plot, = ax1.plot(np.array(self.realws_path_control_law_output)[:, 0], np.array(self.realws_path_control_law_output)[:, 1], "black", linewidth = control_law_path_linewidth)
-                    if len(self.hntf2d_solver.inner_boundaries) != 0:  # if there are inner boundaries
-                        ax1.legend([outer_plot, inner_plot, p_init_plot, p_d_plot, realws_path_plot], ["Outer boundary", "Inner boundaries", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
-                    else:  # if there are no inner boundaries
-                        ax1.legend([outer_plot, p_init_plot, p_d_plot, realws_path_plot], ["Outer boundary", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
-                else:  # if no path (on the real workspace) has been calculated yet by the control law
-                    if len(self.hntf2d_solver.inner_boundaries) != 0:  # if there are inner boundaries
-                        ax1.legend([outer_plot, inner_plot, p_init_plot, p_d_plot], ["Outer boundary", "Inner boundaries", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
-                    else:  # if there are no inner boundaries
-                        ax1.legend([outer_plot, p_init_plot, p_d_plot], ["Outer boundary", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
-                ax1.set_title(f"Original real workspace\n(press mouse right click)")
-                ax1.set_xlabel("x (m)"); ax1.set_ylabel("y (m)"); ax1.set_aspect("equal"); ax1.grid(True)
-                ax2 = fig.add_subplot(122)
-                q_init_plot, = ax2.plot(self.hntf2d_solver.q_init_disk[0], self.hntf2d_solver.q_init_disk[1], "magenta", marker = "s", markersize = positions_fontsize)
-                q_d_plot, = ax2.plot(self.hntf2d_solver.q_d_disk[0], self.hntf2d_solver.q_d_disk[1], "green", marker = "s", markersize = positions_fontsize)
-                unit_disk_plot, = ax2.plot(self.hntf2d_solver.unit_circle[:, 0], self.hntf2d_solver.unit_circle[:, 1], "red", linewidth = outer_boundaries_linewidth)
-                for i in range(len(self.hntf2d_solver.q_i_disk)):
-                    punctures_plot, = ax2.plot(self.hntf2d_solver.q_i_disk[i][0], self.hntf2d_solver.q_i_disk[i][1], "blue", marker = "o", markersize = punctures_fontsize)
-                    ax2.text(self.hntf2d_solver.q_i_disk[i][0] + text_margin, self.hntf2d_solver.q_i_disk[i][1] + text_margin, f"{i+1}", fontsize = text_fontsize)
-                if len(self.unit_disk_path_control_law_output) != 0:  # if a path (on the unit disk) has been calculated by the control law
-                    unit_disk_path_plot, = ax2.plot(np.array(self.unit_disk_path_control_law_output)[:, 0], np.array(self.unit_disk_path_control_law_output)[:, 1], "black", linewidth = control_law_path_linewidth)
-                    if len(self.hntf2d_solver.q_i_disk) != 0:  # if there are inner boundaries
-                        ax2.legend([unit_disk_plot, punctures_plot, q_init_plot, q_d_plot, unit_disk_path_plot], ["Unit disk", "Punctures", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
-                    else:  # if there are no inner boundaries
-                        ax2.legend([unit_disk_plot, q_init_plot, q_d_plot, unit_disk_path_plot], ["Unit disk", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
-                else:  # if no path (on the unit disk) has been calculated yet by the control law
-                    if len(self.hntf2d_solver.q_i_disk) != 0:  # if there are inner boundaries
-                        ax2.legend([unit_disk_plot, punctures_plot, q_init_plot, q_d_plot], ["Unit disk", "Punctures", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
-                    else:  # if there are no inner boundaries
-                        ax2.legend([unit_disk_plot, q_init_plot, q_d_plot], ["Unit disk", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
-                ax2.set_title(f"Real workspace ->\n-> Unit disk transformation")
-                ax2.set_xlabel("u"); ax2.set_ylabel("v"); ax2.set_aspect("equal"); ax2.grid(True)
-                fig.canvas.mpl_connect("button_press_event", lambda event: self.mark_transform_points_on_wtd_plot(event, ax1, ax2))  # connect a function to the plot
-                plt.show()
-        self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
-    def mark_transform_points_on_wtd_plot(self, event, fig_ax1, fig_ax2):  # mark the transformation points on the wtd plot
-        if event.inaxes:  # if the event is inside the axis space
-            x, y = event.xdata, event.ydata  # get the coordinates of the mouse click
-            if event.button == 3:  # if the user presses mouse right click
-                try:
-                    self.input_point_plot.remove()  # try to remove the plotted input point
-                    self.input_point_plot_text.remove()  # try to remove the plotted input point text
-                    self.output_point_plot.remove()  # try to remove the plotted output point
-                    self.output_point_plot_text.remove()  # try to remove the plotted output point text
-                except: pass
-                input_point = np.array([x, y])  # the input point
-                output_point = self.hntf2d_solver.realws_to_unit_disk_mapping(input_point)  # map the input point to the output_point
-                self.input_point_plot, = fig_ax1.plot(x, y, "ko", markersize = 5)  # plot the input point
-                self.input_point_plot_text = fig_ax1.text(x, y, f"({x:.3f}, {y:.3f})", fontsize = 7, color = "k")  # write the text of the input point
-                self.output_point_plot, = fig_ax2.plot(output_point[0], output_point[1], "ko", markersize = 5)  # plot the output point
-                self.output_point_plot_text = fig_ax2.text(output_point[0], output_point[1], f"({output_point[0]:.3f}, {output_point[1]:.3f})", fontsize = 7, color = "k")  # write the text of the output point
-            plt.draw()  # redraw the plot
     def build_unit_disk_to_R2_transformation(self, event = None):  # build the transformation from the unit disk to the R2 plane
         if self.hntf2d_solver != None:  # if the hntf2d control law object has been created
             self.hntf2d_solver.disk_to_R2_transformation()  # calculate the transformation from the unit disk to the R2 plane
@@ -4279,26 +4221,103 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
         else:  # if the hntf2d control law object has not been created yet
             ms.showerror("Error", "Press the \"start\" button first to begin building the workspace transformations (following the defined order)!")  # show an error message
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
+    def realws_to_unit_disk_plot_interact(self, event = None):  # show the details of the transformation from the real workspace to the unit disk
+        if self.hntf2d_solver != None:  # if the hntf2d control law object has been created
+            if self.hntf2d_solver.wtd_transformation_is_built:  # if the transformation from the real workspace to the unit disk is built
+                text_margin = 0.01; text_fontsize = 8; legend_fontsize = 7; outer_boundaries_linewidth = 1; inner_boundaries_linewidth = 1; positions_markersize = 5; punctures_markersize = 4  # some plot parameters
+                path_linewidth = 2; path_fontsize = text_fontsize+1; path_positions_markersize = positions_markersize+1  # some plot parameters
+                fig = plt.figure()
+                # plot the real workspace
+                ax1 = fig.add_subplot(121)
+                outer_plot, = ax1.plot(self.hntf2d_solver.outer_boundary[:, 0], self.hntf2d_solver.outer_boundary[:, 1], "red", linewidth = outer_boundaries_linewidth)
+                for i in range(len(self.hntf2d_solver.inner_boundaries)):
+                    inner_plot, = ax1.plot(self.hntf2d_solver.inner_boundaries[i][:, 0], self.hntf2d_solver.inner_boundaries[i][:, 1], "blue", linewidth = inner_boundaries_linewidth)
+                    ax1.text(np.mean(self.hntf2d_solver.inner_boundaries[i][:, 0]), np.mean(self.hntf2d_solver.inner_boundaries[i][:, 1]), f"{i+1}", fontsize = text_fontsize)
+                p_init_plot, = ax1.plot(self.hntf2d_solver.p_init[0], self.hntf2d_solver.p_init[1], "magenta", marker = "s", markersize = path_positions_markersize)
+                p_d_plot, = ax1.plot(self.hntf2d_solver.p_d[0], self.hntf2d_solver.p_d[1], "green", marker = "s", markersize = path_positions_markersize)
+                if len(self.realws_paths_list) != 0:  # if at least one path has been calculated by the control law
+                    if self.all_paths_are_shown:  # if all paths are shown
+                        for k, path in enumerate(self.realws_paths_list):  # for each path calculated by the control law
+                            if self.path_chosen != k:  # if the current path is not the chosen one
+                                realws_path_plot, = ax1.plot(np.array(path)[:, 0], np.array(path)[:, 1], self.paths_colors[k], linewidth = path_linewidth)
+                            ax1.text(np.array(path)[int(len(path)/2), 0], np.array(path)[int(len(path)/2), 1], f"{k + 1}", fontweight = "bold", fontsize = path_fontsize)
+                            p_init_plot, = ax1.plot(np.array(path)[0, 0], np.array(path)[0, 1], "magenta", marker = "s", markersize = positions_markersize)
+                            p_d_plot, = ax1.plot(np.array(path)[-1, 0], np.array(path)[-1, 1], "green", marker = "s", markersize = positions_markersize)
+                    if len(self.realws_path_control_law_output) != 0:  # if the control law path is calculated
+                        realws_path_plot, = ax1.plot(np.array(self.realws_path_control_law_output)[:, 0], np.array(self.realws_path_control_law_output)[:, 1], "black", linewidth = path_linewidth)
+                    if len(self.hntf2d_solver.inner_boundaries) != 0:  # if there are inner boundaries
+                        ax1.legend([outer_plot, inner_plot, p_init_plot, p_d_plot, realws_path_plot], ["Outer boundary", "Inner boundaries", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
+                    else:  # if there are no inner boundaries
+                        ax1.legend([outer_plot, p_init_plot, p_d_plot, realws_path_plot], ["Outer boundary", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
+                else:  # if no path has been calculated yet by the control law
+                    if len(self.hntf2d_solver.inner_boundaries) != 0:  # if there are inner boundaries
+                        ax1.legend([outer_plot, inner_plot, p_init_plot, p_d_plot], ["Outer boundary", "Inner boundaries", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
+                    else:  # if there are no inner boundaries
+                        ax1.legend([outer_plot, p_init_plot, p_d_plot], ["Outer boundary", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
+                ax1.set_title(f"Original real workspace\n(press mouse right click)")
+                ax1.set_xlabel("x (m)"); ax1.set_ylabel("y (m)"); ax1.set_aspect("equal"); ax1.grid(True)
+                # plot the unit disk
+                ax2 = fig.add_subplot(122)
+                unit_disk_plot, = ax2.plot(self.hntf2d_solver.unit_circle[:, 0], self.hntf2d_solver.unit_circle[:, 1], "red", linewidth = outer_boundaries_linewidth)
+                for i in range(len(self.hntf2d_solver.q_i_disk)):
+                    punctures_plot, = ax2.plot(self.hntf2d_solver.q_i_disk[i][0], self.hntf2d_solver.q_i_disk[i][1], "blue", marker = "o", markersize = punctures_markersize)
+                    ax2.text(self.hntf2d_solver.q_i_disk[i][0] + text_margin, self.hntf2d_solver.q_i_disk[i][1] + text_margin, f"{i+1}", fontsize = text_fontsize)
+                q_init_plot, = ax2.plot(self.hntf2d_solver.q_init_disk[0], self.hntf2d_solver.q_init_disk[1], "magenta", marker = "s", markersize = path_positions_markersize)
+                q_d_plot, = ax2.plot(self.hntf2d_solver.q_d_disk[0], self.hntf2d_solver.q_d_disk[1], "green", marker = "s", markersize = path_positions_markersize)
+                if len(self.unit_disk_paths_list) != 0:  # if at least one path has been calculated by the control law
+                    if self.all_paths_are_shown:  # if all paths are shown
+                        for k, path in enumerate(self.unit_disk_paths_list):  # for each path calculated by the control law
+                            if self.path_chosen != k:  # if the current path is not the chosen one
+                                unit_disk_path_plot, = ax2.plot(np.array(path)[:, 0], np.array(path)[:, 1], self.paths_colors[k], linewidth = path_linewidth)
+                            ax2.text(np.array(path)[int(len(path)/2), 0], np.array(path)[int(len(path)/2), 1], f"{k + 1}", fontweight = "bold", fontsize = path_fontsize)
+                            q_init_plot, = ax2.plot(np.array(path)[0, 0], np.array(path)[0, 1], "magenta", marker = "s", markersize = positions_markersize)
+                            q_d_plot, = ax2.plot(np.array(path)[-1, 0], np.array(path)[-1, 1], "green", marker = "s", markersize = positions_markersize)
+                    if len(self.unit_disk_path_control_law_output) != 0:  # if the control law path is calculated
+                        unit_disk_path_plot, = ax2.plot(np.array(self.unit_disk_path_control_law_output)[:, 0], np.array(self.unit_disk_path_control_law_output)[:, 1], "black", linewidth = path_linewidth)
+                    if len(self.hntf2d_solver.q_i_disk) != 0:  # if there are inner boundaries
+                        ax2.legend([unit_disk_plot, punctures_plot, q_init_plot, q_d_plot, unit_disk_path_plot], ["Unit disk", "Punctures", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
+                    else:  # if there are no inner boundaries
+                        ax2.legend([unit_disk_plot, q_init_plot, q_d_plot, unit_disk_path_plot], ["Unit disk", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
+                else:  # if no path has been calculated yet by the control law
+                    if len(self.hntf2d_solver.q_i_disk) != 0:  # if there are inner boundaries
+                        ax2.legend([unit_disk_plot, punctures_plot, q_init_plot, q_d_plot], ["Unit disk", "Punctures", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
+                    else:  # if there are no inner boundaries
+                        ax2.legend([unit_disk_plot, q_init_plot, q_d_plot], ["Unit disk", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
+                ax2.set_title(f"Real workspace ->\n-> Unit disk transformation")
+                ax2.set_xlabel("u"); ax2.set_ylabel("v"); ax2.set_aspect("equal"); ax2.grid(True)
+                fig.canvas.mpl_connect("button_press_event", lambda event: self.transformations_plots_buttons_actions(event, "realws_to_unit_disk", fig, ax1, ax2))  # connect a function to the plot
+                fig.canvas.mpl_connect("key_press_event", lambda event: self.transformations_plots_keys_actions(event, "realws_to_unit_disk", fig, ax1, ax2))  # connect a function to the plot
+                plt.show()
+        self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def unit_disk_to_R2_plot_interact(self, event = None):  # show the details of the transformation from the unit disk to the R2 plane
         if self.hntf2d_solver != None:  # if the hntf2d control law object has been created
             if self.hntf2d_solver.dtp_transformation_is_built:  # if the transformation from the unit disk to the R2 plane is built
-                text_margin = 0.01; text_fontsize = 8; legend_fontsize = 7; unit_circle_linewidth = 1; control_law_path_linewidth = 2; positions_fontsize = 5; punctures_fontsize = 4  # some plot parameters
-                points_max_norm = max([np.linalg.norm(self.hntf2d_solver.q_i[k]) for k in range(len(self.hntf2d_solver.q_i))] + [np.linalg.norm(self.hntf2d_solver.q_init), np.linalg.norm(self.hntf2d_solver.q_d)])  # calculate the maximum norm of the points
+                text_margin = 0.01; text_fontsize = 8; legend_fontsize = 7; outer_boundaries_linewidth = 1; inner_boundaries_linewidth = 1; positions_markersize = 5; punctures_markersize = 4  # some plot parameters
+                path_linewidth = 2; path_fontsize = text_fontsize+1; path_positions_markersize = positions_markersize+1  # some plot parameters
                 fig = plt.figure()
+                # plot the unit disk
                 ax1 = fig.add_subplot(121)
-                q_init_disk_plot, = ax1.plot(self.hntf2d_solver.q_init_disk[0], self.hntf2d_solver.q_init_disk[1], "magenta", marker = "s", markersize = positions_fontsize)
-                q_d_disk_plot, = ax1.plot(self.hntf2d_solver.q_d_disk[0], self.hntf2d_solver.q_d_disk[1], "green", marker = "s", markersize = positions_fontsize)
                 unit_disk_plot, = ax1.plot(self.hntf2d_solver.unit_circle[:, 0], self.hntf2d_solver.unit_circle[:, 1], "red", linewidth = unit_circle_linewidth)
                 for i in range(len(self.hntf2d_solver.q_i_disk)):
-                    punctures_plot, = ax1.plot(self.hntf2d_solver.q_i_disk[i][0], self.hntf2d_solver.q_i_disk[i][1], "blue", marker = "o", markersize = punctures_fontsize)
+                    punctures_plot, = ax1.plot(self.hntf2d_solver.q_i_disk[i][0], self.hntf2d_solver.q_i_disk[i][1], "blue", marker = "o", markersize = punctures_markersize)
                     ax1.text(self.hntf2d_solver.q_i_disk[i][0] + text_margin, self.hntf2d_solver.q_i_disk[i][1] + text_margin, f"{i+1}", fontsize = text_fontsize)
-                if len(self.unit_disk_path_control_law_output) != 0:  # if a path (on the unit disk) has been calculated by the control law
-                    unit_disk_path_plot, = ax1.plot(np.array(self.unit_disk_path_control_law_output)[:, 0], np.array(self.unit_disk_path_control_law_output)[:, 1], "black", linewidth = control_law_path_linewidth)
+                q_init_disk_plot, = ax1.plot(self.hntf2d_solver.q_init_disk[0], self.hntf2d_solver.q_init_disk[1], "magenta", marker = "s", markersize = path_positions_markersize)
+                q_d_disk_plot, = ax1.plot(self.hntf2d_solver.q_d_disk[0], self.hntf2d_solver.q_d_disk[1], "green", marker = "s", markersize = path_positions_markersize)
+                if len(self.unit_disk_paths_list) != 0:  # if at least one path has been calculated by the control law
+                    if self.all_paths_are_shown:  # if all paths are shown
+                        for k, path in enumerate(self.unit_disk_paths_list):  # for each path calculated by the control law
+                            if self.path_chosen != k:  # if the current path is not the chosen one
+                                unit_disk_path_plot, = ax1.plot(np.array(path)[:, 0], np.array(path)[:, 1], self.paths_colors[k], linewidth = path_linewidth)
+                            ax1.text(np.array(path)[int(len(path)/2), 0], np.array(path)[int(len(path)/2), 1], f"{k + 1}", fontweight = "bold", fontsize = path_fontsize)
+                            q_init_disk_plot, = ax1.plot(np.array(path)[0, 0], np.array(path)[0, 1], "magenta", marker = "s", markersize = positions_markersize)
+                            q_d_disk_plot, = ax1.plot(np.array(path)[-1, 0], np.array(path)[-1, 1], "green", marker = "s", markersize = positions_markersize)
+                    if len(self.unit_disk_path_control_law_output) != 0:  # if the control law path is calculated
+                        unit_disk_path_plot, = ax1.plot(np.array(self.unit_disk_path_control_law_output)[:, 0], np.array(self.unit_disk_path_control_law_output)[:, 1], "black", linewidth = path_linewidth)
                     if len(self.hntf2d_solver.q_i_disk) != 0:  # if there are inner boundaries
                         ax1.legend([unit_disk_plot, punctures_plot, q_init_disk_plot, q_d_disk_plot, unit_disk_path_plot], ["Unit disk", "Punctures", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
                     else:  # if there are no inner boundaries
                         ax1.legend([unit_disk_plot, q_init_disk_plot, q_d_disk_plot, unit_disk_path_plot], ["Unit disk", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
-                else:  # if no path (on the unit disk) has been calculated yet by the control law
+                else:  # if no path has been calculated yet by the control law
                     if len(self.hntf2d_solver.q_i_disk) != 0:  # if there are inner boundaries
                         ax1.legend([unit_disk_plot, punctures_plot, q_init_disk_plot, q_d_disk_plot], ["Unit disk", "Punctures", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
                     else:  # if there are no inner boundaries
@@ -4306,34 +4325,46 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                 ax1.set_title(f"Real workspace ->\n-> Unit disk transformation\n(press mouse right click)")
                 ax1.set_xlabel("u"); ax1.set_ylabel("v"); ax1.set_aspect("equal")
                 ax1.grid(True)
+                # plot the R2 plane
                 ax2 = fig.add_subplot(122)
-                q_init_R2_plot, = ax2.plot(self.hntf2d_solver.q_init[0], self.hntf2d_solver.q_init[1], "magenta", marker = "s", markersize = positions_fontsize)
-                q_d_R2_plot, = ax2.plot(self.hntf2d_solver.q_d[0], self.hntf2d_solver.q_d[1], "green", marker = "s", markersize = positions_fontsize)
                 for i in range(len(self.hntf2d_solver.q_i)):
-                    displayed_punctures_plot, = ax2.plot(self.hntf2d_solver.q_i[i][0], self.hntf2d_solver.q_i[i][1], "blue", marker = "o", markersize = punctures_fontsize)
+                    displayed_punctures_plot, = ax2.plot(self.hntf2d_solver.q_i[i][0], self.hntf2d_solver.q_i[i][1], "blue", marker = "o", markersize = punctures_markersize)
                     ax2.text(self.hntf2d_solver.q_i[i][0] + 3.0*text_margin, self.hntf2d_solver.q_i[i][1] + 3.0*text_margin, f"{i+1}", fontsize = text_fontsize)
-                if len(self.R2_plane_path_control_law_output) != 0:  # if a path (on the R2 plane) has been calculated by the control law
-                    R2_plane_path_plot, = ax2.plot(np.array(self.R2_plane_path_control_law_output)[:, 0], np.array(self.R2_plane_path_control_law_output)[:, 1], "black", linewidth = control_law_path_linewidth)
+                q_init_R2_plot, = ax2.plot(self.hntf2d_solver.q_init[0], self.hntf2d_solver.q_init[1], "magenta", marker = "s", markersize = path_positions_markersize)
+                q_d_R2_plot, = ax2.plot(self.hntf2d_solver.q_d[0], self.hntf2d_solver.q_d[1], "green", marker = "s", markersize = path_positions_markersize)
+                if len(self.R2_plane_paths_list) != 0:  # if at least one path has been calculated by the control law
+                    if self.all_paths_are_shown:  # if all paths are shown
+                        for k, path in enumerate(self.R2_plane_paths_list):  # for each path calculated by the control law
+                            if self.path_chosen != k:  # if the current path is not the chosen one
+                                R2_plane_path_plot, = ax2.plot(np.array(path)[:, 0], np.array(path)[:, 1], self.paths_colors[k], linewidth = path_linewidth)
+                            ax2.text(np.array(path)[int(len(path)/2), 0], np.array(path)[int(len(path)/2), 1], f"{k + 1}", fontweight = "bold", fontsize = path_fontsize)
+                            q_init_R2_plot, = ax2.plot(np.array(path)[0, 0], np.array(path)[0, 1], "magenta", marker = "s", markersize = positions_markersize)
+                            q_d_R2_plot, = ax2.plot(np.array(path)[-1, 0], np.array(path)[-1, 1], "green", marker = "s", markersize = positions_markersize)
+                    if len(self.R2_plane_path_control_law_output) != 0:  # if the control law path is calculated
+                        R2_plane_path_plot, = ax2.plot(np.array(self.R2_plane_path_control_law_output)[:, 0], np.array(self.R2_plane_path_control_law_output)[:, 1], "black", linewidth = path_linewidth)
                     if len(self.hntf2d_solver.q_i) != 0:  # if there are inner boundaries
                         ax2.legend([displayed_punctures_plot, q_init_R2_plot, q_d_R2_plot, R2_plane_path_plot], ["Punctures", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
                     else:  # if there are no inner boundaries
                         ax2.legend([q_init_R2_plot, q_d_R2_plot, R2_plane_path_plot], ["Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
-                else:  # if no path (on the R2 plane) has been calculated yet by the control law
+                else:  # if no path has been calculated yet by the control law
                     if len(self.hntf2d_solver.q_i) != 0:  # if there are inner boundaries
                         ax2.legend([displayed_punctures_plot, q_init_R2_plot, q_d_R2_plot], ["Punctures", "Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
                     else:  # if there are no inner boundaries
                         ax2.legend([q_init_R2_plot, q_d_R2_plot], ["Start position", "Target position"], fontsize = legend_fontsize, loc = "upper right")
                 ax2.set_title(f"Unit disk ->\n-> R2 plane transformation")
                 ax2.set_xlabel("x"); ax2.set_ylabel("y"); ax2.set_aspect("equal")
+                points_max_norm = max([np.linalg.norm(self.hntf2d_solver.q_i[k]) for k in range(len(self.hntf2d_solver.q_i))] + [np.linalg.norm(self.hntf2d_solver.q_init), np.linalg.norm(self.hntf2d_solver.q_d)])  # calculate the maximum norm of the points
                 ax2.set_xlim(-1.5 * points_max_norm, 1.5 * points_max_norm); ax2.set_ylim(-1.5 * points_max_norm, 1.5 * points_max_norm)
                 ax2.grid(True)
-                fig.canvas.mpl_connect("button_press_event", lambda event: self.mark_transform_points_on_dtp_plot(event, ax1, ax2))  # connect a function to the plot
+                fig.canvas.mpl_connect("button_press_event", lambda event: self.transformations_plots_buttons_actions(event, "unit_disk_to_R2", fig, ax1, ax2))  # connect a function to the plot
+                fig.canvas.mpl_connect("key_press_event", lambda event: self.transformations_plots_keys_actions(event, "unit_disk_to_R2", fig, ax1, ax2))  # connect a function to the plot
                 plt.show()
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
-    def mark_transform_points_on_dtp_plot(self, event, fig_ax1, fig_ax2):  # mark the transformation points on the dtp plot
+    def transformations_plots_buttons_actions(self, event, transformation, fig, fig_ax1, fig_ax2):  # handle the mouse clicks events in the transformations plots
         if event.inaxes:  # if the event is inside the axis space
             x, y = event.xdata, event.ydata  # get the coordinates of the mouse click
-            if event.button == 3:  # if the user presses mouse right click
+            # handle mouse clicks events
+            if event.button == 2:  # if the user presses mouse middle click
                 try:
                     self.input_point_plot.remove()  # try to remove the plotted input point
                     self.input_point_plot_text.remove()  # try to remove the plotted input point text
@@ -4341,12 +4372,75 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                     self.output_point_plot_text.remove()  # try to remove the plotted output point text
                 except: pass
                 input_point = np.array([x, y])  # the input point
-                output_point = self.hntf2d_solver.unit_disk_to_R2_mapping(input_point)  # map the input point to the output_point
+                if transformation == "realws_to_unit_disk":  # if the transformation is from the real workspace to the unit disk
+                    output_point = self.hntf2d_solver.realws_to_unit_disk_mapping(input_point)  # map the input point to the proper output_point
+                elif transformation == "unit_disk_to_R2":  # if the transformation is from the unit disk to the R2 plane
+                    output_point = self.hntf2d_solver.unit_disk_to_R2_mapping(input_point)  # map the input point to the proper output_point
                 self.input_point_plot, = fig_ax1.plot(x, y, "ko", markersize = 5)  # plot the input point
                 self.input_point_plot_text = fig_ax1.text(x, y, f"({x:.3f}, {y:.3f})", fontsize = 7, color = "k")  # write the text of the input point
                 self.output_point_plot, = fig_ax2.plot(output_point[0], output_point[1], "ko", markersize = 5)  # plot the output point
                 self.output_point_plot_text = fig_ax2.text(output_point[0], output_point[1], f"({output_point[0]:.3f}, {output_point[1]:.3f})", fontsize = 7, color = "k")  # write the text of the output point
-            plt.draw()  # redraw the plot
+                plt.draw()  # redraw the plot
+    def transformations_plots_keys_actions(self, event, transformation, fig, fig_ax1, fig_ax2):  # handle the key press events in the transformations plots
+        if event.inaxes:  # if the event is inside the axis space
+            # handle key press events
+            if event.key in ["a", "A"]:  # if the user presses "a" or "A" key
+                self.all_paths_are_shown = not self.all_paths_are_shown  # change the flag to show all the paths
+            elif event.key in ["d", "D"]:  # if the user presses "d" or "D" key
+                self.remove_result_from_control_law_outputs(self.path_chosen)  # remove the chosen path from the control law outputs list
+                self.path_chosen = 0  # choose the first path in the list of the remaining real workspace paths
+                self.choose_result_from_control_law_outputs(self.path_chosen)  # select the new chosen path from the control law outputs list
+            elif event.key in ["f", "F"]:  # if the user presses "f" or "F" key
+                ms.showinfo("Control law chosen path info", f"Chosen path: {self.path_chosen + 1}\n" + self.show_chosen_path_information(self.path_chosen), parent = self.menus_area)  # show an info message
+            elif event.key in [str(i) for i in range(1, 10)]:  # if the user presses a number key from 1 to 9
+                if self.path_chosen <= len(self.realws_paths_list):  # if a valid path number is chosen
+                    self.path_chosen = int(event.key) - 1  # change the chosen path
+                    self.choose_result_from_control_law_outputs(self.path_chosen)  # select the new chosen path from the control law outputs list
+            if event.key in ["a", "A", "d", "D"] or event.key in [str(i) for i in range(1, 10)]:  # if the user presses a proper key
+                plt.close(fig)  # close the current plot
+                if transformation == "realws_to_unit_disk":  # if the transformation is from the real workspace to the unit disk
+                    self.realws_to_unit_disk_plot_interact()  # show the details of the transformation from the real workspace to the unit disk again
+                elif transformation == "unit_disk_to_R2":  # if the transformation is from the unit disk to the R2 plane
+                    self.unit_disk_to_R2_plot_interact()  # show the details of the transformation from the unit disk to the R2 plane again
+    def choose_result_from_control_law_outputs(self, chosen_path_index, event = None):  # choose an output result from the control law outputs list
+        if not self.solver_enable_error_correction: last_index = -1  # if the error correction is not enabled
+        else: last_index = len(self.realws_paths_list[chosen_path_index])  # if the error correction is enabled
+        if chosen_path_index < len(self.realws_paths_list):  # if the chosen path index is valid
+            self.realws_path_control_law_output = self.realws_paths_list[chosen_path_index][:last_index]  # change the real workspace path control law output
+            self.unit_disk_path_control_law_output = self.unit_disk_paths_list[chosen_path_index][:last_index]  # change the unit disk path control law output
+            self.R2_plane_path_control_law_output = self.R2_plane_paths_list[chosen_path_index][:last_index]  # change the R2 plane path control law output
+            self.realws_velocities_control_law_output = self.realws_velocities_sequences_list[chosen_path_index][:last_index]  # change the real workspace velocities control law output
+            self.start_pos_workspace_plane = self.realws_paths_list[chosen_path_index][0]  # change the start position of the workspace plane
+            self.target_pos_workspace_plane = self.realws_paths_list[chosen_path_index][-1]  # change the target position of the workspace plane
+    def remove_result_from_control_law_outputs(self, removed_path_index, event = None):  # remove an output result from the control law outputs list
+        if len(self.realws_paths_list) > 1 and removed_path_index < len(self.realws_paths_list):  # if there is more than one path in the list of the real workspace paths and the removed path index is valid
+            self.realws_paths_list.remove(self.realws_paths_list[removed_path_index])  # remove the chosen path from the list of the real workspace paths
+            self.unit_disk_paths_list.remove(self.unit_disk_paths_list[removed_path_index])  # remove the chosen path from the list of the unit disk paths
+            self.R2_plane_paths_list.remove(self.R2_plane_paths_list[removed_path_index])  # remove the chosen path from the list of the R2 plane paths
+            self.realws_velocities_sequences_list.remove(self.realws_velocities_sequences_list[removed_path_index])  # remove the chosen path from the list of the real workspace velocities
+    def reset_control_law_outputs(self, event = None):  # reset the control law outputs
+        self.realws_path_control_law_output = []  # reset the real workspace path control law output
+        self.unit_disk_path_control_law_output = []  # reset the unit disk path control law output
+        self.R2_plane_path_control_law_output = []  # reset the R2 plane path control law output
+        self.realws_velocities_control_law_output = []  # reset the real workspace velocities control law output
+        self.robot_joints_control_law_output = []  # reset the robot joints control law output
+    def show_chosen_path_information(self, chosen_path_index, event = None):  # show some information about the chosen path
+        if chosen_path_index < len(self.realws_paths_list):  # if the chosen path index is valid
+            chosen_path = self.realws_paths_list[chosen_path_index]  # the chosen path
+            path_start = chosen_path[0]  # the start position of the path
+            path_stop = chosen_path[-2]  # the final position of the path
+            pd = chosen_path[-1]  # the desired target-position
+            solver_time_step_dt = float(np.linalg.norm(chosen_path[1] - path_start) / np.linalg.norm(self.realws_velocities_sequences_list[chosen_path_index][0]))  # the solver time step dt
+            if not self.solver_enable_error_correction:  # if the error correction is not enabled
+                chosen_path = chosen_path[:-1]  # remove the desired target-position
+            info_text = f"• Initial pos (cm): {np.round(100.0 * path_start, 1)}, Target pos (cm): {np.round(100.0 * pd, 1)}\n\
+• Convergence error = {100.0 * (np.linalg.norm(pd - path_stop)):.2f} cm\n\
+• Number of iterations = {len(chosen_path)}\n\
+• Total path time = {np.round(len(chosen_path) * solver_time_step_dt, 3)} sec\n\
+• Total path length = {np.round(100.0 * np.sum([np.linalg.norm(chosen_path[k] - chosen_path[k - 1]) for k in range(1, len(chosen_path))]), 1)} cm"
+            return info_text  # return the chosen path information
+        else:  # if the chosen path index is not valid
+            return "The path is not valid!"  # return an error message
     def check_workspace_transformations_built(self, event = None):  # check which workspace transformations have been built
         if self.hntf2d_solver == None:  # if the hntf2d control law object has not been created yet
             self.check_transformations_built_text = "Press start!"  # change the text of the label that shows the built transformations
@@ -4418,6 +4512,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def change_solver_error_correction(self, event = None):  # change the error correction state for the control law
         self.solver_enable_error_correction = not self.solver_enable_error_correction  # change the error correction state for the control law
+        self.choose_result_from_control_law_outputs(self.path_chosen)  # select the new chosen path from the control law outputs list
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def save_control_law_parameters(self, event = None):  # save the control law parameters of the obstacles avoidance solver
         ask_file_name = sd.askstring("Save control law parameters", "Enter the file name to save the control law parameters:", initialvalue = f"parameters_{len(self.saved_control_law_parameters_list) + 1}", parent = self.menus_area)  # ask the user to enter the file name to save the control law parameters
@@ -4579,29 +4674,20 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                 self.realws_velocities_control_law_output = p_dot_list  # the velocities on the real workspace, generated by the control law
                 self.unit_disk_path_control_law_output = q_disk_list  # the path positions on the unit disk, generated by the control law
                 self.R2_plane_path_control_law_output = q_list  # the path positions on the R2 plane, generated by the control law
+                if len(self.realws_paths_list) < self.max_paths_stored:  # if the total number of paths is less than the maximum allowed number that can be stored
+                    self.realws_paths_list.append(p_list + [self.hntf2d_solver.p_d])  # append the real workspace path to the list of the real workspace paths
+                    self.unit_disk_paths_list.append(q_disk_list + [self.hntf2d_solver.q_d_disk])  # append the unit disk path to the list of the unit disk paths
+                    self.R2_plane_paths_list.append(q_list + [self.hntf2d_solver.q_d])  # append the R2 plane path to the list of the R2 plane paths
+                    self.realws_velocities_sequences_list.append(p_dot_list + [(self.hntf2d_solver.p_d - p_list[-1]) / self.solver_time_step_dt])  # append the real workspace velocities to the list of the real workspace velocities
+                self.path_chosen = len(self.realws_paths_list) - 1  # choose the last path in the list of the real workspace paths
+                self.choose_result_from_control_law_outputs(self.path_chosen)  # choose the last path in the list of the control law outputs
                 if control_law_success:  # if the control law is successful
-                    ms.showinfo("Control law success", f"The control law has been applied successfully!\n\
-• Convergence error = {100.0 * (np.linalg.norm(p_list[-1] - self.hntf2d_solver.p_d)):.2f} cm\n\
-• Number of iterations = {len(self.realws_path_control_law_output)}\n\
-• Total path time = {np.round(len(self.realws_path_control_law_output) * self.solver_time_step_dt, 3)} sec", parent = self.menus_area)  # show an info message
+                    ms.showinfo("Control law success", f"The control law has been applied successfully!\n" + self.show_chosen_path_information(self.path_chosen), parent = self.menus_area)  # show an info message
                 else:  # if the control law is not successful
-                    ms.showinfo("Control law failure", f"The control law has failed to converge within the maximum number of iterations ({self.solver_maximum_iterations})!\n\
-• Convergence error = {100.0 * (np.linalg.norm(p_list[-1] - self.hntf2d_solver.p_d)):.2f} cm", parent = self.menus_area)  # show an info message
-                if self.solver_enable_error_correction:  # if the error correction is enabled
-                    self.realws_path_control_law_output.append(self.hntf2d_solver.p_d)  # append the target position to the proper list of the control law output
-                    self.realws_velocities_control_law_output.append((self.hntf2d_solver.p_d - p_list[-1]) / self.solver_time_step_dt)  # append the target velocity to the proper list of the control law output
-                    self.unit_disk_path_control_law_output.append(self.hntf2d_solver.q_d_disk)  # append the target position on the unit disk to the proper list of the control law output
-                    self.R2_plane_path_control_law_output.append(self.hntf2d_solver.q_d)  # append the target position on the R2 plane to the proper list of the control law output
-                self.real_ws_paths_list.append(self.realws_path_control_law_output)  # append the real workspace path to the list of the real workspace paths
+                    ms.showinfo("Control law failure", f"The control law has failed to converge within the maximum number of iterations ({self.solver_maximum_iterations})!\n• Convergence error = {100.0 * (np.linalg.norm(p_list[-1] - self.hntf2d_solver.p_d)):.2f} cm", parent = self.menus_area)  # show an info message
             else:
                 ms.showerror("Error", "The workspace transformations have not been built yet and/or the start and target positions are not set correctly!", parent = self.menus_area)  # show an error message
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
-    def reset_control_law_outputs(self, event = None):  # reset the control law outputs
-        self.realws_path_control_law_output = []  # reset the real workspace path control law output
-        self.realws_velocities_control_law_output = []  # reset the real workspace velocities control law output
-        self.unit_disk_path_control_law_output = []  # reset the unit disk path control law output
-        self.R2_plane_path_control_law_output = []  # reset the R2 plane path control law output
-        self.robot_joints_control_law_output = []  # reset the robot joints control law output
     def compute_robot_trajectory_obstacles_avoidance(self, event = None):  # compute the robot trajectory for the obstacles avoidance
         if not self.robot_control_thread_flag:  # if the robot control thread is not running
             if self.robotic_manipulator_is_built:  # if a robotic manipulator is built
