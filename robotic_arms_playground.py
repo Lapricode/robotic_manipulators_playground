@@ -4738,11 +4738,11 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                     end_effector_start_configuration_2[:, 3] = end_effector_start_position_2  # the transformation matrix of the end-effector on the workspace plane
                     # move the robotic manipulator to its zero configuration (reset the robot's position to its default zero state)
                     self.robot_joints_control_law_output.append(np.array(self.control_joints_variables))  # append the current control joints variables to the list of the robot joints control law output
-                    reset_robot_pos_steps = 20  # the number of steps to reset the robot's position
+                    reset_robot_steps = 20  # the number of steps to reset the robot's position
                     qr_start = self.robot_joints_control_law_output[-1]  # the start configuration of the robot's joints
-                    qr_zero = np.zeros_like(qr_start)  # the target configuration of the robot's joints
-                    for k in range(reset_robot_pos_steps):  # loop through the number of steps to reset the robot's position
-                        qr_new = qr_start + (k + 1) * (qr_zero - qr_start) / reset_robot_pos_steps  # the new configuration of the robot's joints
+                    qr_zero = np.zeros_like(qr_start)  # the zero configuration of the robot's joints
+                    for k in range(reset_robot_steps):  # loop through the number of steps to reset the robot's position
+                        qr_new = qr_start + (k + 1) * (qr_zero - qr_start) / reset_robot_steps  # the new configuration of the robot's joints
                         self.robot_joints_control_law_output.append(qr_new)  # append the new configuration of the robot's joints to the list of the robot joints control law output
                     # check if the start configurations of the end-effector on the workspace plane can be achieved by the robot
                     invkine_success = False  # the flag to check if the inverse kinematics has succeeded or not
@@ -4754,30 +4754,50 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                         if not invkine_success: invkine_tolerance *= 10.0  # increase the tolerance of the inverse kinematics if it has not succeeded
                     if invkine_success:  # if the inverse kinematics has succeeded
                         # choose a start joints configuration for the robot, based on the distance of the joints values from their limits
-                        invkine_tries = []  # the tries of the inverse kinematics for the start configuration of the end-effector on the workspace plane
-                        for k in range(25):  # loop through the maximum number of tries for the inverse kinematics
+                        invkine_max_tries = 25  # the maximum number of tries for the inverse kinematics
+                        invkine_tries_start_configuration = []  # the tries for the inverse kinematics of the end-effector's start configuration on the workspace plane
+                        for k in range(invkine_max_tries):  # loop through the maximum number of tries for the inverse kinematics
                             qr_joints_start_configuration, _ = kin.compute_inverse_kinematics(self.built_robotic_manipulator, end_effector_start_configuration_1, invkine_tolerance)  # compute the robot's joints configuration (if possible) for the start end-effector configuration
                             qr_joints_are_valid, joints_limits_distance = kin.check_joints_limits(self.built_robotic_manipulator, qr_joints_start_configuration)  # check the joints limits
                             if qr_joints_are_valid:  # if the joints values are within their limits
-                                invkine_tries.append([qr_joints_start_configuration, joints_limits_distance])  # append the tries of the inverse kinematics for the start configuration of the end-effector on the workspace plane
-                        invkine_tries.sort(key = lambda x: x[1], reverse = True)  # sort the tries of the inverse kinematics based on the distance of the joints values from their limits, in a descending order
+                                invkine_tries_start_configuration.append([qr_joints_start_configuration, joints_limits_distance])  # append the tries for the inverse kinematics of the end-effector's start configuration on the workspace plane
+                        invkine_tries_start_configuration.sort(key = lambda x: x[1], reverse = True)  # sort the tries of the inverse kinematics based on the distance of the joints values from their limits, in a descending order
                         # loop through all the inverse kinematics tries for the start configuration of the end-effector on the workspace plane, until a feasible trajectory is found for the robot to move to the target position
                         reset_robot_configuration_joints_sequence = self.robot_joints_control_law_output.copy()  # the time sequence of the robot's joints to reset the robot's position
-                        for k in range(len(invkine_tries)):  # loop through all the inverse kinematics tries
+                        R_plane = self.obst_plane_wrt_world_transformation_matrix[0:3, 0:3]  # the rotation matrix of the workspace plane wrt the world frame
+                        for k in range(len(invkine_tries_start_configuration)):  # loop through all the inverse kinematics tries
+                            # move the robot from its zero configuration to the start configuration above the workspace plane
+                            reset_robot_steps = 20  # the number of steps to move the robot to its start configuration above the workspace plane
+                            self.robot_joints_control_law_output.append(invkine_tries_start_configuration[k][0])  # append the start configuration of the robot's joints to the list of the robot joints control law output
+                            qr_start_1 = self.robot_joints_control_law_output[-1]  # the start configuration of the robot's joints above the workspace plane
+                            qr_zero = np.zeros_like(qr_start_1)  # the zero configuration of the robot's joints
+                            for i in range(reset_robot_steps):  # loop through the number of steps to move the robot from its zero state to the start configuration above the workspace plane
+                                qr_new = qr_zero + (i + 1) * (qr_start_1 - qr_zero) / reset_robot_steps  # the new configuration of the robot's joints
+                                self.robot_joints_control_law_output.append(qr_new)  # append the new configuration of the robot's joints to the list of the robot joints control law output
+                            # move the robot from the start configuration above the workspace plane to the current start configuration on the workspace plane
+                            ve_z = 0.05  # the velocity (in m/sec) of the end-effector along its z-axis
+                            ve_start = np.concatenate((np.array([0.0, 0.0, ve_z]), np.zeros(3)), axis = 0)  # set the velocity of the end-effector wrt its own frame
+                            start_robot_steps = self.obstacles_height_for_solver / ve_z / self.move_robot_time_step_dt  # the number of steps to move the robot from its start configuration above the workspace plane to the start configuration on the workspace plane
+                            qr_old = self.robot_joints_control_law_output[-1]  # the previous configuration of the robot's joints
+                            for j in range(start_robot_steps):  # loop through the number of steps to move the robot from its start configuration above the workspace plane to the start configuration on the workspace plane
+                                qr_dot, _ = kin.compute_inverse_differential_kinematics(self.built_robotic_manipulator, self.robot_joints_control_law_output[-1], ve_start, "end-effector")  # compute the joints velocities
+                                qr_new = qr_old + qr_dot * self.move_robot_time_step_dt  # the new configuration of the robot's joints
+                                self.robot_joints_control_law_output.append(qr_new)  # append the new configuration of the robot's joints to the list of the robot joints control law output
+                            # move the robot from the start position to the target position on the workspace plane
                             trajectory_success = True  # the flag to check if the trajectory has been computed successfully
-                            qr_joints_start_configuration = invkine_tries[k][0]  # the chosen start configuration of the joints
-                            self.robot_joints_control_law_output.append(qr_joints_start_configuration)  # append the start configuration of the joints to the list of the robot joints control law output
-                            R_plane = self.obst_plane_wrt_world_transformation_matrix[0:3, 0:3]  # the rotation matrix of the workspace plane wrt the world frame
                             for k in range(len(self.realws_velocities_control_law_output)):  # loop through all the velocities of the real workspace path, generated by the control law
                                 p_dot = self.realws_velocities_control_law_output[k]  # the velocity of the real workspace path
-                                qr = self.robot_joints_control_law_output[-1]  # the last configuration of the robot's joints
+                                qr_old = self.robot_joints_control_law_output[-1]  # the previous configuration of the robot's joints
                                 pe_dot = R_plane @ np.array([p_dot[0], p_dot[1], 0.0])  # the velocity of the end-effector on the workspace plane wrt the world frame
-                                ve_dot = np.concatenate((pe_dot, np.zeros(3)), axis = 0)  # the velocity of the end-effector wrt the world frame
-                                qr_dot, J0_is_full_rank = kin.compute_inverse_differential_kinematics(self.built_robotic_manipulator, self.robot_joints_control_law_output[-1], ve_dot, "world")  # compute the joints velocities
-                                qr_new = qr + qr_dot * self.move_robot_time_step_dt  # the new configuration of the robot's joints
-                                qr_joints_are_valid, _ = kin.check_joints_limits(self.built_robotic_manipulator, qr_joints_start_configuration)  # check the joints limits
-                                if J0_is_full_rank and qr_joints_are_valid:  # if the Jacobian matrix is full rank and the joints values are within their limits
-                                    self.robot_joints_control_law_output.append(qr_new)  # append the new configuration of the robot's joints to the list of the robot joints control law output
+                                ve = np.concatenate((pe_dot, np.zeros(3)), axis = 0)  # the velocity of the end-effector wrt the world frame
+                                qr_dot, J0_is_full_rank = kin.compute_inverse_differential_kinematics(self.built_robotic_manipulator, self.robot_joints_control_law_output[-1], ve, "world")  # compute the joints velocities
+                                qr_new = qr_old + qr_dot * self.move_robot_time_step_dt  # the new configuration of the robot's joints
+                                qr_joints_are_valid, _ = kin.check_joints_limits(self.built_robotic_manipulator, qr_new)  # check the joints limits
+                                if J0_is_full_rank and qr_joints_are_valid:  # if the Jacobian matrix is full rank and the joints values are within their limits for the new configuration
+                                    new_movement_divs_number = int(self.solver_time_step_dt / self.move_robot_time_step_dt)  # the number of movement divisions to reach the new configuration
+                                    for i in range(new_movement_divs_number):  # divide the current movement to smaller steps
+                                        qr_new_div = qr_old + (i + 1) * (qr_dot * self.move_robot_time_step_dt) / new_movement_divs_number  # the new configuration of the robot's joints
+                                        self.robot_joints_control_law_output.append(qr_new_div)  # append the new configuration of the robot's joints to the list of the robot joints control law output
                                 else:  # if the Jacobian matrix is not full rank or the joints values are not within their limits
                                     trajectory_success = False  # set the flag to False
                                     break  # break the loop
