@@ -2,6 +2,10 @@
 
 This is a python tkinter GUI for designing, simulating and controlling serial robotic manipulators (with open kinematic chains), that also gives a solution to the obstacles avoidance problem.
 
+The program uses the classic Denavit - Hartenberg parameterization. The modified Denavit - Hartenberg parameterization and the (more modern) Product of Exponentials (POE) method are not addressed here.
+
+The program can be run in both Windows and Linux.
+
 Python libraries needed:
 - To be installed (using pip for example):
     - roboticstoolbox, swift
@@ -27,10 +31,6 @@ Python libraries needed:
     - shutil
     - time
     - threading
-
-The program uses the classic Denavit - Hartenberg parameterization. The modified Denavit - Hartenberg parameterization and the (more modern) Product of Exponentials (POE) method are not addressed here.
-
-The program can be run in both Windows and Linux.
 
 ## Camera calibration
 
