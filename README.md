@@ -3,25 +3,25 @@
 This is a python tkinter GUI for designing, simulating and controlling serial robotic manipulators (with open kinematic chains), that also gives a solution to the obstacles avoidance problem.
 
 Python libraries needed:
-a) To be installed (using pip for example):
-- roboticstoolbox, swift
-- matplotlib (matplotlib.pyplot, matplotlib.colors)
-- mpl_toolkits (mpl_toolkits.mplot3d)
-- cv2
-- pillow (Image, ImageColor)
-- numpy, scipy (scipy.ndimage)
-- spatialmath, spatialgeometry
-- shapely (shapely.geometry)
-- skimage, trimesh
-- pyserial
-- requests
-Native:
-- tkinter (tkinter.ttk, tkinter.simpledialog, tkinter.messagebox, tkinter.colorchooser)
-- itertools
-- string, copy
-- os, shutil
-- time
-- threading
+- To be installed (using pip for example):
+    - roboticstoolbox, swift
+    - matplotlib (matplotlib.pyplot, matplotlib.colors)
+    - mpl_toolkits (mpl_toolkits.mplot3d)
+    - cv2
+    - pillow (Image, ImageColor)
+    - numpy, scipy (scipy.ndimage)
+    - spatialmath, spatialgeometry
+    - shapely (shapely.geometry)
+    - skimage, trimesh
+    - pyserial
+    - requests
+- Native:
+    - tkinter (tkinter.ttk, tkinter.simpledialog, tkinter.messagebox, tkinter.colorchooser)
+    - itertools
+    - string, copy
+    - os, shutil
+    - time
+    - threading
 
 The program uses the classic Denavit - Hartenberg parameterization. The modified Denavit - Hartenberg parameterization and the (more modern) Product of Exponentials (POE) method are not addressed here.
 
