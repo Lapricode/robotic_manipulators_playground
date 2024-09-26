@@ -9,17 +9,22 @@ Python libraries needed:
     - mpl_toolkits (mpl_toolkits.mplot3d)
     - cv2
     - pillow (Image, ImageColor)
-    - numpy, scipy (scipy.ndimage)
-    - spatialmath, spatialgeometry
+    - numpy
+    - scipy (scipy.ndimage)
+    - spatialmath
+    - spatialgeometry
     - shapely (shapely.geometry)
-    - skimage, trimesh
+    - skimage
+    - trimesh
     - pyserial
     - requests
 - Native:
     - tkinter (tkinter.ttk, tkinter.simpledialog, tkinter.messagebox, tkinter.colorchooser)
     - itertools
-    - string, copy
-    - os, shutil
+    - string
+    - copy
+    - os
+    - shutil
     - time
     - threading
 
