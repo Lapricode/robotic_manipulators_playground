@@ -3,6 +3,7 @@
 This is a python tkinter GUI for designing, simulating and controlling serial robotic manipulators (with open kinematic chains), that also gives a solution to the obstacles avoidance problem.
 
 Python libraries needed:
+* Have to install:
 - tkinter (tkinter.ttk, tkinter.simpledialog, tkinter.messagebox, tkinter.colorchooser)
 - roboticstoolbox, swift
 - matplotlib (matplotlib.pyplot, matplotlib.colors)
