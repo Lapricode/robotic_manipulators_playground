@@ -209,7 +209,7 @@ class robotic_manipulators_playground_window():
         self.joints_motors_mult_factors = [[1.0] for _ in range(self.joints_number)]  # a list to store the multiplication factors for the joints variables to be sent as commands to the joints motors
         self.control_end_effector_variable = 0.0  # the control variable for the control end-effector
         self.control_end_effector_limits = [0, 100]  # the control limits of the control end-effector
-        self.end_effector_motor = "X"  # the motor of the end-effector
+        self.end_effector_motor = "M3 S"  # the motor of the end-effector
         self.end_effector_motor_mult_factor = 1.0  # the multiplication factor for the end-effector motor
         self.robotic_manipulator_control_mode = "manual"  # the mode of the robotic manipulator control, it can be "manual" or "automatic"
         self.robotic_manipulator_control_modes_list = ["manual", "automatic"]  # the possible modes of the robotic manipulator control
@@ -411,7 +411,8 @@ class robotic_manipulators_playground_window():
         self.realws_velocities_sequences_list = []  # the list of the total velocities sequences on the real workspace
         self.robot_joints_control_law_output = []  # the robot joints found by the control law for the obstacles avoidance solver
         self.move_robot_time_step_dt = self.solver_time_step_dt  # the time step for the robot control (in seconds)
-        self.move_real_robot_joints_vel_limits = [[1.0, 0.001], [45.0, 0.200]]  # the minimum and maximum velocities (for the revolute -degrees/sec- and prismatic -meters/sec- joints respectively) of the robotic manipulator joints for the obstacles avoidance solver
+        self.trajectory_relative_speeds_list = [0.1, 0.2, 0.5, 1.0]  # the possible relative speeds of the trajectory for the robot control
+        self.trajectory_relative_speed = 1.0  # the relative speed of the trajectory for the robot control
         self.robot_control_thread_flag = False  # the flag to run/stop the robot control thread
         self.simulated_robot_is_moving = False  # the flag to check if the simulated robot is moving
         self.swift_robot_is_moving = False  # the flag to check if the Swift simulated robot is moving
@@ -2042,12 +2043,14 @@ class robotic_manipulators_playground_window():
         navigation_field_label_ord = compute_control_law_for_robot_label_ord+4.4
         show_field_values_button_ord = navigation_field_label_ord-0.3
         show_field_gradients_button_ord = navigation_field_label_ord+0.3
-        field_plot_points_divs_label_ord = navigation_field_label_ord
-        field_plot_points_divs_slider_ord = navigation_field_label_ord
+        field_plot_points_divs_label_ord = navigation_field_label_ord+1.3
+        field_plot_points_divs_button_ord = field_plot_points_divs_label_ord
         apply_control_law_button_ord = navigation_field_label_ord
-        compute_robot_trajectory_button_ord = compute_control_law_for_robot_label_ord+5.7
-        move_simulated_robot_button_ord = compute_control_law_for_robot_label_ord+5.7
-        move_real_robot_button_ord = compute_control_law_for_robot_label_ord+5.7
+        compute_robot_trajectory_button_ord = apply_control_law_button_ord
+        trajectory_speed_label_ord = compute_robot_trajectory_button_ord-0.3
+        trajectory_speed_button_ord = trajectory_speed_label_ord+0.6
+        move_simulated_robot_button_ord = apply_control_law_button_ord+1.3
+        move_real_robot_button_ord = move_simulated_robot_button_ord
         # create the options
         menu_title_x = 1/2; gbl.menu_label(menu_frame, menu_properties['sub_menu_title'], f"Calibri {menu_properties['title_font']} bold underline", "gold", menu_properties['bg_color'], menu_title_x * menu_properties['width'], menu_title_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         menu_info_button_x = 1/20; gbl.menu_button(menu_frame, "ⓘ", f"Calibri {menu_properties['title_font'] - 5} bold", "white", menu_properties['bg_color'], menu_info_button_x * menu_properties['width'], menu_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), lambda event: ms.showinfo(menu_properties['sub_menu_title'], menu_properties['info'], master = self.root)).button
@@ -2114,12 +2117,14 @@ class robotic_manipulators_playground_window():
         navigation_field_label_x = 3/30; gbl.menu_label(menu_frame, "Navigation\npotential field:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], navigation_field_label_x * menu_properties['width'], navigation_field_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         show_field_values_button_x = 8/30; self.show_field_values_button = gbl.menu_button(menu_frame, "plot function", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_field_values_button_x * menu_properties['width'], show_field_values_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.plot_navigation_potential_field_values).button
         show_field_gradients_button_x = show_field_values_button_x; self.show_field_gradients_button = gbl.menu_button(menu_frame, "plot gradients", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], show_field_gradients_button_x * menu_properties['width'], show_field_gradients_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.plot_navigation_potential_field_gradients).button
-        field_plot_points_divs_label_x = 14/30; gbl.menu_label(menu_frame, "Points divisions\nto plot:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], field_plot_points_divs_label_x * menu_properties['width'], field_plot_points_divs_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
-        field_plot_points_divs_button_x = 18/30; self.navigation_field_plot_points_divs_button = gbl.menu_button(menu_frame, self.navigation_field_plot_points_divs, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], field_plot_points_divs_button_x * menu_properties['width'], field_plot_points_divs_slider_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_field_plot_points_divs).button
-        apply_control_law_button_x = 4/5; self.apply_control_law_button = gbl.menu_button(menu_frame, "apply\ncontrol law", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], apply_control_law_button_x * menu_properties['width'], apply_control_law_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.apply_control_law_obstacles_avoidance).button
-        compute_robot_trajectory_button_x = 1/5; self.compute_robot_trajectory_button = gbl.menu_button(menu_frame, "compute robot trajectory", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], compute_robot_trajectory_button_x * menu_properties['width'], compute_robot_trajectory_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.compute_robot_trajectory_obstacles_avoidance).button
+        field_plot_points_divs_label_x = navigation_field_label_x; gbl.menu_label(menu_frame, "Divisions to plot:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], field_plot_points_divs_label_x * menu_properties['width'], field_plot_points_divs_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        field_plot_points_divs_button_x = show_field_values_button_x; self.navigation_field_plot_points_divs_button = gbl.menu_button(menu_frame, self.navigation_field_plot_points_divs, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], field_plot_points_divs_button_x * menu_properties['width'], field_plot_points_divs_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_field_plot_points_divs).button
+        apply_control_law_button_x = 1/2; self.apply_control_law_button = gbl.menu_button(menu_frame, "apply\ncontrol law", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], apply_control_law_button_x * menu_properties['width'], apply_control_law_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.apply_control_law_obstacles_avoidance).button
+        compute_robot_trajectory_button_x = 7/10; self.compute_robot_trajectory_button = gbl.menu_button(menu_frame, "compute robot\ntrajectory", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], compute_robot_trajectory_button_x * menu_properties['width'], compute_robot_trajectory_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.compute_robot_trajectory_obstacles_avoidance).button
+        trajectory_speed_label_x = 9/10; gbl.menu_label(menu_frame, "Speed:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], trajectory_speed_label_x * menu_properties['width'], trajectory_speed_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        trajectory_speed_button_x = trajectory_speed_label_x; self.trajectory_speed_button = gbl.menu_button(menu_frame, f"{self.trajectory_relative_speed}", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], trajectory_speed_button_x * menu_properties['width'], trajectory_speed_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_trajectory_speed).button
         move_simulated_robot_button_x = 1/2; self.move_simulated_robot_button = gbl.menu_button(menu_frame, "move simulated robot", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], move_simulated_robot_button_x * menu_properties['width'], move_simulated_robot_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.move_simulated_robot_obstacles_avoidance).button
-        move_real_robot_button_x = 4/5; self.move_real_robot_button = gbl.menu_button(menu_frame, "move real robot", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], move_real_robot_button_x * menu_properties['width'], move_real_robot_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.move_real_robot_obstacles_avoidance).button
+        move_real_robot_button_x = 8/10; self.move_real_robot_button = gbl.menu_button(menu_frame, "move real robot", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], move_real_robot_button_x * menu_properties['width'], move_real_robot_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.move_real_robot_obstacles_avoidance).button
         self.update_obstacles_avoidance_solver_indicators()  # update the indicators of the obstacles avoidance solver
         self.load_workspace_obstacles_infos_for_solver()  # load the workspace obstacles infos of the chosen workspace image
         
@@ -3125,24 +3130,30 @@ class robotic_manipulators_playground_window():
             self.serial_connect_button.configure(text = self.serial_connect_disconnect_command)  # change the text of the serial connect/disconnect button to the text of the serial connect/disconnect command
         except Exception as e:
             print(f"Error in update_serial_connection_indicators: {e}")
-    def send_serial_command(self, command, event = None):  # send a command to the console to be executed
-        try:  # try to send the command to the console
+    def send_serial_command(self, command, event = None):  # send a command through the serial connection to be executed
+        try:  # try to send the command through the serial connection
             if self.serial_connection.is_open:  # if the serial connection is open
                 if self.allow_sending_all_ports or self.serial_connection_state != "Connected to Port":  # if the user is allowed to send commands to all serial ports or the user is connected to the wrong serial port
-                    self.write_serial_monitor(">>>", "blue", command)  # write the command to the serial monitor
+                    try:  # try to write the command to the serial monitor
+                        self.write_serial_monitor(">>>", "blue", command)  # write the command to the serial monitor
+                        self.command_entrybox.delete(0, "end")  # clear the console entry box
+                    except: pass
                     print(">>> " + command)  # print the command
                     serial_command = command + "\n"  # add a newline character to the command to be sent
                     self.serial_connection.write(serial_command.encode("utf-8"))  # send the serial command through the opened serial port to the arduino microcontroller in order to be executed
-                    self.command_entrybox.delete(0, "end")  # clear the console entry box
                 else:  # if the user is not allowed to send commands to all serial ports and the user is connected to the wrong serial port
                     if self.robotic_manipulator_control_mode == self.robotic_manipulator_control_modes_list[0]:  # if the robotic manipulator is controlled manually
-                        self.write_serial_monitor("Warn:", "brown", f"The command \"{command}\" could not be sent to the arduino microcontroller! You are connected to the wrong serial port or/and you are using the wrong baudrate!")  # inform the user that the command could not be sent to the arduino microcontroller
+                        try:  # try to write the command to the serial monitor
+                            self.write_serial_monitor("Warn:", "brown", f"The command \"{command}\" could not be sent to the arduino microcontroller! You are connected to the wrong serial port or/and you are using the wrong baudrate!")  # inform the user that the command could not be sent to the arduino microcontroller
+                        except: pass
                         print("You are connected to the wrong serial port or/and you are using the wrong baudrate!")  # print a message to inform the user that the command could not be sent to the arduino microcontroller
                         self.allow_sending_all_ports = ms.askyesno("Asking permission to send commands", "Do you want to allow sending commands to this serial port with this baudrate?")  # ask the user's permission to send commands to this serial port with this baudrate
             else:  # if the user tries to send a command when there is no serial connection established yet
                 if self.robotic_manipulator_control_mode == self.robotic_manipulator_control_modes_list[0]:  # if the robotic manipulator is controlled manually
-                    self.write_serial_monitor("Warn:", "brown", f"The command \"{command}\" was not sent because there is no serial connection established yet.")  # inform the user that there is no serial connection established yet
-                    ms.showerror("Error", "There is no serial connection. You should first establish a serial connection before trying to send commands.", parent = self.menus_area)  # show an error message to the user that there is no serial connection
+                    try:  # try to write the command to the serial monitor
+                        self.write_serial_monitor("Warn:", "brown", f"The command \"{command}\" was not sent because there is no serial connection established yet!")  # inform the user that there is no serial connection established yet
+                    except: pass
+                    ms.showerror("Error", "There is no serial connection! You should first establish a serial connection before trying to send commands!", parent = self.menus_area)  # show an error message to the user that there is no serial connection
         except Exception as e:  # if an error occurs
             self.close_serial_connection()  # close the serial connection and kill the serial communication thread
             self.write_serial_monitor("Error:", "red", "The serial connection has been closed due to an error!")  # inform the user that the serial connection has been closed due to an error
@@ -4060,7 +4071,7 @@ You can also press left click on the number of a boundary to remove it and right
     # for the main menu where the obstalces avoidance problem is solved
     def load_workspace_obstacles_infos_for_solver(self, event = None):  # load the information (the boundaries more specifically) of the chosen workspace obstacles
         if event != None:  # if the function is called by an event
-            self.clear_control_law_outputs_list()  # clear the control law outputs list
+            self.clear_control_law_outputs_lists()  # clear the control law outputs list
             self.reset_control_law_outputs()  # reset the control law outputs
         if event != None or (event == None and len(self.obstacles_boundaries_for_solver) == 0):  # if the function is called by the user or there are no obstacles boundaries detected yet
             chosen_solver_workspace_image_name = self.load_workspace_obstacles_objects_combobox.get()  # the name of the chosen workspace image
@@ -4241,7 +4252,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                     ax1.text(np.mean(self.hntf2d_solver.inner_boundaries[i][:, 0]), np.mean(self.hntf2d_solver.inner_boundaries[i][:, 1]), f"{i+1}", fontsize = text_fontsize)
                 p_init_plot, = ax1.plot(self.hntf2d_solver.p_init[0], self.hntf2d_solver.p_init[1], "magenta", marker = "s", markersize = path_positions_markersize)
                 p_d_plot, = ax1.plot(self.hntf2d_solver.p_d[0], self.hntf2d_solver.p_d[1], "green", marker = "s", markersize = path_positions_markersize)
-                if len(self.realws_paths_list) != 0:  # if at least one path has been calculated by the control law
+                if len(self.realws_path_control_law_output) != 0:  # if at least one path has been calculated by the control law
                     if self.all_paths_are_shown:  # if all paths are shown
                         for k, path in enumerate(self.realws_paths_list):  # for each path calculated by the control law
                             if self.path_chosen != k:  # if the current path is not the chosen one
@@ -4249,8 +4260,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                             ax1.text(np.array(path)[int(len(path)/2), 0], np.array(path)[int(len(path)/2), 1], f"{k + 1}", fontweight = "bold", fontsize = path_fontsize)
                             p_init_plot, = ax1.plot(np.array(path)[0, 0], np.array(path)[0, 1], "magenta", marker = "s", markersize = positions_markersize)
                             p_d_plot, = ax1.plot(np.array(path)[-1, 0], np.array(path)[-1, 1], "green", marker = "s", markersize = positions_markersize)
-                    if len(self.realws_path_control_law_output) != 0:  # if the control law path is calculated
-                        realws_path_plot, = ax1.plot(np.array(self.realws_path_control_law_output)[:, 0], np.array(self.realws_path_control_law_output)[:, 1], "black", linewidth = path_linewidth)
+                    realws_path_plot, = ax1.plot(np.array(self.realws_path_control_law_output)[:, 0], np.array(self.realws_path_control_law_output)[:, 1], "black", linewidth = path_linewidth)
                     if len(self.hntf2d_solver.inner_boundaries) != 0:  # if there are inner boundaries
                         ax1.legend([outer_plot, inner_plot, p_init_plot, p_d_plot, realws_path_plot], ["Outer boundary", "Inner boundaries", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
                     else:  # if there are no inner boundaries
@@ -4270,7 +4280,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                     ax2.text(self.hntf2d_solver.q_i_disk[i][0] + text_margin, self.hntf2d_solver.q_i_disk[i][1] + text_margin, f"{i+1}", fontsize = text_fontsize)
                 q_init_plot, = ax2.plot(self.hntf2d_solver.q_init_disk[0], self.hntf2d_solver.q_init_disk[1], "magenta", marker = "s", markersize = path_positions_markersize)
                 q_d_plot, = ax2.plot(self.hntf2d_solver.q_d_disk[0], self.hntf2d_solver.q_d_disk[1], "green", marker = "s", markersize = path_positions_markersize)
-                if len(self.unit_disk_paths_list) != 0:  # if at least one path has been calculated by the control law
+                if len(self.unit_disk_path_control_law_output) != 0:  # if at least one path has been calculated by the control law
                     if self.all_paths_are_shown:  # if all paths are shown
                         for k, path in enumerate(self.unit_disk_paths_list):  # for each path calculated by the control law
                             if self.path_chosen != k:  # if the current path is not the chosen one
@@ -4278,8 +4288,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                             ax2.text(np.array(path)[int(len(path)/2), 0], np.array(path)[int(len(path)/2), 1], f"{k + 1}", fontweight = "bold", fontsize = path_fontsize)
                             q_init_plot, = ax2.plot(np.array(path)[0, 0], np.array(path)[0, 1], "magenta", marker = "s", markersize = positions_markersize)
                             q_d_plot, = ax2.plot(np.array(path)[-1, 0], np.array(path)[-1, 1], "green", marker = "s", markersize = positions_markersize)
-                    if len(self.unit_disk_path_control_law_output) != 0:  # if the control law path is calculated
-                        unit_disk_path_plot, = ax2.plot(np.array(self.unit_disk_path_control_law_output)[:, 0], np.array(self.unit_disk_path_control_law_output)[:, 1], "black", linewidth = path_linewidth)
+                    unit_disk_path_plot, = ax2.plot(np.array(self.unit_disk_path_control_law_output)[:, 0], np.array(self.unit_disk_path_control_law_output)[:, 1], "black", linewidth = path_linewidth)
                     if len(self.hntf2d_solver.q_i_disk) != 0:  # if there are inner boundaries
                         ax2.legend([unit_disk_plot, punctures_plot, q_init_plot, q_d_plot, unit_disk_path_plot], ["Unit disk", "Punctures", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
                     else:  # if there are no inner boundaries
@@ -4309,7 +4318,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                     ax1.text(self.hntf2d_solver.q_i_disk[i][0] + text_margin, self.hntf2d_solver.q_i_disk[i][1] + text_margin, f"{i+1}", fontsize = text_fontsize)
                 q_init_disk_plot, = ax1.plot(self.hntf2d_solver.q_init_disk[0], self.hntf2d_solver.q_init_disk[1], "magenta", marker = "s", markersize = path_positions_markersize)
                 q_d_disk_plot, = ax1.plot(self.hntf2d_solver.q_d_disk[0], self.hntf2d_solver.q_d_disk[1], "green", marker = "s", markersize = path_positions_markersize)
-                if len(self.unit_disk_paths_list) != 0:  # if at least one path has been calculated by the control law
+                if len(self.unit_disk_path_control_law_output) != 0:  # if at least one path has been calculated by the control law
                     if self.all_paths_are_shown:  # if all paths are shown
                         for k, path in enumerate(self.unit_disk_paths_list):  # for each path calculated by the control law
                             if self.path_chosen != k:  # if the current path is not the chosen one
@@ -4317,8 +4326,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                             ax1.text(np.array(path)[int(len(path)/2), 0], np.array(path)[int(len(path)/2), 1], f"{k + 1}", fontweight = "bold", fontsize = path_fontsize)
                             q_init_disk_plot, = ax1.plot(np.array(path)[0, 0], np.array(path)[0, 1], "magenta", marker = "s", markersize = positions_markersize)
                             q_d_disk_plot, = ax1.plot(np.array(path)[-1, 0], np.array(path)[-1, 1], "green", marker = "s", markersize = positions_markersize)
-                    if len(self.unit_disk_path_control_law_output) != 0:  # if the control law path is calculated
-                        unit_disk_path_plot, = ax1.plot(np.array(self.unit_disk_path_control_law_output)[:, 0], np.array(self.unit_disk_path_control_law_output)[:, 1], "black", linewidth = path_linewidth)
+                    unit_disk_path_plot, = ax1.plot(np.array(self.unit_disk_path_control_law_output)[:, 0], np.array(self.unit_disk_path_control_law_output)[:, 1], "black", linewidth = path_linewidth)
                     if len(self.hntf2d_solver.q_i_disk) != 0:  # if there are inner boundaries
                         ax1.legend([unit_disk_plot, punctures_plot, q_init_disk_plot, q_d_disk_plot, unit_disk_path_plot], ["Unit disk", "Punctures", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
                     else:  # if there are no inner boundaries
@@ -4338,7 +4346,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                     ax2.text(self.hntf2d_solver.q_i[i][0] + 3.0*text_margin, self.hntf2d_solver.q_i[i][1] + 3.0*text_margin, f"{i+1}", fontsize = text_fontsize)
                 q_init_R2_plot, = ax2.plot(self.hntf2d_solver.q_init[0], self.hntf2d_solver.q_init[1], "magenta", marker = "s", markersize = path_positions_markersize)
                 q_d_R2_plot, = ax2.plot(self.hntf2d_solver.q_d[0], self.hntf2d_solver.q_d[1], "green", marker = "s", markersize = path_positions_markersize)
-                if len(self.R2_plane_paths_list) != 0:  # if at least one path has been calculated by the control law
+                if len(self.R2_plane_path_control_law_output) != 0:  # if at least one path has been calculated by the control law
                     if self.all_paths_are_shown:  # if all paths are shown
                         for k, path in enumerate(self.R2_plane_paths_list):  # for each path calculated by the control law
                             if self.path_chosen != k:  # if the current path is not the chosen one
@@ -4346,8 +4354,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                             ax2.text(np.array(path)[int(len(path)/2), 0], np.array(path)[int(len(path)/2), 1], f"{k + 1}", fontweight = "bold", fontsize = path_fontsize)
                             q_init_R2_plot, = ax2.plot(np.array(path)[0, 0], np.array(path)[0, 1], "magenta", marker = "s", markersize = positions_markersize)
                             q_d_R2_plot, = ax2.plot(np.array(path)[-1, 0], np.array(path)[-1, 1], "green", marker = "s", markersize = positions_markersize)
-                    if len(self.R2_plane_path_control_law_output) != 0:  # if the control law path is calculated
-                        R2_plane_path_plot, = ax2.plot(np.array(self.R2_plane_path_control_law_output)[:, 0], np.array(self.R2_plane_path_control_law_output)[:, 1], "black", linewidth = path_linewidth)
+                    R2_plane_path_plot, = ax2.plot(np.array(self.R2_plane_path_control_law_output)[:, 0], np.array(self.R2_plane_path_control_law_output)[:, 1], "black", linewidth = path_linewidth)
                     if len(self.hntf2d_solver.q_i) != 0:  # if there are inner boundaries
                         ax2.legend([displayed_punctures_plot, q_init_R2_plot, q_d_R2_plot, R2_plane_path_plot], ["Punctures", "Start position", "Target position", "Control law path"], fontsize = legend_fontsize, loc = "upper right")
                     else:  # if there are no inner boundaries
@@ -4409,16 +4416,17 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                 elif transformation == "unit_disk_to_R2":  # if the transformation is from the unit disk to the R2 plane
                     self.unit_disk_to_R2_plot_interact()  # show the details of the transformation from the unit disk to the R2 plane again
     def choose_result_from_control_law_outputs(self, chosen_path_index, event = None):  # choose an output result from the control law outputs list
-        if not self.solver_enable_error_correction: last_index = -1  # if the error correction is not enabled
-        else: last_index = len(self.realws_paths_list[chosen_path_index])  # if the error correction is enabled
-        if chosen_path_index < len(self.realws_paths_list):  # if the chosen path index is valid
-            self.realws_path_control_law_output = self.realws_paths_list[chosen_path_index][:last_index]  # change the real workspace path control law output
-            self.unit_disk_path_control_law_output = self.unit_disk_paths_list[chosen_path_index][:last_index]  # change the unit disk path control law output
-            self.R2_plane_path_control_law_output = self.R2_plane_paths_list[chosen_path_index][:last_index]  # change the R2 plane path control law output
-            self.realws_velocities_control_law_output = self.realws_velocities_sequences_list[chosen_path_index][:last_index]  # change the real workspace velocities control law output
-            self.start_pos_workspace_plane = self.realws_paths_list[chosen_path_index][0]  # change the start position of the workspace plane
-            self.target_pos_workspace_plane = self.realws_paths_list[chosen_path_index][-1]  # change the target position of the workspace plane
-            self.refresh_obstacles_avoidance_solver_parameters()  # refresh the obstacles avoidance solver parameters
+        if len(self.realws_paths_list) != 0:  # if at least one path has been calculated by the control law
+            if not self.solver_enable_error_correction: last_index = -1  # if the error correction is not enabled
+            else: last_index = len(self.realws_paths_list[chosen_path_index])  # if the error correction is enabled
+            if chosen_path_index < len(self.realws_paths_list):  # if the chosen path index is valid
+                self.realws_path_control_law_output = self.realws_paths_list[chosen_path_index][:last_index]  # change the real workspace path control law output
+                self.unit_disk_path_control_law_output = self.unit_disk_paths_list[chosen_path_index][:last_index]  # change the unit disk path control law output
+                self.R2_plane_path_control_law_output = self.R2_plane_paths_list[chosen_path_index][:last_index]  # change the R2 plane path control law output
+                self.realws_velocities_control_law_output = self.realws_velocities_sequences_list[chosen_path_index][:last_index]  # change the real workspace velocities control law output
+                self.start_pos_workspace_plane = self.realws_paths_list[chosen_path_index][0]  # change the start position of the workspace plane
+                self.target_pos_workspace_plane = self.realws_paths_list[chosen_path_index][-1]  # change the target position of the workspace plane
+                self.refresh_obstacles_avoidance_solver_parameters()  # refresh the obstacles avoidance solver parameters
     def remove_result_from_control_law_outputs(self, removed_path_index, event = None):  # remove an output result from the control law outputs list
         if len(self.realws_paths_list) > 1 and removed_path_index < len(self.realws_paths_list):  # if there is more than one path in the list of the real workspace paths and the removed path index is valid
             self.realws_paths_list.remove(self.realws_paths_list[removed_path_index])  # remove the chosen path from the list of the real workspace paths
@@ -4432,7 +4440,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
         self.R2_plane_path_control_law_output = []  # reset the R2 plane path control law output
         self.realws_velocities_control_law_output = []  # reset the real workspace velocities control law output
         self.robot_joints_control_law_output = []  # reset the robot joints control law output
-    def clear_control_law_outputs_list(self, event = None):  # clear the control law outputs list
+    def clear_control_law_outputs_lists(self, event = None):  # clear the control law outputs list
         self.realws_paths_list = []  # clear the list of the real workspace paths
         self.unit_disk_paths_list = []  # clear the list of the unit disk paths
         self.R2_plane_paths_list = []  # clear the list of the R2 plane paths
@@ -4723,9 +4731,9 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
     def compute_robot_trajectory_obstacles_avoidance(self, event = None):  # compute the robot trajectory for the obstacles avoidance
         if not self.robot_control_thread_flag:  # if the robot control thread is not running
             if self.robotic_manipulator_is_built:  # if a robotic manipulator is built
-                self.plot_robot_joints_trajectories()  # plot the robot's joints trajectories for the obstacles avoidance
-                if len(self.realws_velocities_control_law_output) != 0 and len(self.robot_joints_control_law_output) == 0:  # if the control law has been applied but the robot joints for the robot's motion have not been computed yet
-                    self.control_or_kinematics_variables_visualization = self.control_or_kinematics_variables_visualization_list[0]  # choose the control variables for visualization
+                if len(self.realws_velocities_control_law_output) != 0:  # if the control law has been applied
+                    self.robot_joints_control_law_output = []  # initialize the robot joints control law output
+                    self.control_or_kinematics_variables_visualization = self.control_or_kinematics_variables_visualization_list[0]  # choose the control joints variables for visualization
                     # compute the start configuration of the end-effector on the workspace plane
                     obstacles_2d_plane_normal_vector, obstacles_2d_plane_orientation, obstacles_2d_plane_translation = gf.get_components_from_xy_plane_transformation(self.obst_plane_wrt_world_transformation_matrix)  # get the components of the obstacles 2D plane transformation
                     obst_top_plane_position = obstacles_2d_plane_translation + obstacles_2d_plane_normal_vector * self.obstacles_height_for_solver  # the position of the top plane of the obstacles
@@ -4738,7 +4746,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                     end_effector_start_configuration_2[:, 3] = end_effector_start_position_2  # the transformation matrix of the end-effector on the workspace plane
                     # move the robotic manipulator to its zero configuration (reset the robot's position to its default zero state)
                     self.robot_joints_control_law_output.append(np.array(self.control_joints_variables))  # append the current control joints variables to the list of the robot joints control law output
-                    reset_robot_steps = 20  # the number of steps to reset the robot's position
+                    reset_robot_steps = 500  # the number of steps to reset the robot's position
                     qr_start = self.robot_joints_control_law_output[-1]  # the start configuration of the robot's joints
                     qr_zero = np.zeros_like(qr_start)  # the zero configuration of the robot's joints
                     for k in range(reset_robot_steps):  # loop through the number of steps to reset the robot's position
@@ -4751,10 +4759,11 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                         _, invkine_success_1 = kin.compute_inverse_kinematics(self.built_robotic_manipulator, end_effector_start_configuration_1, invkine_tolerance)  # compute the robot's joints configuration (if possible)
                         _, invkine_success_2 = kin.compute_inverse_kinematics(self.built_robotic_manipulator, end_effector_start_configuration_2, invkine_tolerance)  # compute the robot's joints configuration (if possible)
                         invkine_success = invkine_success_1 and invkine_success_2  # check if the inverse kinematics has succeeded
-                        if not invkine_success: invkine_tolerance *= 10.0  # increase the tolerance of the inverse kinematics if it has not succeeded
+                        if not invkine_success:  # if the inverse kinematics has not succeeded
+                            invkine_tolerance *= 10.0  # increase the tolerance of the inverse kinematics
                     if invkine_success:  # if the inverse kinematics has succeeded
                         # choose a start joints configuration for the robot, based on the distance of the joints values from their limits
-                        invkine_max_tries = 25  # the maximum number of tries for the inverse kinematics
+                        invkine_max_tries = 100  # the maximum number of tries for the inverse kinematics
                         invkine_tries_start_configuration = []  # the tries for the inverse kinematics of the end-effector's start configuration on the workspace plane
                         for k in range(invkine_max_tries):  # loop through the maximum number of tries for the inverse kinematics
                             qr_joints_start_configuration, _ = kin.compute_inverse_kinematics(self.built_robotic_manipulator, end_effector_start_configuration_1, invkine_tolerance)  # compute the robot's joints configuration (if possible) for the start end-effector configuration
@@ -4767,22 +4776,22 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                         R_plane = self.obst_plane_wrt_world_transformation_matrix[0:3, 0:3]  # the rotation matrix of the workspace plane wrt the world frame
                         for k in range(len(invkine_tries_start_configuration)):  # loop through all the inverse kinematics tries
                             # move the robot from its zero configuration to the start configuration above the workspace plane
-                            reset_robot_steps = 20  # the number of steps to move the robot to its start configuration above the workspace plane
-                            self.robot_joints_control_law_output.append(invkine_tries_start_configuration[k][0])  # append the start configuration of the robot's joints to the list of the robot joints control law output
-                            qr_start_1 = self.robot_joints_control_law_output[-1]  # the start configuration of the robot's joints above the workspace plane
+                            start_1_robot_steps = 500  # the number of steps to move the robot to its start configuration above the workspace plane
+                            qr_start_1 = invkine_tries_start_configuration[k][0]  # the start configuration of the robot's joints above the workspace plane
                             qr_zero = np.zeros_like(qr_start_1)  # the zero configuration of the robot's joints
-                            for i in range(reset_robot_steps):  # loop through the number of steps to move the robot from its zero state to the start configuration above the workspace plane
-                                qr_new = qr_zero + (i + 1) * (qr_start_1 - qr_zero) / reset_robot_steps  # the new configuration of the robot's joints
+                            for i in range(start_1_robot_steps):  # loop through the number of steps to move the robot from its zero state to the start configuration above the workspace plane
+                                qr_new = qr_zero + (i + 1) * (qr_start_1 - qr_zero) / start_1_robot_steps  # the new configuration of the robot's joints
                                 self.robot_joints_control_law_output.append(qr_new)  # append the new configuration of the robot's joints to the list of the robot joints control law output
                             # move the robot from the start configuration above the workspace plane to the current start configuration on the workspace plane
                             ve_z = 0.05  # the velocity (in m/sec) of the end-effector along its z-axis
                             ve_start = np.concatenate((np.array([0.0, 0.0, ve_z]), np.zeros(3)), axis = 0)  # set the velocity of the end-effector wrt its own frame
-                            start_robot_steps = self.obstacles_height_for_solver / ve_z / self.move_robot_time_step_dt  # the number of steps to move the robot from its start configuration above the workspace plane to the start configuration on the workspace plane
+                            start_2_robot_steps = int(self.obstacles_height_for_solver / ve_z / self.move_robot_time_step_dt)  # the number of steps to move the robot from its start configuration above the workspace plane to the start configuration on the workspace plane
                             qr_old = self.robot_joints_control_law_output[-1]  # the previous configuration of the robot's joints
-                            for j in range(start_robot_steps):  # loop through the number of steps to move the robot from its start configuration above the workspace plane to the start configuration on the workspace plane
+                            for j in range(start_2_robot_steps):  # loop through the number of steps to move the robot from its start configuration above the workspace plane to the start configuration on the workspace plane
                                 qr_dot, _ = kin.compute_inverse_differential_kinematics(self.built_robotic_manipulator, self.robot_joints_control_law_output[-1], ve_start, "end-effector")  # compute the joints velocities
                                 qr_new = qr_old + qr_dot * self.move_robot_time_step_dt  # the new configuration of the robot's joints
                                 self.robot_joints_control_law_output.append(qr_new)  # append the new configuration of the robot's joints to the list of the robot joints control law output
+                                qr_old = qr_new  # the configuration of the robot's joints for the next step
                             # move the robot from the start position to the target position on the workspace plane
                             trajectory_success = True  # the flag to check if the trajectory has been computed successfully
                             for k in range(len(self.realws_velocities_control_law_output)):  # loop through all the velocities of the real workspace path, generated by the control law
@@ -4791,12 +4800,12 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                                 pe_dot = R_plane @ np.array([p_dot[0], p_dot[1], 0.0])  # the velocity of the end-effector on the workspace plane wrt the world frame
                                 ve = np.concatenate((pe_dot, np.zeros(3)), axis = 0)  # the velocity of the end-effector wrt the world frame
                                 qr_dot, J0_is_full_rank = kin.compute_inverse_differential_kinematics(self.built_robotic_manipulator, self.robot_joints_control_law_output[-1], ve, "world")  # compute the joints velocities
-                                qr_new = qr_old + qr_dot * self.move_robot_time_step_dt  # the new configuration of the robot's joints
+                                qr_new = qr_old + qr_dot * self.solver_time_step_dt  # the new configuration of the robot's joints
                                 qr_joints_are_valid, _ = kin.check_joints_limits(self.built_robotic_manipulator, qr_new)  # check the joints limits
                                 if J0_is_full_rank and qr_joints_are_valid:  # if the Jacobian matrix is full rank and the joints values are within their limits for the new configuration
                                     new_movement_divs_number = int(self.solver_time_step_dt / self.move_robot_time_step_dt)  # the number of movement divisions to reach the new configuration
                                     for i in range(new_movement_divs_number):  # divide the current movement to smaller steps
-                                        qr_new_div = qr_old + (i + 1) * (qr_dot * self.move_robot_time_step_dt) / new_movement_divs_number  # the new configuration of the robot's joints
+                                        qr_new_div = qr_old + (i + 1) * (qr_dot * self.solver_time_step_dt) / new_movement_divs_number  # the new configuration of the robot's joints
                                         self.robot_joints_control_law_output.append(qr_new_div)  # append the new configuration of the robot's joints to the list of the robot joints control law output
                                 else:  # if the Jacobian matrix is not full rank or the joints values are not within their limits
                                     trajectory_success = False  # set the flag to False
@@ -4807,6 +4816,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                                 self.robot_joints_control_law_output = reset_robot_configuration_joints_sequence.copy()  # the time sequence of the robot's joints to reset the robot's configuration
                         if trajectory_success:  # if a feasible trajectory is found for the robot to move to the target position
                             ms.showinfo("Robot trajectory success", "The robot's trajectory has been computed successfully!", parent = self.menus_area)  # show an info message
+                            self.plot_robot_joints_trajectories()  # plot the robot's joints trajectories for the obstacles avoidance
                         else:  # if no feasible trajectory is found for the robot to move to the target position
                             ms.showinfo("Robot trajectory failure", "Failed to find a feasible trajectory!", parent = self.menu_area)  # show an info message
                     else:  # if the inverse kinematics has not succeded
@@ -4820,45 +4830,51 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             prismatic_joints_indexes = [k for k in range(len(self.joints_types)) if self.joints_types[k] == self.joints_types_list[1]]  # the indexes of the prismatic joints
             trajectory_linewidth = 2; text_fontsize = 8; legend_fontsize = 7
             fig = plt.figure()
-            if len(revolute_joints_indexes) != 0: ax1 = fig.add_subplot(111)  # if there are revolute joints create a subplot
-            if len(prismatic_joints_indexes) != 0: ax2 = fig.add_subplot(111)  # if there are prismatic joints create a subplot
             if len(revolute_joints_indexes) != 0 and len(prismatic_joints_indexes) != 0:  # if there are both revolute and prismatic joints
-                ax1 = fig.add_subplot(211); ax2 = fig.add_subplot(212)  # create two subplots
+                ax1 = fig.add_subplot(121); ax2 = fig.add_subplot(122)  # create two subplots
+            else:  # if there is only one type of joints
+                if len(revolute_joints_indexes) != 0: ax1 = fig.add_subplot(111)  # if there are only revolute joints create a subplot
+                if len(prismatic_joints_indexes) != 0: ax2 = fig.add_subplot(111)  # if there are only prismatic joints create a subplot
             if len(revolute_joints_indexes) != 0:  # if there are prismatic joints
                 for k in revolute_joints_indexes:  # loop through all the revolute joints
                     joint_trajectory = [np.rad2deg(self.robot_joints_control_law_output[j][k]) for j in range(len(self.robot_joints_control_law_output))]  # the trajectory of the k-th joint
-                    ax1.plot(np.arange(0, len(joint_trajectory) * self.move_robot_time_step_dt, self.solver_time_step_dt), joint_trajectory, linewidth = trajectory_linewidth, label = f"q{k+1}")
-                    ax1.text(len(joint_trajectory) * self.move_robot_time_step_dt, joint_trajectory[-1], f"q_{k+1}", fontsize = text_fontsize)
+                    ax1.plot(np.arange(0, len(joint_trajectory) * self.solver_time_step_dt, self.solver_time_step_dt), joint_trajectory, linewidth = trajectory_linewidth, label = f"q{k+1}")
+                    ax1.text(len(joint_trajectory) * self.solver_time_step_dt, joint_trajectory[-1], f"q_{k+1}", fontsize = text_fontsize)
                 ax1.legend(fontsize = legend_fontsize, loc = "upper left")
                 ax1.set_title("Robot's revolute joints trajectories")
-                ax1.set_xlabel("Time (sec)"); ax1.set_ylabel("Joint angles (degrees)")
+                ax1.set_xlabel("Time (sec)"); ax1.set_ylabel("Joints angles (degrees)")
             if len(prismatic_joints_indexes) != 0:  # if there are prismatic joints
                 for k in prismatic_joints_indexes:  # loop through all the prismatic joints
                     joint_trajectory = [self.robot_joints_control_law_output[j][k] for j in range(len(self.robot_joints_control_law_output))]  # the trajectory of the k-th joint
-                    ax2.plot(np.arange(0, len(joint_trajectory) * self.move_robot_time_step_dt, self.solver_time_step_dt), joint_trajectory, linewidth = trajectory_linewidth, label = f"q{k+1}")
-                    ax2.text(len(joint_trajectory) * self.move_robot_time_step_dt, joint_trajectory[-1], f"q_{k+1}", fontsize = text_fontsize)
+                    ax2.plot(np.arange(0, len(joint_trajectory) * self.solver_time_step_dt, self.solver_time_step_dt), joint_trajectory, linewidth = trajectory_linewidth, label = f"q{k+1}")
+                    ax2.text(len(joint_trajectory) * self.solver_time_step_dt, joint_trajectory[-1], f"q_{k+1}", fontsize = text_fontsize)
                 ax2.legend(fontsize = legend_fontsize, loc = "upper left")
                 ax2.set_title("Robot's prismatic joints trajectories")
-                ax2.set_xlabel("Time (sec)"); ax2.set_ylabel("Joint displacements (m)")
-            plt.show()   
+                ax2.set_xlabel("Time (sec)"); ax2.set_ylabel("Joints displacements (m)")
+            plt.show()
+    def change_trajectory_speed(self, event = None):  # change the trajectory speed in relation to the obstacles avoidance solver time step
+        self.trajectory_relative_speed = self.alternate_matrix_elements(self.trajectory_relative_speeds_list, self.trajectory_relative_speed)  # change the trajectory relative speed
+        self.move_robot_time_step_dt = self.trajectory_relative_speed * self.solver_time_step_dt  # the time step of the robot's movement
+        self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def move_simulated_robot_obstacles_avoidance(self, event = None):  # control the simulated robotic manipulator for the obstacles avoidance
         if not self.robot_control_thread_flag:  # if the robot control thread is not running
             if self.robotic_manipulator_is_built:  # if a robotic manipulator is built
                 self.simulated_robot_is_moving = True  # set the flag that indicates that the simulated robot is moving
-                self.control_or_kinematics_variables_visualization = self.control_or_kinematics_variables_visualization_list[1]  # choose the forward kinematics variables for visualization
+                self.control_or_kinematics_variables_visualization = self.control_or_kinematics_variables_visualization_list[0]  # choose the forward kinematics variables for visualization
                 self.start_robot_control_thread()  # start the robot control thread
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def move_swift_robot_obstacles_avoidance(self, event = None):  # control the Swift robotic manipulator for the obstacles avoidance
         if not self.robot_control_thread_flag:  # if the robot control thread is not running
             if self.robotic_manipulator_is_built:  # if a robotic manipulator is built
                 self.swift_robot_is_moving = True  # set the flag that indicates that the Swift robot is moving
-                self.control_or_kinematics_variables_visualization = self.control_or_kinematics_variables_visualization_list[1]  # choose the forward kinematics variables for visualization
+                self.control_or_kinematics_variables_visualization = self.control_or_kinematics_variables_visualization_list[0]  # choose the forward kinematics variables for visualization
                 self.start_robot_control_thread()  # start the robot control thread
     def move_real_robot_obstacles_avoidance(self, event = None):  # control the real robotic manipulator for the obstacles avoidance
         if not self.robot_control_thread_flag:  # if the robot control thread is not running
             if self.robotic_manipulator_is_built: # if a robotic manipulator is built
                 self.real_robot_is_moving = True  # set the flag that indicates that the real robot is moving
                 self.control_or_kinematics_variables_visualization = self.control_or_kinematics_variables_visualization_list[0]  # choose the control variables for visualization
+                # self.change_main_menu
                 self.start_robot_control_thread()  # start the robot control thread
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def update_obstacles_avoidance_solver_indicators(self, event = None):  # update the indicators of the obstacles avoidance solver
@@ -4895,7 +4911,6 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             self.choose_vp_max_parameter_button.configure(text = f"{100.0 * self.vp_max:.1f}")  # change the text of the button that allows the user to choose the vp_max parameter
             self.load_control_parameters_combobox["values"] = self.saved_control_law_parameters_list  # update the values of the combobox that allows the user to load the control law parameters
             self.load_control_parameters_combobox.set(self.chosen_control_law_parameters_name)  # set the value of the combobox that allows the user to load the control law parameters
-            self.navigation_field_plot_points_divs_button.configure(text = f"{self.navigation_field_plot_points_divs}")  # change the text of the button that allows the user to change the number of points divisions in the navigation field plot
             self.choose_solver_dt_button.configure(text = f"{self.solver_time_step_dt:.3f}")  # change the text of the button that allows the user to choose the time step for the control law
             self.choose_solver_max_iter_button.configure(text = f"{self.solver_maximum_iterations}")  # change the text of the button that allows the user to choose the maximum number of iterations for the control law
             self.choose_solver_error_tol_button.configure(text = f"{100.0 * self.solver_error_tolerance:.1f}")  # change the text of the button that allows the user to choose the error tolerance for the control law
@@ -4904,6 +4919,8 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             self.show_max_path_time_indicator.configure(text = f"{max_path_time:.3f}")  # change the text of the label that shows the maximum path time
             max_path_length = self.calculate_maximum_path_length()  # calculate the maximum path length
             self.show_max_path_length_indicator.configure(text = f"{100.0 * max_path_length:.1f}")  # change the text of the label that shows the maximum path length
+            self.navigation_field_plot_points_divs_button.configure(text = f"{self.navigation_field_plot_points_divs}")  # change the text of the button that allows the user to change the number of points divisions in the navigation field plot
+            self.trajectory_speed_button.configure(text = f"x {self.trajectory_relative_speed}")  # change the text of the button that allows the user to change the trajectory relative speed
             self.refresh_obstacles_avoidance_solver_parameters()  # refresh the obstacles avoidance solver parameters
         except: pass
         # except Exception as e:
@@ -4914,29 +4931,33 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
         self.robot_control_thread_flag = True  # let the robot control thread run
         self.robot_control_thread = threading.Thread(target = self.robot_control_thread_run_function)  # create the thread for the robot control
         self.robot_control_thread.start()  # start the robot control thread
-    def kill_robot_control_thread(self, event = None):  # kill the existed and running camera thread
+    def kill_robot_control_thread(self, event = None):  # kill the existed and running robot control thread
         self.robot_control_thread_flag = False  # stop the robot control thread
         self.simulated_robot_is_moving = False  # stop the simulated robot
         self.swift_robot_is_moving = False  # stop the Swift robot
         self.real_robot_is_moving = False  # stop the real robot
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
-    def robot_control_thread_run_function(self):  # the run function, it continuously captures and displays the camera frames
+    def robot_control_thread_run_function(self):  # the run function, for the robot control thread
         control_or_kinematics_choose = self.control_or_kinematics_variables_visualization
         while True:  # while the thread is running
             for k in range(len(self.robot_joints_control_law_output)):  # loop through the joints variables time series for the robot control
                 if not self.real_robot_is_moving:  # if the real robot is not moving
                     if control_or_kinematics_choose == self.control_or_kinematics_variables_visualization_list[0]:  # if the user wants to visualize the control variables
                         self.control_joints_variables = self.robot_joints_control_law_output[k].copy()  # the joints variables for the robot control, for the current time step
-                        if self.swift_robot_is_moving:  # if the Swift robot is moving
-                            # animate
-                            pass
                     elif control_or_kinematics_choose == self.control_or_kinematics_variables_visualization_list[1]:  # if the user wants to visualize the forward kinematics variables
                         self.forward_kinematics_variables = self.robot_joints_control_law_output[k].copy()  # the joints variables for the robot control, for the current time step
-                    time.sleep(self.move_robot_time_step_dt)  # wait for some time equal to the time step of the solver
+                    if self.swift_robot_is_moving:  # if the Swift robot is moving
+                        pass
+                    time.sleep(self.solver_time_step_dt)  # wait for some time equal to the time step of the solver
                 else:  # if the real robot is moving
-                    self.send_command_to_all_motors(self.control_joints_variables, self.control_end_effector_variable)  # send the command to all the motors
-                    time.sleep(self.move_robot_time_step_dt)  # wait for some time equal to the time step of the solver
-            self.kill_robot_control_thread()  # kill the existed and running camera thread
+                    if self.serial_connection.is_open:  # if the serial connection is open
+                        self.control_joints_variables = self.robot_joints_control_law_output[k].copy()  # the joints variables for the robot control, for the current time step
+                        self.control_end_effector_variable = 0.0  # the end-effector variable for the robot control, for the current time step
+                        self.send_command_to_all_motors(self.control_joints_variables, self.control_end_effector_variable)  # send the command to all the motors
+                        time.sleep(self.solver_time_step_dt)  # wait for some time equal to the time step of the solver
+                    else:  # if the serial connection is not open yet
+                        ms.showerror("Error", "The serial connection is not open yet! You have to establish a serial connection between the computer and the real robot, in order to control the real robot!", parent = self.menus_area)  # show an error message
+            self.kill_robot_control_thread()  # kill the existed and running robot control thread
             if not self.robot_control_thread_flag:  # if the thread is stopped
                 break  # break the while loop
     
