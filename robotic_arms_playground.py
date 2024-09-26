@@ -4227,6 +4227,9 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             self.hntf2d_solver.realws_to_disk_transformation()  # calculate the transformation from the real workspace to the unit disk
             if not self.hntf2d_solver.wtd_transformation_is_built:  # if the transformation from the real workspace to the unit disk is not built correctly
                 ms.showerror("Error", "The transformation from the real workspace to the unit disk could not be built!")  # show an error message
+            test_point = self.hntf2d_solver.realws_to_unit_disk_mapping(np.zeros(2))  # test the transformation from the real workspace to the unit disk, at the origin (0, 0)
+            if np.all(np.isnan(test_point)):  # if the transformation from the real workspace to the unit disk is not correct
+                ms.showerror("Error", "The transformation from the real workspace to the unit disk is not correct! This can be due to the detected obstacles boundaries, so try to retake the workspace image!")  # show an error message
         else:  # if the hntf2d control law object has not been created yet
             ms.showerror("Error", "Press the \"start\" button first to begin building the workspace transformations (following the defined order)!")  # show an error message
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
