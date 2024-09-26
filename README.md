@@ -10,7 +10,8 @@ The program can be run in both Windows and Linux.
 
 Python libraries needed:
 - To be installed (using pip for example):
-    - roboticstoolbox, swift
+    - roboticstoolbox
+    - swift
     - matplotlib (matplotlib.pyplot, matplotlib.colors)
     - mpl_toolkits (mpl_toolkits.mplot3d)
     - cv2
