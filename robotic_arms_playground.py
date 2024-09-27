@@ -3147,7 +3147,9 @@ class robotic_manipulators_playground_window():
                             self.write_serial_monitor("Warn:", "brown", f"The command \"{command}\" could not be sent to the arduino microcontroller! You are connected to the wrong serial port or/and you are using the wrong baudrate!")  # inform the user that the command could not be sent to the arduino microcontroller
                         except: pass
                         print("You are connected to the wrong serial port or/and you are using the wrong baudrate!")  # print a message to inform the user that the command could not be sent to the arduino microcontroller
-                        self.allow_sending_all_ports = ms.askyesno("Asking permission to send commands", "Do you want to allow sending commands to this serial port with this baudrate?")  # ask the user's permission to send commands to this serial port with this baudrate
+                        self.allow_sending_all_ports = ms.askyesno("Asking permission to send commands", f"Do you want to allow sending commands to the serial port \"{self.serial_port}\" with {self.baudrate} bps baudrate?")  # ask the user's permission to send commands to this serial port with this baudrate
+                        if not self.allow_sending_all_ports and self.robot_control_thread_flag:  # if the user does not allow sending commands to this serial port with this baudrate and the robot control thread is running
+                            self.kill_robot_control_thread()  # kill the robot control thread
             else:  # if the user tries to send a command when there is no serial connection established yet
                 if self.robotic_manipulator_control_mode == self.robotic_manipulator_control_modes_list[0]:  # if the robotic manipulator is controlled manually
                     try:  # try to write the command to the serial monitor
@@ -4750,13 +4752,30 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                     end_effector_start_configuration_2 = gf.xy_plane_transformation(-obstacles_2d_plane_normal_vector, obstacles_2d_plane_orientation, obstacles_2d_plane_translation)  # initialize the transformation matrix of the end-effector on the workspace plane
                     end_effector_start_configuration_2[:, 3] = end_effector_start_position_2  # the transformation matrix of the end-effector on the workspace plane
                     robot_joints_configurations, _ = kin.find_reachable_workspace(self.built_robotic_manipulator, self.joints_range_divisions, False)  # find some of the robot's reachable configurations
-                    robot_joints_configurations.sort(key = lambda x: np.linalg.norm(x - self.robot_joints_control_law_output[-1]))  # sort (in ascending order) the robot's reachable configurations based on their distance from the current robot's joints configuration
-                    # move the robotic manipulator to its zero configuration (reset the robot's position to its default zero state)
+                    ve_z = 0.05  # the linear velocity (in m/sec) of the end-effector along its z-axis
+                    # move the robot from its initial configuration to the zero configuration (reset the robot's pose to its default zero state)
+                    initial_robot_steps = int(2.0 * self.obstacles_height_for_solver / ve_z / self.move_robot_time_step_dt)  # the number of steps to move the robot away from its initial configuration
                     reset_robot_steps = 500  # the number of steps to reset the robot's position
                     go_to_zero_success = True  # the flag to check if the robot can go to its zero configuration without hitting the obstacles plane
-                    qr_initial = self.robot_joints_control_law_output[-1]  # the start configuration of the robot's joints
-                    qr_zero = np.zeros_like(qr_initial)  # the zero configuration of the robot's joints
+                    qr_initial = self.robot_joints_control_law_output[-1]  # the initial configuration of the robot's joints
+                    qr_zero = np.zeros_like(self.robot_joints_control_law_output[-1])  # the zero configuration of the robot's joints
+                    robot_joints_configurations.sort(key = lambda x: np.linalg.norm(x - self.robot_joints_control_law_output[-1]))  # sort (in ascending order) the robot's reachable configurations based on their distance from the current robot's joints configuration
                     if np.linalg.norm(qr_initial - qr_zero) >= 1e-3:  # if the robot is not already in its zero configuration
+                        # move the robot away from its initial configuration (usually the robot's end-effector is on the workspace plane)
+                        ve = np.concatenate((np.array([0.0, 0.0, -ve_z]), np.zeros(3)), axis = 0)  # set the velocity of the end-effector wrt its own frame
+                        qr_old = self.robot_joints_control_law_output[-1]  # the previous configuration of the robot's joints
+                        for j in range(initial_robot_steps):  # loop through the number of steps to move the robot away from its initial configuration
+                            qr_dot, joints_velocity_found = kin.compute_inverse_differential_kinematics(self.built_robotic_manipulator, self.robot_joints_control_law_output[-1], ve, "end-effector")  # compute the joints velocities
+                            if joints_velocity_found:  # if valid joints velocities are found
+                                qr_new = qr_old + qr_dot * self.move_robot_time_step_dt  # the new configuration of the robot's joints
+                                self.robot_joints_control_law_output.append(qr_new)  # append the new configuration of the robot's joints to the list of the robot joints control law output
+                                qr_old = qr_new  # the configuration of the robot's joints for the next step
+                            else:  # if valid joints velocities are not found
+                                break  # break the loop
+                        # move the robot to its zero configuration
+                        current_robot_joints_number = len(self.robot_joints_control_law_output)  # the current number of the robot's joints configurations
+                        initial_robot_configuration_joints_sequence = self.robot_joints_control_law_output.copy()  # the sequence of the robot's joints configurations to move the robot away from its initial configuration
+                        qr_initial = self.robot_joints_control_law_output[-1]  # the initial configuration of the robot's joints
                         for qr_middle in robot_joints_configurations:  # loop through the robot's reachable joints configurations
                             for i in range(int(reset_robot_steps / 2.0)):  # loop through the number of steps to reset the robot's position
                                 qr_new = qr_initial + (i + 1) * (qr_middle - qr_initial) / int(reset_robot_steps / 2.0)  # the new configuration of the robot's joints
@@ -4764,17 +4783,18 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                             for j in range(int(reset_robot_steps / 2.0)):  # loop through the number of steps to reset the robot's position
                                 qr_new = qr_middle + (j + 1) * (qr_zero - qr_middle) / int(reset_robot_steps / 2.0)  # the new configuration of the robot's joints
                                 self.robot_joints_control_law_output.append(qr_new)  # append the new configuration of the robot's joints to the list of the robot joints control law output
-                            for k in range(len(self.robot_joints_control_law_output)):  # loop through the number of steps to reset the robot's position
-                                qr = self.robot_joints_control_law_output[k]  # the current configuration of the robot's joints
+                            for k in range(len(self.robot_joints_control_law_output[current_robot_joints_number:])):  # loop through the number of steps to reset the robot's position
+                                qr = self.robot_joints_control_law_output[current_robot_joints_number + k]  # the current configuration of the robot's joints
                                 pos = np.array(self.built_robotic_manipulator.fkine(qr), dtype = float)[:, 3]  # the current position (in homogeneous coordinates) of the end-effector wrt the world frame
-                                collision_happening = (np.linalg.inv(self.obst_plane_wrt_world_transformation_matrix) @ pos)[2] < 0.0  # check if the end-effector is below the obstacles plane
+                                collision_happening = (np.linalg.inv(self.obst_plane_wrt_world_transformation_matrix) @ pos)[2] <= 0.0  # check if the end-effector is below the obstacles plane
                                 if collision_happening:  # if the end-effector is below the obstacles plane, meaning there is a collision
                                     go_to_zero_success = False  # the robot cannot go to its zero configuration without hitting the obstacles plane
-                                    self.robot_joints_control_law_output = [np.array(self.control_joints_variables)]  # reset the robot's joints to their initial configuration
+                                    self.robot_joints_control_law_output = initial_robot_configuration_joints_sequence.copy()  # reset the robot's joints to their initial configuration
                                     break  # break the loop
                             if go_to_zero_success:  # if the robot does not hit the obstacles plane
                                 break  # break the loop
                             go_to_zero_success = True  # reset the flag to check if the robot can go to its zero configuration without hitting the obstacles plane
+                    # move the robot from its zero configuration to its start configuration above the workspace plane
                     if go_to_zero_success:  # if the robot can go to its zero configuration without hitting the obstacles plane
                         # check if the start configurations of the end-effector on the workspace plane can be achieved by the robot
                         invkine_success = False  # the flag to check if the inverse kinematics has succeeded or not
@@ -4798,38 +4818,41 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                             # loop through all the inverse kinematics tries for the start configuration of the end-effector on the workspace plane, until a feasible trajectory is found for the robot to move to the target position
                             reset_robot_configuration_joints_sequence = self.robot_joints_control_law_output.copy()  # the time sequence of the robot's joints to reset the robot's position
                             for k in range(len(invkine_tries_start_configuration)):  # loop through all the inverse kinematics tries
-                                # move the robot from its zero configuration to the start configuration above the workspace plane
+                                # move the robot to the start configuration above the workspace plane
                                 start_1_robot_steps = 500  # the number of steps to move the robot to its start configuration above the workspace plane
+                                current_robot_joints_number = len(self.robot_joints_control_law_output)  # the current number of the robot's joints configurations in the control law output
                                 go_to_start_1_success = True  # the flag to check if the robot can go to its start configuration above the workspace plane without hitting the obstacles plane
                                 qr_start_1 = invkine_tries_start_configuration[k][0]  # the start configuration of the robot's joints above the workspace plane
                                 qr_zero = np.zeros_like(qr_start_1)  # the zero configuration of the robot's joints
-                                current_robot_joints_number = len(self.robot_joints_control_law_output)  # the current number of the robot's joints configurations in the control law output
-                                for qr_middle in robot_joints_configurations:  # loop through the robot's reachable joints configurations
-                                    for i in range(int(start_1_robot_steps / 2.0)):  # loop through the number of steps to reset the robot's position
-                                        qr_new = qr_zero + (i + 1) * (qr_middle - qr_zero) / int(reset_robot_steps / 2.0)  # the new configuration of the robot's joints
-                                        self.robot_joints_control_law_output.append(qr_new)  # append the new configuration of the robot's joints to the list of the robot joints control law output
-                                    for j in range(int(start_1_robot_steps / 2.0)):  # loop through the number of steps to reset the robot's position
-                                        qr_new = qr_middle + (j + 1) * (qr_start_1 - qr_middle) / int(reset_robot_steps / 2.0)  # the new configuration of the robot's joints
-                                        self.robot_joints_control_law_output.append(qr_new)  # append the new configuration of the robot's joints to the list of the robot joints control law output
-                                    for k in range(len(self.robot_joints_control_law_output[current_robot_joints_number:])):  # loop through the number of steps to move the robot to the start configuration above the workspace plane
-                                        qr = self.robot_joints_control_law_output[current_robot_joints_number + k]  # the current configuration of the robot's joints
-                                        pos = np.array(self.built_robotic_manipulator.fkine(qr), dtype = float)[:, 3]  # the current position (in homogeneous coordinates) of the end-effector wrt the world frame
-                                        collision_happening = (np.linalg.inv(obst_top_plane_wrt_world_transformation_matrix) @ pos)[2] < 0.0  # check if the end-effector is below the top plane of the obstacles
-                                        if collision_happening:  # if the end-effector is below the top plane of the obstacles, meaning there is a collision
-                                            go_to_start_1_success = False  # the robot cannot go to its start configuration above the workspace plane without hitting the obstacles plane
-                                            self.robot_joints_control_law_output = reset_robot_configuration_joints_sequence.copy()  # initialize the robot's joints to the reset time sequence
-                                            break  # break the loop
-                                    if go_to_start_1_success:  # if the robot does not hit the obstacles plane
-                                        break  # break the loop
-                                    go_to_start_1_success = True  # reset the flag to check if the robot can go to its start configuration above the workspace plane without hitting the obstacles plane
+                                for i in range(start_1_robot_steps):  # loop through the number of steps to reset the robot's position
+                                    qr_new = qr_zero + (i + 1) * (qr_start_1 - qr_zero) / reset_robot_steps  # the new configuration of the robot's joints
+                                    self.robot_joints_control_law_output.append(qr_new)  # append the new configuration of the robot's joints to the list of the robot joints control law output
+                                # robot_joints_configurations.sort(key = lambda x: np.linalg.norm(x - self.robot_joints_control_law_output[-1]))  # sort (in ascending order) the robot's reachable configurations based on their distance from the current robot's joints configuration
+                                # for qr_middle in robot_joints_configurations:  # loop through the robot's reachable joints configurations
+                                #     go_to_start_1_success = True  # reset the flag to check if the robot can go to its start configuration above the workspace plane without hitting the obstacles plane
+                                #     for i in range(int(start_1_robot_steps / 2.0)):  # loop through the number of steps to reset the robot's position
+                                #         qr_new = qr_zero + (i + 1) * (qr_middle - qr_zero) / int(reset_robot_steps / 2.0)  # the new configuration of the robot's joints
+                                #         self.robot_joints_control_law_output.append(qr_new)  # append the new configuration of the robot's joints to the list of the robot joints control law output
+                                #     for j in range(int(start_1_robot_steps / 2.0)):  # loop through the number of steps to reset the robot's position
+                                #         qr_new = qr_middle + (j + 1) * (qr_start_1 - qr_middle) / int(reset_robot_steps / 2.0)  # the new configuration of the robot's joints
+                                #         self.robot_joints_control_law_output.append(qr_new)  # append the new configuration of the robot's joints to the list of the robot joints control law output
+                                #     for k in range(len(self.robot_joints_control_law_output[current_robot_joints_number:])):  # loop through the number of steps to move the robot to the start configuration above the workspace plane
+                                #         qr = self.robot_joints_control_law_output[current_robot_joints_number + k]  # the current configuration of the robot's joints
+                                #         pos = np.array(self.built_robotic_manipulator.fkine(qr), dtype = float)[:, 3]  # the current position (in homogeneous coordinates) of the end-effector wrt the world frame
+                                #         collision_happening = (np.linalg.inv(obst_top_plane_wrt_world_transformation_matrix) @ pos)[2] <= 0.0  # check if the end-effector is below the top plane of the obstacles
+                                #         if collision_happening:  # if the end-effector is below the top plane of the obstacles, meaning there is a collision
+                                #             go_to_start_1_success = False  # the robot cannot go to its start configuration above the workspace plane without hitting the obstacles plane
+                                #             self.robot_joints_control_law_output = reset_robot_configuration_joints_sequence.copy()  # initialize the robot's joints to the reset time sequence
+                                #             break  # break the loop
+                                #     if go_to_start_1_success:  # if the robot does not hit the obstacles plane
+                                #         break  # break the loop
                                 if go_to_start_1_success:  # if the robot can go to its start configuration above the workspace plane without hitting the obstacles plane
                                     # move the robot from the start configuration above the workspace plane to the current start configuration on the workspace plane
-                                    ve_z = 0.05  # the velocity (in m/sec) of the end-effector along its z-axis
-                                    ve_start = np.concatenate((np.array([0.0, 0.0, ve_z]), np.zeros(3)), axis = 0)  # set the velocity of the end-effector wrt its own frame
+                                    ve = np.concatenate((np.array([0.0, 0.0, ve_z]), np.zeros(3)), axis = 0)  # set the velocity of the end-effector wrt its own frame
                                     start_2_robot_steps = int(self.obstacles_height_for_solver / ve_z / self.move_robot_time_step_dt)  # the number of steps to move the robot from its start configuration above the workspace plane to the start configuration on the workspace plane
                                     qr_old = self.robot_joints_control_law_output[-1]  # the previous configuration of the robot's joints
                                     for j in range(start_2_robot_steps):  # loop through the number of steps to move the robot from its start configuration above the workspace plane to the start configuration on the workspace plane
-                                        qr_dot, _ = kin.compute_inverse_differential_kinematics(self.built_robotic_manipulator, self.robot_joints_control_law_output[-1], ve_start, "end-effector")  # compute the joints velocities
+                                        qr_dot, _ = kin.compute_inverse_differential_kinematics(self.built_robotic_manipulator, self.robot_joints_control_law_output[-1], ve, "end-effector")  # compute the joints velocities
                                         qr_new = qr_old + qr_dot * self.move_robot_time_step_dt  # the new configuration of the robot's joints
                                         self.robot_joints_control_law_output.append(qr_new)  # append the new configuration of the robot's joints to the list of the robot joints control law output
                                         qr_old = qr_new  # the configuration of the robot's joints for the next step
@@ -4863,7 +4886,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                                 ms.showinfo("Robot trajectory success", "The robot's trajectory has been calculated successfully!", parent = self.menus_area)  # show an info message
                                 self.plot_robot_joints_trajectories()  # plot the robot's joints trajectories for the obstacles avoidance
                             else:  # if no feasible trajectory is found for the robot to move to the target position
-                                ms.showinfo("Robot trajectory failure", "Failed to find a feasible trajectory!", parent = self.menu_area)  # show an info message
+                                ms.showinfo("Robot trajectory failure", "Failed to find a feasible trajectory!", parent = self.menus_area)  # show an info message
                         else:  # if the inverse kinematics has not succeded
                             ms.showinfo("Robot trajectory failure", "The inverse kinematics has failed to find a feasible solution for the start configuration of the end-effector on the workspace plane!", parent = self.menus_area)  # show an info message
                     else: # if the robot cannot go to its zero configuration without hitting the obstacles plane
@@ -4921,7 +4944,6 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             if self.robotic_manipulator_is_built: # if a robotic manipulator is built
                 self.real_robot_is_moving = True  # set the flag that indicates that the real robot is moving
                 self.control_or_kinematics_variables_visualization = self.control_or_kinematics_variables_visualization_list[0]  # choose the control variables for visualization
-                # self.change_main_menu
                 self.start_robot_control_thread()  # start the robot control thread
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def update_obstacles_avoidance_solver_indicators(self, event = None):  # update the indicators of the obstacles avoidance solver
@@ -5004,6 +5026,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                         time.sleep(self.solver_time_step_dt)  # wait for some time equal to the time step of the solver
                     else:  # if the serial connection is not open yet
                         ms.showerror("Error", "The serial connection is not open yet! You have to establish a serial connection between the computer and the real robot, in order to control the real robot!", parent = self.menus_area)  # show an error message
+                        break  # break the for loop
             self.kill_robot_control_thread()  # kill the existed and running robot control thread
             if not self.robot_control_thread_flag:  # if the thread is stopped
                 break  # break the while loop
