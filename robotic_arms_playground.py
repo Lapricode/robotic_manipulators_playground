@@ -209,7 +209,7 @@ class robotic_manipulators_playground_window():
         self.joints_motors_mult_factors = [[1.0] for _ in range(self.joints_number)]  # a list to store the multiplication factors for the joints variables to be sent as commands to the joints motors
         self.control_end_effector_variable = 0.0  # the control variable for the control end-effector
         self.control_end_effector_limits = [0, 100]  # the control limits of the control end-effector
-        self.end_effector_motor = "M3 S"  # the motor of the end-effector
+        self.end_effector_motor = "S"  # the motor of the end-effector
         self.end_effector_motor_mult_factor = 1.0  # the multiplication factor for the end-effector motor
         self.robotic_manipulator_control_mode = "manual"  # the mode of the robotic manipulator control, it can be "manual" or "automatic"
         self.robotic_manipulator_control_modes_list = ["manual", "automatic"]  # the possible modes of the robotic manipulator control
@@ -1627,6 +1627,7 @@ class robotic_manipulators_playground_window():
         choose_joint_number_control_label_ord = 2.5
         joint_type_indicator_ord = choose_joint_number_control_label_ord
         joint_control_variable_combobox_ord = choose_joint_number_control_label_ord
+        get_kinematics_values_button_ord = joint_control_variable_combobox_ord
         choose_joint_motors_label_ord = choose_joint_number_control_label_ord+1.5
         increase_joint_motors_button_ord = choose_joint_motors_label_ord-0.4
         decrease_joints_motors_button_ord = choose_joint_motors_label_ord+0.4
@@ -1650,30 +1651,31 @@ class robotic_manipulators_playground_window():
         choose_control_mode_label_ord = end_effector_slider_label_ord+2.5
         choose_control_mode_button_ord = choose_control_mode_label_ord
         send_command_end_effector_button_ord = choose_control_mode_label_ord
-        send_command_joint_motors_button_ord = choose_control_mode_label_ord
         send_command_all_motors_button_ord = choose_control_mode_label_ord
+        send_command_joint_motors_button_ord = choose_control_mode_label_ord
         # create the options
         menu_title_x = 1/2; gbl.menu_label(menu_frame, menu_properties['sub_menu_title'], f"Calibri {menu_properties['title_font']} bold underline", "gold", menu_properties['bg_color'], menu_title_x * menu_properties['width'], menu_title_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         menu_info_button_x = 1/20; gbl.menu_button(menu_frame, "ⓘ", f"Calibri {menu_properties['title_font'] - 5} bold", "white", menu_properties['bg_color'], menu_info_button_x * menu_properties['width'], menu_info_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), lambda event: ms.showinfo(menu_properties['sub_menu_title'], menu_properties['info'], master = self.root)).button
-        choose_joint_number_control_label_x = 1/5; gbl.menu_label(menu_frame, "Joint number:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_joint_number_control_label_x * menu_properties['width'], choose_joint_number_control_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        choose_joint_number_control_label_x = 4/30; gbl.menu_label(menu_frame, "Joint number:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_joint_number_control_label_x * menu_properties['width'], choose_joint_number_control_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         self.choose_joint_number_control_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "readonly", width = 8, values = [f"joint {joint}" for joint in range(1, self.joints_number + 1)], justify = "center")
-        choose_joint_number_control_combobox_x = 2/5; self.choose_joint_number_control_combobox.place(x = choose_joint_number_control_combobox_x * menu_properties['width'], y = choose_joint_number_control_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
+        choose_joint_number_control_combobox_x = 10/30; self.choose_joint_number_control_combobox.place(x = choose_joint_number_control_combobox_x * menu_properties['width'], y = choose_joint_number_control_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
         self.choose_joint_number_control_combobox.bind("<<ComboboxSelected>>", self.change_chosen_joint_number_control)
         joint_type_index = self.joints_types_list.index(self.joints_types[self.chosen_joint_number_control - 1])  # the index of the chosen joint type (0 for revolute and 1 for prismatic) for the control
-        joint_type_indicator_x = 3/5; self.joint_type_indicator = gbl.menu_label(menu_frame, self.joints_types[self.chosen_joint_number_control - 1] + [" (degrees)", " (meters)"][joint_type_index], f"Calibri {menu_properties['options_font']} bold", "black", "orange", joint_type_indicator_x * menu_properties['width'], joint_type_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
+        joint_type_indicator_x = 16/30; self.joint_type_indicator = gbl.menu_label(menu_frame, self.joints_types[self.chosen_joint_number_control - 1] + [" (degrees)", " (meters)"][joint_type_index], f"Calibri {menu_properties['options_font']} bold", "black", "orange", joint_type_indicator_x * menu_properties['width'], joint_type_indicator_ord * menu_properties['height'] / (menu_properties['rows'] + 1)).label
         self.joint_control_variable_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "normal", width = 8, values = "", justify = "center")
-        joint_control_variable_combobox_x = 4/5; self.joint_control_variable_combobox.place(x = joint_control_variable_combobox_x * menu_properties['width'], y = joint_control_variable_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
+        joint_control_variable_combobox_x = 22/30; self.joint_control_variable_combobox.place(x = joint_control_variable_combobox_x * menu_properties['width'], y = joint_control_variable_combobox_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
         self.joint_control_variable_combobox.bind("<<ComboboxSelected>>", self.change_chosen_joint_number_control_2)
         self.joint_control_variable_combobox.bind("<Return>", self.change_chosen_control_variable)
-        choose_joint_motors_label_x = 1/5; gbl.menu_label(menu_frame, "Joint motors:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_joint_motors_label_x * menu_properties['width'], choose_joint_motors_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        get_kinematics_values_button_x = 27/30; self.get_kinematics_values_button = gbl.menu_button(menu_frame, "get\nkinematics\nvalues", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], get_kinematics_values_button_x * menu_properties['width'], get_kinematics_values_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.copy_fkine_to_control_values).button
+        choose_joint_motors_label_x = 4/30; gbl.menu_label(menu_frame, "Joint motors:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_joint_motors_label_x * menu_properties['width'], choose_joint_motors_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         self.choose_joint_motors_combobox = ttk.Combobox(menu_frame, font = f"Calibri {menu_properties['options_font']}", state = "readonly", width = 8, values = self.joints_motors_list[self.chosen_joint_number_control - 1], justify = "center")
-        choose_joint_motors_combobox_x = 2/5; self.choose_joint_motors_combobox.place(x = choose_joint_motors_combobox_x * menu_properties['width'], y = choose_joint_motors_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
+        choose_joint_motors_combobox_x = 10/30; self.choose_joint_motors_combobox.place(x = choose_joint_motors_combobox_x * menu_properties['width'], y = choose_joint_motors_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
         self.choose_joint_motors_combobox.bind("<<ComboboxSelected>>", self.change_chosen_joint_motors)
-        increase_joint_motors_button_x = 3/6; self.increase_joint_motors_button = gbl.menu_button(menu_frame, "+", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], increase_joint_motors_button_x * menu_properties['width'], increase_joint_motors_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.increase_chosen_joint_motors).button
-        decrease_joints_motors_button_x = 3/6; self.decrease_joints_motors_button = gbl.menu_button(menu_frame, "-", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], decrease_joints_motors_button_x * menu_properties['width'], decrease_joints_motors_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.decrease_chosen_joint_motors).button
-        choose_motors_mult_factors_label_x = 4/6; gbl.menu_label(menu_frame, "Motors factors\n(for commands):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_motors_mult_factors_label_x * menu_properties['width'], choose_motors_mult_factors_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
+        increase_joint_motors_button_x = 13/30; self.increase_joint_motors_button = gbl.menu_button(menu_frame, "+", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], increase_joint_motors_button_x * menu_properties['width'], increase_joint_motors_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.increase_chosen_joint_motors).button
+        decrease_joints_motors_button_x = 13/30; self.decrease_joints_motors_button = gbl.menu_button(menu_frame, "-", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], decrease_joints_motors_button_x * menu_properties['width'], decrease_joints_motors_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.decrease_chosen_joint_motors).button
+        choose_motors_mult_factors_label_x = 18/30; gbl.menu_label(menu_frame, "Motors factors\n(for commands):", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_motors_mult_factors_label_x * menu_properties['width'], choose_motors_mult_factors_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         self.motors_mult_factors_entrybox = ttk.Entry(menu_frame, font = f"Calibri {menu_properties['options_font']}", width = 8, justify = "center")
-        motors_mult_factors_entrybox_x = 5/6; self.motors_mult_factors_entrybox.place(x = motors_mult_factors_entrybox_x * menu_properties['width'], y = choose_motors_mult_factors_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
+        motors_mult_factors_entrybox_x = 23/30; self.motors_mult_factors_entrybox.place(x = motors_mult_factors_entrybox_x * menu_properties['width'], y = choose_motors_mult_factors_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1), anchor = "center")
         self.motors_mult_factors_entrybox.bind("<Return>", self.change_motors_mult_factors_entrybox)
         joint_variable_slider_label_x = 1/6; gbl.menu_label(menu_frame, "Joint variable control:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], joint_variable_slider_label_x * menu_properties['width'], joint_variable_slider_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         self.joint_variable_slider = tk.Scale(menu_frame, font = f"Arial {menu_properties['options_font']}", orient = tk.HORIZONTAL, length = menu_properties['width'] / 3.0, bg = menu_properties['bg_color'], fg = "white", troughcolor = "brown", highlightbackground = menu_properties['bg_color'], highlightcolor = menu_properties['bg_color'], highlightthickness = 2, sliderlength = 25, command = self.change_control_variable_slider)
@@ -1699,9 +1701,9 @@ class robotic_manipulators_playground_window():
         self.end_effector_mult_factor_entrybox.bind("<Return>", self.change_end_effector_mult_factor)
         choose_control_mode_label_x = 1/6; gbl.menu_label(menu_frame, "Control mode:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_control_mode_label_x * menu_properties['width'], choose_control_mode_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         choose_control_mode_button_x = 2/6; self.choose_control_mode_button = gbl.menu_button(menu_frame, self.robotic_manipulator_control_mode, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], choose_control_mode_button_x * menu_properties['width'], choose_control_mode_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_robotic_manipulator_control_mode).button
-        send_command_joint_motors_button_x = 3/6; self.send_command_joint_motors_button = gbl.menu_button(menu_frame, "GO\njoints", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], send_command_joint_motors_button_x * menu_properties['width'], send_command_joint_motors_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), lambda event, joints_values = self.control_joints_variables: self.send_command_to_chosen_joint_motors(joints_values)).button
-        send_command_end_effector_button_x = 4/6; self.send_command_end_effector_button = gbl.menu_button(menu_frame, "GO\nend-effector", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], send_command_end_effector_button_x * menu_properties['width'], send_command_end_effector_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), lambda event, end_effector_value = self.control_end_effector_variable: self.send_command_to_end_effector(end_effector_value)).button
-        send_command_all_motors_button_x = 5/6; self.send_command_all_motors_button = gbl.menu_button(menu_frame, "GO ALL", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], send_command_all_motors_button_x * menu_properties['width'], send_command_all_motors_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), lambda event, joints_values = self.control_joints_variables, end_effector_value = self.control_end_effector_variable: self.send_command_to_all_motors(joints_values, end_effector_value)).button
+        send_command_joint_motors_button_x = 3/6; self.send_command_joint_motors_button = gbl.menu_button(menu_frame, "GO\njoint", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], send_command_joint_motors_button_x * menu_properties['width'], send_command_joint_motors_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), lambda event, joints_values = self.control_joints_variables: self.send_command_to_chosen_joint_motors(joints_values)).button
+        send_command_all_motors_button_x = 4/6; self.send_command_all_motors_button = gbl.menu_button(menu_frame, "GO ALL\njoints", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], send_command_all_motors_button_x * menu_properties['width'], send_command_all_motors_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), lambda event, joints_values = self.control_joints_variables, end_effector_value = self.control_end_effector_variable: self.send_command_to_all_motors(joints_values, end_effector_value)).button
+        send_command_end_effector_button_x = 5/6; self.send_command_end_effector_button = gbl.menu_button(menu_frame, "GO\nend-effector", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], send_command_end_effector_button_x * menu_properties['width'], send_command_end_effector_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), lambda event, end_effector_value = self.control_end_effector_variable: self.send_command_to_end_effector(end_effector_value)).button
         self.update_control_variables_indicators()  # update the indicators of the control variables of the robotic manipulator
     def build_camera_control_menus(self, submenus_titles, submenus_descriptions, event = None):  # build the sub menus of the main menu that controls the camera
         self.clear_menus_background()
@@ -2359,8 +2361,8 @@ class robotic_manipulators_playground_window():
                 elif self.joints_types[k] == self.joints_types_list[1]: control_joints_variables_limits.append(self.control_joints_variables_limits[k][1])  # if the current joint is prismatic
             self.built_robotic_manipulator_info["control_joints_variables_limits"] = control_joints_variables_limits  # set the limits of the control variables of the joints of the robotic manipulator model
             self.robotic_manipulator_is_built = True  # the robotic manipulator model has been built
+            self.robot_joints_control_law_output = []  # reset the robot joints control law output
             print(f"\nRobotic manipulator name: {self.robotic_manipulator_model_name}\n", self.built_robotic_manipulator)  # print the robotic manipulator model
-            self.reset_control_law_outputs()  # reset the control law outputs, because a new robotic manipulator has been built
             ms.showinfo("Robotic manipulator model built", f"The \"{self.robotic_manipulator_model_name}\" robotic manipulator model has been built successfully!", parent = self.menus_area)  # show an information message
             self.update_model_visualization_indicators()  # update the model and visualization indicators
     def reload_built_robotic_manipulator_info_data(self, event = None):  # reload the data of the built robotic manipulator model, if any
@@ -2819,7 +2821,7 @@ class robotic_manipulators_playground_window():
         except:  # if the entered value is not a number
             ms.showerror("Error", "Please enter a number!", parent = self.menus_area)  # show an error message
     def copy_control_to_fkine_values(self, event = None):  # copy the control variables to the forward kinematics variables
-        self.forward_kinematics_variables = self.control_joints_variables.copy()  # copy the control variables to the forward kinematics variables
+        self.forward_kinematics_variables = copy.deepcopy(self.control_joints_variables)  # copy the control variables to the forward kinematics variables
         self.update_forward_kinematics_indicators()  # update the forward kinematics indicators
     def change_fkine_variable_slider(self, slider_num, event = None):  # change the value of the chosen joint variable (changing the corresponding slider) for the forward kinematics analysis
         joint_fkine_value = self.fkine_variables_sliders[slider_num].get()  # the fkine variable of the chosen joint
@@ -3212,7 +3214,7 @@ class robotic_manipulators_playground_window():
         self.show_hide_status_button.configure(text = ["✖", "✔"][[False, True].index(self.show_status_responses)])  # change the text of the show/hide status responses button
     def expand_serial_monitor_menu(self, event = None):  # expand the serial monitor menu
         self.expanded_serial_monitor = not self.expanded_serial_monitor  # expand or collapse the serial monitor menu
-        self.build_control_robotic_manipulator_menus(self.submenus_titles[self.main_menu_choice], self.submenus_titles[self.main_menu_choice])  # create the control robotic manipulator menus
+        self.build_control_robotic_manipulator_menus(self.submenus_titles[self.main_menu_choice], self.submenus_descriptions[self.main_menu_choice])  # create the control robotic manipulator menus
     def clear_serial_monitor(self, event = None):  # clear the console serial monitor
         self.console_serial_monitor.delete("1.0", "end")  # clear the console serial monitor
         self.serial_monitor_text = ""  # clear the serial monitor text
@@ -3223,6 +3225,11 @@ class robotic_manipulators_playground_window():
     def change_chosen_joint_number_control_2(self, event = None):  # change the chosen control joint number of the robotic manipulator
         self.chosen_joint_number_control = self.joint_control_variable_combobox.current() + 1  # change the chosen control joint number of the robotic manipulator
         self.update_control_variables_indicators()  # update the indicators of the control variables of the robotic manipulator
+    def copy_fkine_to_control_values(self, event = None):  # copy the forward kinematics variables to the control variables
+        self.control_joints_variables = copy.deepcopy(self.forward_kinematics_variables)  # copy the forward kinematics variables to the control variables 
+        self.update_control_variables_indicators()  # update the indicators of the control variables of the robotic manipulator
+        if self.robotic_manipulator_control_mode == self.robotic_manipulator_control_modes_list[1]:  # if the robotic manipulator control mode is automatic
+            self.send_command_to_chosen_joint_motors(self.control_joints_variables)  # send the right command to the chosen control joint motors
     def set_joints_variables_to_zero(self, event = None):  # set the control joints variables of the robotic manipulator to zero
         for joint_number in range(1, self.joints_number + 1):  # iterate through the joints of the robotic manipulator
             self.control_joints_variables[joint_number - 1] = 0  # set the control joint variable of the chosen control joint to zero
@@ -3324,14 +3331,10 @@ class robotic_manipulators_playground_window():
         for joint_number in range(1, self.joints_number + 1):  # iterate through the joints of the robotic manipulator
             for k in range(len(self.joints_motors_list[joint_number - 1])):  # iterate through all the motors of the chosen control joint
                 motor_name = self.joints_motors_list[joint_number - 1][k]  # the name of the motor
-                motor_value = np.round([np.rad2deg(joints_values[joint_number - 1]), joints_values[joint_number - 1]][joint_type_index] * self.joints_motors_mult_factors[joint_number - 1][k], 3)  # the value of the motor
+                motor_value = np.round([np.rad2deg(joints_values[joint_number - 1]), joints_values[joint_number - 1]][joint_type_index] * self.joints_motors_mult_factors[joint_number - 1][k], 2)  # the value of the motor
                 if motor_name in self.joints_motors_list[self.chosen_joint_number_control - 1]:  # if the motor name is in the list of the chosen control joint motors
                     command_dict[motor_name] = command_dict.get(motor_name, 0) + motor_value  # combine the values of the same motors
-        command = " ".join([motor + str(value) for motor, value in command_dict.items()])  # rewrite the command string
-        command = self.command_starting_text + command + self.command_ending_text  # add the starting and ending texts to the command
-        self.send_serial_command(command)  # send the command to the console to be executed
-    def send_command_to_end_effector(self, end_effector_value, event = None):  # send the control end-effector values (multiplied by some factors) to the end-effector motors
-        command = self.end_effector_motor + str(np.round(end_effector_value * self.end_effector_motor_mult_factor, 3))  # the command to be sent to the console
+        command = " ".join([motor + str(np.round(value, 2)) for motor, value in command_dict.items()])  # rewrite the command string
         command = self.command_starting_text + command + self.command_ending_text  # add the starting and ending texts to the command
         self.send_serial_command(command)  # send the command to the console to be executed
     def send_command_to_all_motors(self, joints_values, end_effector_value, event = None):  # send the control joints values (multiplied by some factors) to all motors
@@ -3340,10 +3343,14 @@ class robotic_manipulators_playground_window():
             joint_type_index = self.joints_types_list.index(self.joints_types[joint_number - 1])  # the index of the chosen joint type (0 for revolute and 1 for prismatic) for the control
             for k in range(len(self.joints_motors_list[joint_number - 1])):  # iterate through all the motors of the chosen control joint
                 motor_name = self.joints_motors_list[joint_number - 1][k]  # the name of the motor
-                motor_value = np.round([np.rad2deg(joints_values[joint_number - 1]), joints_values[joint_number - 1]][joint_type_index] * self.joints_motors_mult_factors[joint_number - 1][k], 3)  # the value of the motor
+                motor_value = np.round([np.rad2deg(joints_values[joint_number - 1]), joints_values[joint_number - 1]][joint_type_index] * self.joints_motors_mult_factors[joint_number - 1][k], 2)  # the value of the motor
                 command_dict[motor_name] = command_dict.get(motor_name, 0) + motor_value  # combine the values of the same motors
-        command = " ".join([motor + str(value) for motor, value in command_dict.items()])  # rewrite the command string for the joints motors
-        command += " " + self.end_effector_motor + str(np.round(end_effector_value * self.end_effector_motor_mult_factor, 3))  # add the end-effector motor command to the joints motors command
+        command = " ".join([motor + str(np.round(value, 2)) for motor, value in command_dict.items()])  # rewrite the command string for the joints motors
+        # command += " " + self.end_effector_motor + str(np.round(end_effector_value * self.end_effector_motor_mult_factor, 2))  # add the end-effector motor command to the joints motors command
+        command = self.command_starting_text + command + self.command_ending_text  # add the starting and ending texts to the command
+        self.send_serial_command(command)  # send the command to the console to be executed
+    def send_command_to_end_effector(self, end_effector_value, event = None):  # send the control end-effector values (multiplied by some factors) to the end-effector motors
+        command = self.end_effector_motor + str(np.round(end_effector_value * self.end_effector_motor_mult_factor, 2))  # the command to be sent to the console
         command = self.command_starting_text + command + self.command_ending_text  # add the starting and ending texts to the command
         self.send_serial_command(command)  # send the command to the console to be executed
     def update_control_variables_indicators(self, event = None):  # update the indicators of the control variables of the robotic manipulator
@@ -4074,7 +4081,6 @@ You can also press left click on the number of a boundary to remove it and right
     def load_workspace_obstacles_infos_for_solver(self, event = None):  # load the information (the boundaries more specifically) of the chosen workspace obstacles
         if event != None:  # if the function is called by an event
             self.clear_control_law_outputs_lists()  # clear the control law outputs list
-            self.reset_control_law_outputs()  # reset the control law outputs
         if event != None or (event == None and len(self.obstacles_boundaries_for_solver) == 0):  # if the function is called by the user or there are no obstacles boundaries detected yet
             chosen_solver_workspace_image_name = self.load_workspace_obstacles_objects_combobox.get()  # the name of the chosen workspace image
             if chosen_solver_workspace_image_name in self.saved_workspace_images_list:  # if the chosen workspace image exists
@@ -4147,7 +4153,6 @@ You can also press left click on the number of a boundary to remove it and right
                 self.start_point_plot, = fig_ax.plot(x, y, "mo", markersize = 5)  # plot the start position of the robot's end-effector on the 2D workspace plane
                 self.start_point_plot_text = fig_ax.text(x, y, "Start", fontsize = 7, color = "m")  # write the text of the start position of the robot's end-effector on the 2D workspace plane
                 self.start_pos_workspace_plane = np.array([x / 100.0 - self.obstacles_2d_plane_x_length / 2.0, y / 100.0 - self.obstacles_2d_plane_y_length / 2.0])  # change the start position of the robot's end-effector on the 2D workspace plane
-                # self.reset_control_law_outputs()  # reset the control law outputs
             elif event.button == 3:  # if the user presses mouse right click
                 try:
                     self.target_point_plot.remove()  # try to remove the plotted target point
@@ -4156,7 +4161,6 @@ You can also press left click on the number of a boundary to remove it and right
                 self.target_point_plot, = fig_ax.plot(x, y, "go", markersize = 5)  # plot the target position of the robot's end-effector on the 2D workspace plane
                 self.target_point_plot_text = fig_ax.text(x, y, "Target", fontsize = 7, color = "g")  # write the text of the target position of the robot's end-effector on the 2D workspace plane
                 self.target_pos_workspace_plane = np.array([x / 100.0 - self.obstacles_2d_plane_x_length / 2.0, y / 100.0 - self.obstacles_2d_plane_y_length / 2.0])  # change the target position of the robot's end-effector on the 2D workspace plane
-                # self.reset_control_law_outputs()  # reset the control law outputs
             elif event.button == 2:  # if the user presses mouse middle click
                 try:
                     self.random_point_plot.remove()  # try to remove the plotted random point
@@ -4178,8 +4182,6 @@ Enter the start x coordinate of the robot's end-effector on the 2D workspace pla
         initial_y_pos_on_plane = sd.askfloat("Choose the start position on plane", f"Enter the start y coordinate of the robot's end-effector on the\n2D workspace plane (in meters). The value must be in the range [0, {self.workspace_image_plane_y_length:.3f}]:", initialvalue = start_pos_previous[1], minvalue = 0, maxvalue = self.workspace_image_plane_y_length, parent = self.menus_area)  # ask the user to enter the start y pos of the robot's end-effector on the 2D workspace plane
         if initial_y_pos_on_plane != None:  # if the user enters a number
             self.start_pos_workspace_plane[1] = initial_y_pos_on_plane - self.obstacles_2d_plane_y_length / 2.0  # change the start y pos of the robot's end-effector on the 2D workspace plane
-        if not np.linalg.norm(self.start_pos_workspace_plane + np.array([self.obstacles_2d_plane_x_length / 2.0, self.obstacles_2d_plane_y_length / 2.0]) - start_pos_previous) < 0.001:  # if the start position of the robot's end-effector on the 2D workspace plane is changed (it is different from the previous one by more than 0.1 mm)
-            self.reset_control_law_outputs()  # reset the control law outputs
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def set_target_pos_on_plane(self, event = None):  # set the final position of the robot's end-effector on the 2D workspace plane for the obstacles avoidance solver
         target_pos_previous = np.array(self.target_pos_workspace_plane) + np.array([self.obstacles_2d_plane_x_length / 2.0, self.obstacles_2d_plane_y_length / 2.0])  # the previous target position of the robot's end-effector on the 2D workspace plane
@@ -4190,8 +4192,6 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
         final_y_pos_plane = sd.askfloat("Choose the final position on plane", f"Enter the final y coordinate of the robot's end-effector on the\n2D workspace plane (in meters). The value must be in the range [0, {self.workspace_image_plane_y_length:.3f}]:", initialvalue = target_pos_previous[1], minvalue = 0, maxvalue = self.workspace_image_plane_y_length, parent = self.menus_area)  # ask the user to enter the final y pos of the robot's end-effector on the 2D workspace plane
         if final_y_pos_plane != None:  # if the user enters a number
             self.target_pos_workspace_plane[1] = final_y_pos_plane - self.obstacles_2d_plane_y_length / 2.0  # change the final y pos of the robot's end-effector on the 2D workspace plane
-        if not np.linalg.norm(self.target_pos_workspace_plane + np.array([self.obstacles_2d_plane_x_length / 2.0, self.obstacles_2d_plane_y_length / 2.0]) - target_pos_previous) < 0.001:  # if the target position of the robot's end-effector on the 2D workspace plane is changed (it is different from the previous one by more than 0.1 mm)
-            self.reset_control_law_outputs()  # reset the control law outputs
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
     def check_start_target_pos_on_plane(self, event = None):  # check the start and target positions of the robot's end-effector on the 2D workspace plane
         initial_target_pos_inside_outer_boundary = True  # the flag that indicates if the start and target positions are inside the outer boundary
@@ -4216,7 +4216,6 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             self.hntf2d_solver = cl.hntf2d_control_law(p_init = self.start_pos_workspace_plane, p_d = self.target_pos_workspace_plane, outer_boundary = self.obstacles_boundaries_for_solver[-1], inner_boundaries = self.obstacles_boundaries_for_solver[:-1], \
                                                         k_d = self.k_d, k_i = self.k_i, w_phi = self.w_phi, vp_max = self.vp_max, dp_min = self.dp_min)  # create a new hntf2d control law object
             self.hntf2d_solver.create_new_harmonic_map_object()  # create a new harmonic map object
-            self.reset_control_law_outputs()  # reset the control law outputs
             plt.close('all')  # close all the opened plots
             if not self.hntf2d_solver.harmonic_map_object_is_built:  # if the harmonic map object is not built
                 ms.showerror("Error", "The harmonic map object to start the transformations process could not be built!")  # show an error message
@@ -4408,10 +4407,10 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                 self.remove_result_from_control_law_outputs(self.path_chosen)  # remove the chosen path from the control law outputs list
                 self.path_chosen = 0  # choose the first path in the list of the remaining real workspace paths
                 self.choose_result_from_control_law_outputs(self.path_chosen)  # select the new chosen path from the control law outputs list
-            elif event.key in ["f", "F"]:  # if the user presses "f" or "F" key
+            elif event.key in ["g", "G"]:  # if the user presses "g" or "G" key
                 ms.showinfo("Control law chosen path info", f"Chosen path: {self.path_chosen + 1}\n" + self.show_chosen_path_information(self.path_chosen), parent = self.menus_area)  # show an info message
             elif event.key in [str(i) for i in range(1, 10)]:  # if the user presses a number key from 1 to 9
-                if self.path_chosen <= len(self.realws_paths_list):  # if a valid path number is chosen
+                if int(event.key) <= len(self.realws_paths_list):  # if a valid path number is chosen
                     self.path_chosen = int(event.key) - 1  # change the chosen path
                     self.choose_result_from_control_law_outputs(self.path_chosen)  # select the new chosen path from the control law outputs list
             if event.key in ["a", "A", "d", "D"] or event.key in [str(i) for i in range(1, 10)]:  # if the user presses a proper key
@@ -4425,32 +4424,20 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             if not self.solver_enable_error_correction: last_index = -1  # if the error correction is not enabled
             else: last_index = len(self.realws_paths_list[chosen_path_index])  # if the error correction is enabled
             if chosen_path_index < len(self.realws_paths_list):  # if the chosen path index is valid
-                self.realws_path_control_law_output = self.realws_paths_list[chosen_path_index][:last_index]  # change the real workspace path control law output
-                self.unit_disk_path_control_law_output = self.unit_disk_paths_list[chosen_path_index][:last_index]  # change the unit disk path control law output
-                self.R2_plane_path_control_law_output = self.R2_plane_paths_list[chosen_path_index][:last_index]  # change the R2 plane path control law output
-                self.realws_velocities_control_law_output = self.realws_velocities_sequences_list[chosen_path_index][:last_index]  # change the real workspace velocities control law output
+                self.realws_path_control_law_output = copy.deepcopy(self.realws_paths_list[chosen_path_index][:last_index])  # change the real workspace path control law output
+                self.unit_disk_path_control_law_output = copy.deepcopy(self.unit_disk_paths_list[chosen_path_index][:last_index])  # change the unit disk path control law output
+                self.R2_plane_path_control_law_output = copy.deepcopy(self.R2_plane_paths_list[chosen_path_index][:last_index])  # change the R2 plane path control law output
+                self.realws_velocities_control_law_output = copy.deepcopy(self.realws_velocities_sequences_list[chosen_path_index][:last_index])  # change the real workspace velocities control law output
                 self.start_pos_workspace_plane = self.realws_paths_list[chosen_path_index][0]  # change the start position of the workspace plane
                 self.target_pos_workspace_plane = self.realws_paths_list[chosen_path_index][-1]  # change the target position of the workspace plane
                 self.refresh_obstacles_avoidance_solver_parameters()  # refresh the obstacles avoidance solver parameters
     def remove_result_from_control_law_outputs(self, removed_path_index, event = None):  # remove an output result from the control law outputs list
         if len(self.realws_paths_list) > 1 and removed_path_index < len(self.realws_paths_list):  # if there is more than one path in the list of the real workspace paths and the removed path index is valid
-            self.realws_paths_list.remove(self.realws_paths_list[removed_path_index])  # remove the chosen path from the list of the real workspace paths
-            self.unit_disk_paths_list.remove(self.unit_disk_paths_list[removed_path_index])  # remove the chosen path from the list of the unit disk paths
-            self.R2_plane_paths_list.remove(self.R2_plane_paths_list[removed_path_index])  # remove the chosen path from the list of the R2 plane paths
-            self.realws_velocities_sequences_list.remove(self.realws_velocities_sequences_list[removed_path_index])  # remove the chosen path velocities from the list of the real workspace velocities
-            self.paths_parameters_list.remove(self.paths_parameters_list[removed_path_index])  # remove the chosen path parameters from the list of the paths parameters
-    def reset_control_law_outputs(self, event = None):  # reset the control law outputs
-        self.realws_path_control_law_output = []  # reset the real workspace path control law output
-        self.unit_disk_path_control_law_output = []  # reset the unit disk path control law output
-        self.R2_plane_path_control_law_output = []  # reset the R2 plane path control law output
-        self.realws_velocities_control_law_output = []  # reset the real workspace velocities control law output
-        self.robot_joints_control_law_output = []  # reset the robot joints control law output
-    def clear_control_law_outputs_lists(self, event = None):  # clear the control law outputs list
-        self.realws_paths_list = []  # clear the list of the real workspace paths
-        self.unit_disk_paths_list = []  # clear the list of the unit disk paths
-        self.R2_plane_paths_list = []  # clear the list of the R2 plane paths
-        self.realws_velocities_sequences_list = []  # clear the list of the real workspace velocities
-        self.paths_parameters_list = []  # clear the list of the paths parameters
+            self.realws_paths_list.pop(removed_path_index)  # remove the chosen path from the list of the real workspace paths
+            self.unit_disk_paths_list.pop(removed_path_index)  # remove the chosen path from the list of the unit disk paths
+            self.R2_plane_paths_list.pop(removed_path_index)  # remove the chosen path from the list of the R2 plane paths
+            self.realws_velocities_sequences_list.pop(removed_path_index)  # remove the chosen path velocities from the list of the real workspace velocities
+            self.paths_parameters_list.pop(removed_path_index)  # remove the chosen path parameters from the list of the paths parameters
     def show_chosen_path_information(self, chosen_path_index, event = None):  # show some information about the chosen path
         if chosen_path_index < len(self.realws_paths_list):  # if the chosen path index is valid
             chosen_path = self.realws_paths_list[chosen_path_index]  # the chosen path
@@ -4460,7 +4447,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             solver_time_step_dt = float(np.linalg.norm(chosen_path[1] - path_start) / np.linalg.norm(self.realws_velocities_sequences_list[chosen_path_index][0]))  # the solver time step dt
             if not self.solver_enable_error_correction:  # if the error correction is not enabled
                 chosen_path = chosen_path[:-1]  # remove the desired target-position
-            kd, ki, w_phi, dp_min, vp_max = self.paths_parameters_list[chosen_path_index]  # the control law parameters
+            kd, ki, w_phi, dp_min, vp_max = copy.deepcopy(self.paths_parameters_list[chosen_path_index])  # the control law parameters
             info_text = f"• Initial pos (cm): {np.round(100.0 * path_start, 1)}, Target pos (cm): {np.round(100.0 * pd, 1)}\n\
 • Control law parameters:\n\
   - kd = {kd:.2f}\n\
@@ -4475,6 +4462,17 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             return info_text  # return the chosen path information
         else:  # if the chosen path index is not valid
             return "The path is not valid!"  # return an error message
+    def clear_control_law_outputs_lists(self, event = None):  # clear the control law outputs list
+        self.realws_path_control_law_output = []  # reset the real workspace path control law output
+        self.unit_disk_path_control_law_output = []  # reset the unit disk path control law output
+        self.R2_plane_path_control_law_output = []  # reset the R2 plane path control law output
+        self.realws_velocities_control_law_output = []  # reset the real workspace velocities control law output
+        self.robot_joints_control_law_output = []  # reset the robot joints control law output
+        self.realws_paths_list = []  # clear the list of the real workspace paths
+        self.unit_disk_paths_list = []  # clear the list of the unit disk paths
+        self.R2_plane_paths_list = []  # clear the list of the R2 plane paths
+        self.realws_velocities_sequences_list = []  # clear the list of the real workspace velocities
+        self.paths_parameters_list = []  # clear the list of the paths parameters
     def refresh_obstacles_avoidance_solver_parameters(self, event = None):  # refresh the obstacles avoidance solver parameters
         if self.hntf2d_solver != None:  # if the hntf2d control law object has been created
             self.hntf2d_solver.p_init = self.start_pos_workspace_plane  # change the initial position of the obstacles avoidance solver
@@ -4550,7 +4548,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
     def calculate_maximum_path_length(self, event = None):  # calculate the maximum path length (in meters) allowed by the solver
         return self.vp_max * self.calculate_maximum_path_time()  # return the maximum path length (in meters) allowed by the solver
     def change_solver_error_tol(self, event = None):  # change the error tolerance for the control law
-        solver_error_tol = sd.askfloat("Choose the solver error tolerance", "Enter the error tolerance (in millimeters)\nof the target position convergence for the control law:", initialvalue = 100.0 * self.solver_error_tolerance, minvalue = 100.0 * self.solver_error_tolerance_limits[0], maxvalue = 100.0 * self.solver_error_tolerance_limits[1], parent = self.menus_area)  # ask the user to enter the new value of the solver's error tolerance
+        solver_error_tol = sd.askfloat("Choose the solver error tolerance", "Enter the error tolerance (in centimeters)\nfor the target position convergence of the control law:", initialvalue = 100.0 * self.solver_error_tolerance, minvalue = 100.0 * self.solver_error_tolerance_limits[0], maxvalue = 100.0 * self.solver_error_tolerance_limits[1], parent = self.menus_area)  # ask the user to enter the new value of the solver's error tolerance
         if solver_error_tol != None:  # if the user enters a number
             self.solver_error_tolerance = solver_error_tol / 100.0  # change the error tolerance for the control law
         self.update_obstacles_avoidance_solver_indicators()  # update the obstacles avoidance solver indicators
@@ -4605,7 +4603,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
         if self.hntf2d_solver != None and self.transformations_are_built:  # if the workspace transformations are built
             points_max_norm = max([np.linalg.norm(self.hntf2d_solver.q_i[k]) for k in range(len(self.hntf2d_solver.q_i))] + [np.linalg.norm(self.hntf2d_solver.q_init), np.linalg.norm(self.hntf2d_solver.q_d)])  # calculate the maximum norm of the points
             grid_points_size = self.navigation_field_plot_points_divs  # the number of points in the grid
-            grid_scale_factor = 1.2  # the scale factor of the grid
+            grid_scale_factor = 1.5  # the scale factor of the grid
             x = np.linspace(-grid_scale_factor * points_max_norm, grid_scale_factor * points_max_norm, grid_points_size)  # the x values
             y = np.linspace(-grid_scale_factor * points_max_norm, grid_scale_factor * points_max_norm, grid_points_size)  # the y values
             X, Y = np.meshgrid(x, y)  # the meshgrid of the x and y values
@@ -4645,7 +4643,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
         if self.hntf2d_solver != None and self.transformations_are_built:  # if the workspace transformations are built
             points_max_norm = max([np.linalg.norm(self.hntf2d_solver.q_i[k]) for k in range(len(self.hntf2d_solver.q_i))] + [np.linalg.norm(self.hntf2d_solver.q_init), np.linalg.norm(self.hntf2d_solver.q_d)])  # calculate the maximum norm of the points
             grid_points_size = self.navigation_field_plot_points_divs  # the number of points in the grid
-            grid_scale_factor = 1.2  # the scale factor of the grid
+            grid_scale_factor = 1.5  # the scale factor of the grid
             x = np.linspace(-grid_scale_factor * points_max_norm, grid_scale_factor * points_max_norm, grid_points_size)  # the x values
             y = np.linspace(-grid_scale_factor * points_max_norm, grid_scale_factor * points_max_norm, grid_points_size)  # the y values
             X, Y = np.meshgrid(x, y)  # the meshgrid of the x and y values
@@ -4656,13 +4654,13 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             reject_point = False  # the flag to reject the point
             for k in range(len(P)):  # for each point p
                 for i in range(len(self.hntf2d_solver.q_i)):
-                    if np.linalg.norm(P[k] - self.hntf2d_solver.q_i[i]) < 0.5 * (2.0 * grid_scale_factor * points_max_norm) / 100.0:  # if the point p is on an obstacle
+                    if np.linalg.norm(P[k] - self.hntf2d_solver.q_i[i]) < 1.0 * (2.0 * grid_scale_factor * points_max_norm) / 100.0:  # if the point p is on an obstacle
                         reject_point = True  # set the flag to reject the point
                         break
                 if not reject_point:  # if the point p is not near an obstacle
                     gradients[k] = self.hntf2d_solver.navigation_psi_gradient(P[k])  # the gradient of the navigation function at point p
                     gradient_norm = np.sqrt(gradients[k, 0]**2 + gradients[k, 1]**2)  # the norm of the current gradient
-                    gradients_scaled[k] = (gradients[k] / (gradient_norm + 1e-7)) * gradients_desired_norm  # the normalized and rescaled gradient of the navigation function at point p
+                    gradients_scaled[k] = (gradients[k] / (gradient_norm + 1e-10)) * gradients_desired_norm  # the normalized and rescaled gradient of the navigation function at point p
                 reject_point = False  # reset the flag to reject the point
             # plot the gradients
             general_fontsize = 7; text_margin = 0.02
@@ -4713,17 +4711,17 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             if self.hntf2d_solver != None and self.transformations_are_built and self.positions_on_plane_are_correct:  # if the workspace transformations are built
                 p_list, p_dot_list, q_disk_list, q_list, control_law_success = self.hntf2d_solver.run_control_law(self.solver_time_step_dt, self.solver_maximum_iterations, self.solver_error_tolerance)  # apply the control law and compute the path positions and velocities on the real and transformed workspaces
                 print("The control process has been completed!")  # print a message
-                self.reset_control_law_outputs()  # reset the control law outputs
                 self.realws_path_control_law_output = p_list  # the path positions on the real workspace, generated by the control law
                 self.realws_velocities_control_law_output = p_dot_list  # the velocities on the real workspace, generated by the control law
                 self.unit_disk_path_control_law_output = q_disk_list  # the path positions on the unit disk, generated by the control law
                 self.R2_plane_path_control_law_output = q_list  # the path positions on the R2 plane, generated by the control law
+                self.robot_joints_control_law_output = []  # reset the robot joints control law output
                 if len(self.realws_paths_list) < self.max_paths_stored:  # if the total number of paths is less than the maximum allowed number that can be stored
-                    self.realws_paths_list.append(p_list + [self.hntf2d_solver.p_d])  # append the real workspace path to the list of the real workspace paths
-                    self.unit_disk_paths_list.append(q_disk_list + [self.hntf2d_solver.q_d_disk])  # append the unit disk path to the list of the unit disk paths
-                    self.R2_plane_paths_list.append(q_list + [self.hntf2d_solver.q_d])  # append the R2 plane path to the list of the R2 plane paths
-                    self.realws_velocities_sequences_list.append(p_dot_list + [(self.hntf2d_solver.p_d - p_list[-1]) / self.solver_time_step_dt])  # append the real workspace velocities to the list of the real workspace velocities
-                    self.paths_parameters_list.append([self.k_d, self.k_i, self.w_phi, self.dp_min, self.vp_max])  # append the control law parameters to the list of the control law parameters
+                    self.realws_paths_list.append(copy.deepcopy(self.realws_path_control_law_output) + [self.hntf2d_solver.p_d])  # append the real workspace path to the list of the real workspace paths
+                    self.realws_velocities_sequences_list.append(copy.deepcopy(self.realws_velocities_control_law_output) + [(self.hntf2d_solver.p_d - p_list[-1]) / self.solver_time_step_dt])  # append the real workspace velocities to the list of the real workspace velocities
+                    self.unit_disk_paths_list.append(copy.deepcopy(self.unit_disk_path_control_law_output) + [self.hntf2d_solver.q_d_disk])  # append the unit disk path to the list of the unit disk paths
+                    self.R2_plane_paths_list.append(copy.deepcopy(self.R2_plane_path_control_law_output) + [self.hntf2d_solver.q_d])  # append the R2 plane path to the list of the R2 plane paths
+                    self.paths_parameters_list.append([self.k_d, copy.deepcopy(self.k_i), self.w_phi, self.dp_min, self.vp_max])  # append the control law parameters to the list of the control law parameters
                 self.path_chosen = len(self.realws_paths_list) - 1  # choose the last path in the list of the real workspace paths
                 self.choose_result_from_control_law_outputs(self.path_chosen)  # choose the last path in the list of the control law outputs
                 if control_law_success:  # if the control law is successful
@@ -4740,24 +4738,27 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                     self.robot_joints_control_law_output = []  # initialize the robot joints control law output
                     self.robot_joints_control_law_output.append(np.array(self.control_joints_variables))  # append the current control joints variables to the list of the robot joints control law output
                     self.control_or_kinematics_variables_visualization = self.control_or_kinematics_variables_visualization_list[0]  # choose the control joints variables for visualization
+                    start_pos_workspace_plane = self.realws_path_control_law_output[0]  # the start position of the current path on the workspace plane
+                    ve_z = 0.05  # the linear velocity (in m/sec) of the end-effector along its z-axis
+                    reset_robot_steps = 250  # the number of steps to reset the robot's position
+                    initial_robot_steps = int(2.0 * self.obstacles_height_for_solver / ve_z / self.move_robot_time_step_dt)  # the number of steps to move the robot away from its initial configuration
+                    start_1_robot_steps = 250  # the number of steps to move the robot to its start configuration above the workspace plane
+                    start_2_robot_steps = int(self.obstacles_height_for_solver / ve_z / self.move_robot_time_step_dt)  # the number of steps to move the robot from its start configuration above the workspace plane to the start configuration on the workspace plane
                     # compute the start configurations of the end-effector above and on the workspace plane, based on the obstacles height, and calculate some of the robot's reachable poses
                     obstacles_2d_plane_normal_vector, obstacles_2d_plane_orientation, obstacles_2d_plane_translation = gf.get_components_from_xy_plane_transformation(self.obst_plane_wrt_world_transformation_matrix)  # get the components of the obstacles 2D plane transformation
                     R_plane = self.obst_plane_wrt_world_transformation_matrix[0:3, 0:3]  # the rotation matrix of the workspace plane wrt the world frame
                     obst_top_plane_position = obstacles_2d_plane_translation + obstacles_2d_plane_normal_vector * self.obstacles_height_for_solver  # the position of the top plane of the obstacles
                     obst_top_plane_wrt_world_transformation_matrix = gf.xy_plane_transformation(obstacles_2d_plane_normal_vector, obstacles_2d_plane_orientation, obst_top_plane_position)  # the transformation matrix of the top plane of the obstacles wrt the world frame
-                    end_effector_start_position_1 = obst_top_plane_wrt_world_transformation_matrix @ np.array([self.start_pos_workspace_plane[0], self.start_pos_workspace_plane[1], 0.0, 1.0])  # the start position of the end-effector on the plane tangent to the obstacles
+                    end_effector_start_position_1 = obst_top_plane_wrt_world_transformation_matrix @ np.array([start_pos_workspace_plane[0], start_pos_workspace_plane[1], 0.0, 1.0])  # the start position of the end-effector on the plane tangent to the obstacles
                     end_effector_start_configuration_1 = gf.xy_plane_transformation(-obstacles_2d_plane_normal_vector, obstacles_2d_plane_orientation, obst_top_plane_position)  # initialize the transformation matrix of the end-effector on the plane tangent to the obstacles
                     end_effector_start_configuration_1[:, 3] = end_effector_start_position_1  # the transformation matrix of the end-effector on the plane tangent to the obstacles
-                    end_effector_start_position_2 = self.obst_plane_wrt_world_transformation_matrix @ np.array([self.start_pos_workspace_plane[0], self.start_pos_workspace_plane[1], 0.0, 1.0])  # the start position of the end-effector on the workspace plane
+                    end_effector_start_position_2 = self.obst_plane_wrt_world_transformation_matrix @ np.array([start_pos_workspace_plane[0], start_pos_workspace_plane[1], 0.0, 1.0])  # the start position of the end-effector on the workspace plane
                     end_effector_start_configuration_2 = gf.xy_plane_transformation(-obstacles_2d_plane_normal_vector, obstacles_2d_plane_orientation, obstacles_2d_plane_translation)  # initialize the transformation matrix of the end-effector on the workspace plane
                     end_effector_start_configuration_2[:, 3] = end_effector_start_position_2  # the transformation matrix of the end-effector on the workspace plane
                     robot_joints_configurations, robot_reachable_positions = kin.find_reachable_workspace(self.built_robotic_manipulator, self.joints_range_divisions, False)  # find some of the robot's reachable configurations and the corresponding reachable positions
                     robot_reachable_positions = [np.concatenate((robot_reachable_positions[k], np.array([1.0])), axis = 0) for k in range(len(robot_reachable_positions))]  # add the homogeneous coordinate to the reachable positions
                     robot_joints_configurations = [robot_joints_configurations[k] for k in range(len(robot_joints_configurations)) if (np.linalg.inv(obst_top_plane_wrt_world_transformation_matrix) @ robot_reachable_positions[k])[2] >= 1e-3]  # filter the robot's reachable configurations keeping only the ones above the obstacles plane
-                    ve_z = 0.05  # the linear velocity (in m/sec) of the end-effector along its z-axis
                     # move the robot from its initial configuration to the zero configuration (reset the robot's pose to its default zero state)
-                    initial_robot_steps = int(2.0 * self.obstacles_height_for_solver / ve_z / self.move_robot_time_step_dt)  # the number of steps to move the robot away from its initial configuration
-                    reset_robot_steps = 500  # the number of steps to reset the robot's position
                     go_to_zero_success = True  # the flag to check if the robot can go to its zero configuration without hitting the obstacles plane
                     qr_initial = self.robot_joints_control_law_output[-1]  # the initial configuration of the robot's joints
                     qr_zero = np.zeros_like(self.robot_joints_control_law_output[-1])  # the zero configuration of the robot's joints
@@ -4776,7 +4777,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                                 break  # break the loop
                         # move the robot to its zero configuration
                         current_robot_joints_number = len(self.robot_joints_control_law_output)  # the current number of the robot's joints configurations
-                        initial_robot_configuration_joints_sequence = self.robot_joints_control_law_output.copy()  # the sequence of the robot's joints configurations to move the robot away from its initial configuration
+                        initial_robot_configuration_joints_sequence = copy.deepcopy(self.robot_joints_control_law_output)  # the sequence of the robot's joints configurations to move the robot away from its initial configuration
                         qr_initial = self.robot_joints_control_law_output[-1]  # the initial configuration of the robot's joints
                         for qr_middle in robot_joints_configurations:  # loop through the robot's reachable joints configurations
                             go_to_zero_success = True  # reset the flag to check if the robot can go to its zero configuration without hitting the obstacles plane
@@ -4792,7 +4793,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                                 collision_happening = (np.linalg.inv(obst_top_plane_wrt_world_transformation_matrix) @ pos)[2] <= -1e-3  # check if the end-effector is below the obstacles plane
                                 if collision_happening:  # if the end-effector is below the obstacles plane, meaning there is a collision
                                     go_to_zero_success = False  # the robot cannot go to its zero configuration without hitting the obstacles plane
-                                    self.robot_joints_control_law_output = initial_robot_configuration_joints_sequence.copy()  # reset the robot's joints to their initial configuration
+                                    self.robot_joints_control_law_output = copy.deepcopy(initial_robot_configuration_joints_sequence)  # reset the robot's joints to their initial configuration
                                     break  # break the loop
                             if go_to_zero_success:  # if the robot does not hit the obstacles plane
                                 break  # break the loop
@@ -4819,16 +4820,12 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                             invkine_tries_start_configuration.sort(key = lambda x: x[1], reverse = True)  # sort the tries of the inverse kinematics based on the distance of the joints values from their limits, in a descending order
                             # loop through all the inverse kinematics tries for the start configuration of the end-effector on the workspace plane, until a feasible trajectory is found for the robot to move to the target position
                             current_robot_joints_number = len(self.robot_joints_control_law_output)  # the current number of the robot's joints configurations in the control law output
-                            reset_robot_configuration_joints_sequence = self.robot_joints_control_law_output.copy()  # the time sequence of the robot's joints to reset the robot's position
+                            reset_robot_configuration_joints_sequence = copy.deepcopy(self.robot_joints_control_law_output)  # the time sequence of the robot's joints to reset the robot's position
                             for k in range(len(invkine_tries_start_configuration)):  # loop through all the inverse kinematics tries
                                 # move the robot to the start configuration above the workspace plane
-                                start_1_robot_steps = 500  # the number of steps to move the robot to its start configuration above the workspace plane
                                 go_to_start_1_success = True  # the flag to check if the robot can go to its start configuration above the workspace plane without hitting the obstacles plane
                                 qr_start_1 = invkine_tries_start_configuration[k][0]  # the start configuration of the robot's joints above the workspace plane
                                 qr_zero = np.zeros_like(qr_start_1)  # the zero configuration of the robot's joints
-                                # for i in range(start_1_robot_steps):  # loop through the number of steps to reset the robot's position
-                                #     qr_new = qr_zero + (i + 1) * (qr_start_1 - qr_zero) / reset_robot_steps  # the new configuration of the robot's joints
-                                #     self.robot_joints_control_law_output.append(qr_new)  # append the new configuration of the robot's joints to the list of the robot joints control law output
                                 robot_joints_configurations.sort(key = lambda x: np.linalg.norm(x - self.robot_joints_control_law_output[-1]))  # sort (in ascending order) the robot's reachable configurations based on their distance from the current robot's joints configuration
                                 for qr_middle in robot_joints_configurations:  # loop through the robot's reachable joints configurations
                                     go_to_start_1_success = True  # reset the flag to check if the robot can go to its start configuration above the workspace plane without hitting the obstacles plane
@@ -4844,15 +4841,13 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                                         collision_happening = (np.linalg.inv(obst_top_plane_wrt_world_transformation_matrix) @ pos)[2] <= -1e-3  # check if the end-effector is below the top plane of the obstacles
                                         if collision_happening:  # if the end-effector is below the top plane of the obstacles, meaning there is a collision
                                             go_to_start_1_success = False  # the robot cannot go to its start configuration above the workspace plane without hitting the obstacles plane
-                                            self.robot_joints_control_law_output = reset_robot_configuration_joints_sequence.copy()  # reset the robot's joints to their initial configuration
-                                            print(k, pos)
+                                            self.robot_joints_control_law_output = copy.deepcopy(reset_robot_configuration_joints_sequence)  # reset the robot's joints to their initial configuration
                                             break  # break the loop
                                     if go_to_start_1_success:  # if the robot does not hit the obstacles plane
                                         break  # break the loop
                                 if go_to_start_1_success:  # if the robot can go to its start configuration above the workspace plane without hitting the obstacles plane
                                     # move the robot from the start configuration above the workspace plane to the current start configuration on the workspace plane
                                     ve = np.concatenate((np.array([0.0, 0.0, ve_z]), np.zeros(3)), axis = 0)  # set the velocity of the end-effector wrt its own frame
-                                    start_2_robot_steps = int(self.obstacles_height_for_solver / ve_z / self.move_robot_time_step_dt)  # the number of steps to move the robot from its start configuration above the workspace plane to the start configuration on the workspace plane
                                     qr_old = self.robot_joints_control_law_output[-1]  # the previous configuration of the robot's joints
                                     for j in range(start_2_robot_steps):  # loop through the number of steps to move the robot from its start configuration above the workspace plane to the start configuration on the workspace plane
                                         qr_dot, _ = kin.compute_inverse_differential_kinematics(self.built_robotic_manipulator, self.robot_joints_control_law_output[-1], ve, "end-effector")  # compute the joints velocities
@@ -4880,10 +4875,10 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                                     if trajectory_success:  # if a feasible trajectory is found for the robot to move to the target position
                                         break  # break the loop
                                     else:  # if the current trajectory is not feasible
-                                        self.robot_joints_control_law_output = reset_robot_configuration_joints_sequence.copy()  # initialize the robot's joints to the reset time sequence
+                                        self.robot_joints_control_law_output = copy.deepcopy(reset_robot_configuration_joints_sequence)  # initialize the robot's joints to the reset time sequence
                                 else:  # if the robot cannot go to its start configuration above the workspace plane without hitting the obstacles plane
                                     trajectory_success = False  # cannot find a feasible trajectory for the robot to move to the target position
-                                    self.robot_joints_control_law_output = reset_robot_configuration_joints_sequence.copy()  # initialize the robot's joints to the reset time sequence
+                                    self.robot_joints_control_law_output = copy.deepcopy(reset_robot_configuration_joints_sequence)  # initialize the robot's joints to the reset time sequence
                             if trajectory_success:  # if a feasible trajectory is found for the robot to move to the target position
                                 ms.showinfo("Robot trajectory success", "The robot's trajectory has been calculated successfully!", parent = self.menus_area)  # show an info message
                                 self.plot_robot_joints_trajectories()  # plot the robot's joints trajectories for the obstacles avoidance
@@ -5014,18 +5009,19 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
             for k in range(len(self.robot_joints_control_law_output)):  # loop through the joints variables time series for the robot control
                 if not self.real_robot_is_moving:  # if the real robot is not moving
                     if control_or_kinematics_choose == self.control_or_kinematics_variables_visualization_list[0]:  # if the user wants to visualize the control variables
-                        self.control_joints_variables = self.robot_joints_control_law_output[k].copy()  # the joints variables for the robot control, for the current time step
+                        self.control_joints_variables = self.robot_joints_control_law_output[k]  # the joints variables for the robot control, for the current time step
                     elif control_or_kinematics_choose == self.control_or_kinematics_variables_visualization_list[1]:  # if the user wants to visualize the forward kinematics variables
-                        self.forward_kinematics_variables = self.robot_joints_control_law_output[k].copy()  # the joints variables for the robot control, for the current time step
+                        self.forward_kinematics_variables = self.robot_joints_control_law_output[k]  # the joints variables for the robot control, for the current time step
                     if self.swift_robot_is_moving:  # if the Swift robot is moving
                         pass
                     time.sleep(self.solver_time_step_dt)  # wait for some time equal to the time step of the solver
                 else:  # if the real robot is moving
                     if self.serial_connection.is_open:  # if the serial connection is open
-                        self.control_joints_variables = self.robot_joints_control_law_output[k].copy()  # the joints variables for the robot control, for the current time step
+                        self.control_joints_variables = self.robot_joints_control_law_output[k]  # the joints variables for the robot control, for the current time step
+                        self.control_joints_variables[-1] = 0.0
                         self.control_end_effector_variable = 0.0  # the end-effector variable for the robot control, for the current time step
                         self.send_command_to_all_motors(self.control_joints_variables, self.control_end_effector_variable)  # send the command to all the motors
-                        time.sleep(self.solver_time_step_dt)  # wait for some time equal to the time step of the solver
+                        time.sleep(0.3)  # wait for some time
                     else:  # if the serial connection is not open yet
                         ms.showerror("Error", "The serial connection is not open yet! You have to establish a serial connection between the computer and the real robot, in order to control the real robot!", parent = self.menus_area)  # show an error message
                         break  # break the for loop
