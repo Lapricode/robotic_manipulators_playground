@@ -39,7 +39,9 @@ Also, the library hntf2d is required.
 
 ## Camera calibration
 
-You may need to calibrate your own camera, if you want to play with the related program features. In order to do that you need to capture new images with your camera and put them inside the "camera_calibration_images" folder.
+You may need to calibrate your own camera, if you want to use the related program features. In order to do so, you need to capture new images with your camera and put (only) them inside the "camera_calibration_images" folder. The images should contain a 10x7 chessboard pattern of arbitary dimensions, like the one shown below. You have to take multiple images of the chessboard (around 20 is probably fine), in different positions and orientations. After that, you can press the proper button in the GUI, in order to compute the new intrinsic matrix and distortion coefficients.
+
+![WIN_20240717_13_17_36_Pro](https://github.com/user-attachments/assets/d9bf27a9-6098-4213-95ef-22b623b1d0a7)
 
 ## Swift simulation
 
