@@ -35,6 +35,8 @@ Python libraries needed:
     - time
     - threading
 
+Also, the library hntf2d is required.
+
 ## Camera calibration
 
 You may need to calibrate your own camera, if you want to play with the related program features. In order to do that you need to capture new images with your camera and put them inside the "camera_calibration_images" folder.
