@@ -24,7 +24,7 @@ import robots_kinematics as kin
 import camera_detection as cd
 import polygons_boundaries_operations as pbo
 import general_functions as gf
-import control_law as cl
+import control_law_hntf2d as cl
 
 
 # the class that creates the GUI window of the application
