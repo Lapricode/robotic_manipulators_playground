@@ -37,7 +37,7 @@ Python libraries needed:
 
 Also, the library hntf2d is required.
 
-To start the program run the python file "main.py".
+To start the program run the python file "robotic_arms_playground.py".
 
 ## Thor robotic arm
 
