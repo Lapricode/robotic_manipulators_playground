@@ -1,6 +1,6 @@
-# robotic_manipulators_playground
+# A playground for serial robotic manipulators
 
-## Introduction
+## Introduction - Running instructions
 
 This is a python tkinter GUI for designing, simulating and controlling serial robotic manipulators (with open kinematic chains), that also gives a solution to the obstacles avoidance problem.
 
@@ -36,6 +36,8 @@ Python libraries needed:
     - threading
 
 Also, the library hntf2d is required.
+
+To start the program run the python file "main.py".
 
 ## Thor robotic arm
 
