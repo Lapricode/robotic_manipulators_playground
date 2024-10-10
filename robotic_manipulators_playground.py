@@ -24,7 +24,7 @@ import robots_kinematics as kin
 import camera_detection as cd
 import polygons_boundaries_operations as pbo
 import general_functions as gf
-import control_law_hntf2d as cl
+import control_law as cl
 
 
 # the class that creates the GUI window of the application
@@ -1701,9 +1701,9 @@ class robotic_manipulators_playground_window():
         self.end_effector_mult_factor_entrybox.bind("<Return>", self.change_end_effector_mult_factor)
         choose_control_mode_label_x = 1/6; gbl.menu_label(menu_frame, "Control mode:", f"Calibri {menu_properties['options_font']} bold", menu_properties['labels_color'], menu_properties['bg_color'], choose_control_mode_label_x * menu_properties['width'], choose_control_mode_label_ord * menu_properties['height'] / (menu_properties['rows'] + 1))
         choose_control_mode_button_x = 2/6; self.choose_control_mode_button = gbl.menu_button(menu_frame, self.robotic_manipulator_control_mode, f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], choose_control_mode_button_x * menu_properties['width'], choose_control_mode_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.change_robotic_manipulator_control_mode).button
-        send_command_joint_motors_button_x = 3/6; self.send_command_joint_motors_button = gbl.menu_button(menu_frame, "GO\njoint", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], send_command_joint_motors_button_x * menu_properties['width'], send_command_joint_motors_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), lambda event, joints_values = self.control_joints_variables: self.send_command_to_chosen_joint_motors(joints_values)).button
-        send_command_all_motors_button_x = 4/6; self.send_command_all_motors_button = gbl.menu_button(menu_frame, "GO ALL\njoints", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], send_command_all_motors_button_x * menu_properties['width'], send_command_all_motors_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), lambda event, joints_values = self.control_joints_variables, end_effector_value = self.control_end_effector_variable: self.send_command_to_all_motors(joints_values, end_effector_value)).button
-        send_command_end_effector_button_x = 5/6; self.send_command_end_effector_button = gbl.menu_button(menu_frame, "GO\nend-effector", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], send_command_end_effector_button_x * menu_properties['width'], send_command_end_effector_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), lambda event, end_effector_value = self.control_end_effector_variable: self.send_command_to_end_effector(end_effector_value)).button
+        send_command_joint_motors_button_x = 3/6; self.send_command_joint_motors_button = gbl.menu_button(menu_frame, "GO\njoint", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], send_command_joint_motors_button_x * menu_properties['width'], send_command_joint_motors_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.send_command_to_chosen_joint_motors).button
+        send_command_all_motors_button_x = 4/6; self.send_command_all_motors_button = gbl.menu_button(menu_frame, "GO ALL\njoints", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], send_command_all_motors_button_x * menu_properties['width'], send_command_all_motors_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.send_command_to_all_motors).button
+        send_command_end_effector_button_x = 5/6; self.send_command_end_effector_button = gbl.menu_button(menu_frame, "GO\nend-effector", f"Calibri {menu_properties['options_font']} bold", menu_properties['buttons_color'], menu_properties['bg_color'], send_command_end_effector_button_x * menu_properties['width'], send_command_end_effector_button_ord * menu_properties['height'] / (menu_properties['rows'] + 1), self.send_command_to_end_effector).button
         self.update_control_variables_indicators()  # update the indicators of the control variables of the robotic manipulator
     def build_camera_control_menus(self, submenus_titles, submenus_descriptions, event = None):  # build the sub menus of the main menu that controls the camera
         self.clear_menus_background()
@@ -2164,11 +2164,11 @@ class robotic_manipulators_playground_window():
             self.control_joints_variables += [0.0 for _ in range(current_joints_number - previous_joints_number)]  # add the new control variables to the list of the control joints variables of the robotic manipulator
             self.control_joints_variables_limits += [copy.deepcopy(self.control_joints_variables_extreme_limits) for _ in range(current_joints_number - previous_joints_number)]  # add the new control variables limits to the list of the control joints variables limits of the robotic manipulator
             self.joints_z_axis_positions += [0.0 for _ in range(current_joints_number - previous_joints_number)]  # add the new joints z axis positions to the list of the joints z axis positions of the robotic manipulator
-            self.frames_origins_colors = self.frames_origins_colors[:-1] + ["black" for _ in range(current_joints_number - previous_joints_number)] + [self.frames_origins_colors[-1]]  # add the new frames origins colors to the list of the frames origins colors of the robotic manipulator
-            self.frames_origins_sizes = self.frames_origins_sizes[:-1] + [self.frames_origins_sizes[-1] for _ in range(current_joints_number - previous_joints_number)] + [self.frames_origins_sizes[-1]]  # add the new frames origins sizes to the list of the frames origins sizes of the robotic manipulator
-            self.initial_links_lengths = self.initial_links_lengths[:-1] + [self.initial_links_lengths[-1] for _ in range(current_joints_number - previous_joints_number)] + [self.initial_links_lengths[-1]]  # add the new initial links lengths to the list of the initial links lengths of the robotic manipulator
-            self.links_colors = self.links_colors[:-1] + ["red" for _ in range(current_joints_number - previous_joints_number)] + [self.links_colors[-1]]  # add the new links colors to the list of the links colors of the robotic manipulator
-            self.links_sizes = self.links_sizes[:-1] + [self.links_sizes[-1] for _ in range(current_joints_number - previous_joints_number)] + [self.links_sizes[-1]]  # add the new links sizes to the list of the links sizes of the robotic manipulator
+            self.frames_origins_colors = list(self.frames_origins_colors[:-1]) + ["black" for _ in range(current_joints_number - previous_joints_number)] + [self.frames_origins_colors[-1]]  # add the new frames origins colors to the list of the frames origins colors of the robotic manipulator
+            self.frames_origins_sizes = list(self.frames_origins_sizes[:-1]) + [self.frames_origins_sizes[-1] for _ in range(current_joints_number - previous_joints_number)] + [self.frames_origins_sizes[-1]]  # add the new frames origins sizes to the list of the frames origins sizes of the robotic manipulator
+            self.initial_links_lengths = list(self.initial_links_lengths[:-1]) + [self.initial_links_lengths[-1] for _ in range(current_joints_number - previous_joints_number)] + [self.initial_links_lengths[-1]]  # add the new initial links lengths to the list of the initial links lengths of the robotic manipulator
+            self.links_colors = list(self.links_colors[:-1]) + ["red" for _ in range(current_joints_number - previous_joints_number)] + [self.links_colors[-1]]  # add the new links colors to the list of the links colors of the robotic manipulator
+            self.links_sizes = list(self.links_sizes[:-1]) + [self.links_sizes[-1] for _ in range(current_joints_number - previous_joints_number)] + [self.links_sizes[-1]]  # add the new links sizes to the list of the links sizes of the robotic manipulator
             self.joints_motors_list += [["X"] for _ in range(current_joints_number - previous_joints_number)]  # add the new joints motors to the list of the joints motors of the robotic manipulator
             self.joints_motors_mult_factors += [[1.0] for _ in range(current_joints_number - previous_joints_number)]  # add the new motors multiplication factors to the list of the motors multiplication factors of the robotic manipulator
             self.forward_kinematics_variables += [0.0 for _ in range(current_joints_number - previous_joints_number)]  # add the new forward kinematics variables to the list of the forward kinematics variables of the robotic manipulator
@@ -2748,7 +2748,7 @@ class robotic_manipulators_playground_window():
             self.change_link_size_button.configure(text = self.links_sizes[link_number_visualization])  # change the text of the button that shows the size of the chosen link
             frames_origins, frames_orientations = self.get_all_frames_positions_orientations(np.zeros(self.joints_number,))  # get the positions and the orientations of the frames of the robotic manipulator when all the joints are at zero
             robotic_manipulator_links_points = [np.array(frames_origins[0])] + [np.array(frames_origins[k + 1] + frames_orientations[k + 1][:, 2] * self.joints_z_axis_positions[k]) for k in range(self.joints_number)] + [np.array(frames_origins[-1])]  # the points of the links of the robotic manipulator
-            self.initial_links_lengths = np.linalg.norm(np.diff(robotic_manipulator_links_points, axis = 0), axis = 1)  # the initial lengths of the links of the robotic manipulator
+            self.initial_links_lengths = np.linalg.norm(np.diff(robotic_manipulator_links_points, axis = 0), axis = 1).tolist()  # the initial lengths of the links of the robotic manipulator
             if self.robotic_manipulator_is_built:  # if a robotic manipulator model is built
                 frames_origins, frames_orientations = self.get_all_frames_positions_orientations(self.built_robotic_manipulator.q)  # get the positions and the orientations of the current frames of the robotic manipulator
             robotic_manipulator_links_points = [np.array(frames_origins[0])] + [np.array(frames_origins[k + 1] + frames_orientations[k + 1][:, 2] * self.joints_z_axis_positions[k]) for k in range(self.joints_number)] + [np.array(frames_origins[-1])]  # the points of the links of the robotic manipulator
@@ -3229,20 +3229,20 @@ class robotic_manipulators_playground_window():
         self.control_joints_variables = copy.deepcopy(self.forward_kinematics_variables)  # copy the forward kinematics variables to the control variables 
         self.update_control_variables_indicators()  # update the indicators of the control variables of the robotic manipulator
         if self.robotic_manipulator_control_mode == self.robotic_manipulator_control_modes_list[1]:  # if the robotic manipulator control mode is automatic
-            self.send_command_to_chosen_joint_motors(self.control_joints_variables)  # send the right command to the chosen control joint motors
+            self.send_command_to_chosen_joint_motors()  # send the right command to the chosen control joint motors
     def set_joints_variables_to_zero(self, event = None):  # set the control joints variables of the robotic manipulator to zero
         for joint_number in range(1, self.joints_number + 1):  # iterate through the joints of the robotic manipulator
             self.control_joints_variables[joint_number - 1] = 0  # set the control joint variable of the chosen control joint to zero
         self.update_control_variables_indicators()  # update the indicators of the control variables of the robotic manipulator
         if self.robotic_manipulator_control_mode == self.robotic_manipulator_control_modes_list[1]:  # if the robotic manipulator control mode is automatic
-            self.send_command_to_all_motors(self.control_joints_variables, self.control_end_effector_variable)  # send the right command to all motors
+            self.send_command_to_all_motors()  # send the right command to all motors
     def change_control_variable_slider(self, event = None):  # change the control variable of the chosen joint of the robotic manipulator
         joint_control_variable = float(self.joint_variable_slider.get())  # the control variable of the chosen control joint
         joint_type_index = self.joints_types_list.index(self.joints_types[self.chosen_joint_number_control - 1])  # the index of the chosen joint type (0 for revolute and 1 for prismatic) for the control
         self.control_joints_variables[self.chosen_joint_number_control - 1] = [np.deg2rad(joint_control_variable), joint_control_variable][joint_type_index]  # change the control variable of the chosen control joint
         self.update_control_variables_indicators()  # update the indicators of the control variables of the robotic manipulator
         if self.robotic_manipulator_control_mode == self.robotic_manipulator_control_modes_list[1]:  # if the robotic manipulator control mode is automatic
-            self.send_command_to_chosen_joint_motors(self.control_joints_variables)  # send the right command to the chosen control joint motors
+            self.send_command_to_chosen_joint_motors()  # send the right command to the chosen control joint motors
     def change_chosen_control_variable(self, event = None):  # change the control variable of the chosen joint of the robotic manipulator
         try:  # try to get the entered value
             joint_control_variable = float(self.joint_control_variable_combobox.get())  # the control variable of the chosen control joint
@@ -3258,7 +3258,7 @@ class robotic_manipulators_playground_window():
             self.control_joints_variables[self.chosen_joint_number_control - 1] = control_variable_limits[1]  # change the control variable of the chosen control joint to the maximum limit
         self.update_control_variables_indicators()  # update the indicators of the control variables of the robotic manipulator
         if self.robotic_manipulator_control_mode == self.robotic_manipulator_control_modes_list[1]:  # if the robotic manipulator control mode is automatic
-            self.send_command_to_chosen_joint_motors(self.control_joints_variables)  # send the right command to the chosen control joint motors
+            self.send_command_to_chosen_joint_motors()  # send the right command to the chosen control joint motors
     def increase_decrease_control_variable(self, change_type, event = None):  # increase or decrease the control variable of the chosen joint of the robotic manipulator
         joint_type_index = self.joints_types_list.index(self.joints_types[self.chosen_joint_number_control - 1])  # the index of the chosen joint type (0 for revolute and 1 for prismatic) for the control
         self.control_joints_variables[self.chosen_joint_number_control - 1] += np.sign(change_type) * [(10**(-self.angles_precision) * np.deg2rad([1, 10, 100])).tolist(), (10**(-self.distances_precision) * np.array([1, 10, 100])).tolist()][joint_type_index][np.abs(change_type) - 1]  # increase or decrease the control variable of the chosen control joint by the correct ammount
@@ -3269,7 +3269,7 @@ class robotic_manipulators_playground_window():
             self.control_joints_variables[self.chosen_joint_number_control - 1] = control_variable_limits[1]  # change the control variable of the chosen control joint to the maximum limit
         self.update_control_variables_indicators()  # update the indicators of the control variables of the robotic manipulator
         if self.robotic_manipulator_control_mode == self.robotic_manipulator_control_modes_list[1]:  # if the robotic manipulator control mode is automatic
-            self.send_command_to_chosen_joint_motors(self.control_joints_variables)  # send the right command to the chosen control joint motors
+            self.send_command_to_chosen_joint_motors()  # send the right command to the chosen control joint motors
     def change_chosen_joint_motors(self, event = None):  # change the chosen control joint motors
         self.chosen_joint_motor_number = self.joints_motors_list[self.chosen_joint_number_control - 1].index(self.choose_joint_motors_combobox.get())  # the current chosen control joint motor
         self.update_control_variables_indicators()  # update the indicators of the control variables of the robotic manipulator
@@ -3306,12 +3306,12 @@ class robotic_manipulators_playground_window():
         self.control_end_effector_variable = float(self.end_effector_slider.get())  # the control end-effector variable of the robotic manipulator
         self.update_control_variables_indicators()  # update the indicators of the control variables of the robotic manipulator
         if self.robotic_manipulator_control_mode == self.robotic_manipulator_control_modes_list[1]:  # if the robotic manipulator control mode is automatic
-            self.send_command_to_end_effector(self.control_end_effector_variable)  # send the right command to the end-effector motors
+            self.send_command_to_end_effector()  # send the right command to the end-effector motors
     def set_end_effector_to_zero(self, event = None):  # set the control end-effector state of the robotic manipulator to zero
         self.control_end_effector_variable = 0  # set the control end-effector variable to zero
         self.update_control_variables_indicators()  # update the indicators of the control variables of the robotic manipulator
         if self.robotic_manipulator_control_mode == self.robotic_manipulator_control_modes_list[1]:  # if the robotic manipulator control mode is automatic
-            self.send_command_to_end_effector(self.control_end_effector_variable)  # send the right command to all motors
+            self.send_command_to_end_effector()  # send the right command to all motors
     def change_end_effector_motor(self, event = None):  # change the chosen control end-effector motor
         self.end_effector_motor = self.end_effector_motor_entrybox.get()  # change the chosen control end-effector motor
         self.update_control_variables_indicators()  # update the indicators of the control variables of the robotic manipulator
@@ -3324,33 +3324,35 @@ class robotic_manipulators_playground_window():
     def change_robotic_manipulator_control_mode(self, event = None):  # change the control mode of the robotic manipulator
         self.robotic_manipulator_control_mode = self.alternate_matrix_elements(self.robotic_manipulator_control_modes_list, self.robotic_manipulator_control_mode)  # change the control mode of the robotic manipulator
         self.update_control_variables_indicators()  # update the indicators of the control variables of the robotic manipulator
-    def send_command_to_chosen_joint_motors(self, joints_values, event = None):  # send the control joints values (multiplied by some factors) to the chosen control joint motors
+    def send_command_to_chosen_joint_motors(self, event = None):  # send the control joints values (multiplied by some factors) to the chosen control joint motors
         command = ""  # the command to be sent to the console
         command_dict = {}  # initialize a dictionary for the command motors
         joint_type_index = self.joints_types_list.index(self.joints_types[self.chosen_joint_number_control - 1])  # the index of the chosen joint type (0 for revolute and 1 for prismatic) for the control
         for joint_number in range(1, self.joints_number + 1):  # iterate through the joints of the robotic manipulator
+            joint_value = self.control_joints_variables[joint_number - 1]  # the value of the joint
             for k in range(len(self.joints_motors_list[joint_number - 1])):  # iterate through all the motors of the chosen control joint
                 motor_name = self.joints_motors_list[joint_number - 1][k]  # the name of the motor
-                motor_value = np.round([np.rad2deg(joints_values[joint_number - 1]), joints_values[joint_number - 1]][joint_type_index] * self.joints_motors_mult_factors[joint_number - 1][k], 2)  # the value of the motor
+                motor_value = np.round([np.rad2deg(joint_value), joint_value][joint_type_index] * self.joints_motors_mult_factors[joint_number - 1][k], 2)  # the value of the motor
                 if motor_name in self.joints_motors_list[self.chosen_joint_number_control - 1]:  # if the motor name is in the list of the chosen control joint motors
                     command_dict[motor_name] = command_dict.get(motor_name, 0) + motor_value  # combine the values of the same motors
         command = " ".join([motor + str(np.round(value, 2)) for motor, value in command_dict.items()])  # rewrite the command string
         command = self.command_starting_text + command + self.command_ending_text  # add the starting and ending texts to the command
         self.send_serial_command(command)  # send the command to the console to be executed
-    def send_command_to_all_motors(self, joints_values, end_effector_value, event = None):  # send the control joints values (multiplied by some factors) to all motors
+    def send_command_to_all_motors(self, event = None):  # send the control joints values (multiplied by some factors) to all motors
         command_dict = {}  # initialize a dictionary for the command motors
         for joint_number in range(1, self.joints_number + 1):  # iterate through the joints of the robotic manipulator
+            joint_value = self.control_joints_variables[joint_number - 1]  # the value of the joint
             joint_type_index = self.joints_types_list.index(self.joints_types[joint_number - 1])  # the index of the chosen joint type (0 for revolute and 1 for prismatic) for the control
             for k in range(len(self.joints_motors_list[joint_number - 1])):  # iterate through all the motors of the chosen control joint
                 motor_name = self.joints_motors_list[joint_number - 1][k]  # the name of the motor
-                motor_value = np.round([np.rad2deg(joints_values[joint_number - 1]), joints_values[joint_number - 1]][joint_type_index] * self.joints_motors_mult_factors[joint_number - 1][k], 2)  # the value of the motor
+                motor_value = np.round([np.rad2deg(joint_value), joint_value][joint_type_index] * self.joints_motors_mult_factors[joint_number - 1][k], 2)  # the value of the motor
                 command_dict[motor_name] = command_dict.get(motor_name, 0) + motor_value  # combine the values of the same motors
         command = " ".join([motor + str(np.round(value, 2)) for motor, value in command_dict.items()])  # rewrite the command string for the joints motors
-        # command += " " + self.end_effector_motor + str(np.round(end_effector_value * self.end_effector_motor_mult_factor, 2))  # add the end-effector motor command to the joints motors command
+        # command += " " + self.end_effector_motor + str(np.round(self.control_end_effector_variable * self.end_effector_motor_mult_factor, 2))  # add the end-effector motor command to the joints motors command
         command = self.command_starting_text + command + self.command_ending_text  # add the starting and ending texts to the command
         self.send_serial_command(command)  # send the command to the console to be executed
-    def send_command_to_end_effector(self, end_effector_value, event = None):  # send the control end-effector values (multiplied by some factors) to the end-effector motors
-        command = self.end_effector_motor + str(np.round(end_effector_value * self.end_effector_motor_mult_factor, 2))  # the command to be sent to the console
+    def send_command_to_end_effector(self, event = None):  # send the control end-effector values (multiplied by some factors) to the end-effector motors
+        command = self.end_effector_motor + str(np.round(self.control_end_effector_variable * self.end_effector_motor_mult_factor, 2))  # the command to be sent to the console
         command = self.command_starting_text + command + self.command_ending_text  # add the starting and ending texts to the command
         self.send_serial_command(command)  # send the command to the console to be executed
     def update_control_variables_indicators(self, event = None):  # update the indicators of the control variables of the robotic manipulator
@@ -5025,7 +5027,7 @@ Enter the final x coordinate of the robot's end-effector on the 2D workspace pla
                         self.control_joints_variables = self.robot_joints_control_law_output[k]  # the joints variables for the robot control, for the current time step
                         self.control_joints_variables[-1] = 0.0
                         self.control_end_effector_variable = 0.0  # the end-effector variable for the robot control, for the current time step
-                        self.send_command_to_all_motors(self.control_joints_variables, self.control_end_effector_variable)  # send the command to all the motors
+                        self.send_command_to_all_motors()  # send the command to all the motors
                         time.sleep(0.3)  # wait for some time
                     else:  # if the serial connection is not open yet
                         ms.showerror("Error", "The serial connection is not open yet! You have to establish a serial connection between the computer and the real robot, in order to control the real robot!", parent = self.menus_area)  # show an error message
