@@ -1,0 +1,170 @@
+<?xml version="1.0"?>
+<robot name="THOR" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!-- Link 0 (base link) -->
+  <link name="base">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://thor_description/meshes/base_thor.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="base_material">
+        <color rgba="0.0 0.0 1.0 1.0"/>
+      </material>
+    </visual>
+  </link>
+
+  <!-- Joint 1 -->
+  <joint name="art1_yaw" type="revolute">
+    <origin xyz="0 0 0.099" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="base"/>
+    <child link="art1"/>
+    <limit lower="-3.14159265358979" upper="3.14159265358979" effort="1" velocity="1.5707963267948966"/>
+  </joint>
+
+  <!-- Link 1 (joint 1 link) -->
+  <link name="art1">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://thor_description/meshes/art1_thor.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="art1_material">
+        <color rgba="1.0 0.0 0.0 1.0"/>
+      </material>
+    </visual>
+  </link>
+  
+  <!-- Joint 2 (frames 0, 1) -->
+  <joint name="art2_pitch" type="revolute">
+    <origin xyz="0 0.0 0.104" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <parent link="art1"/>
+    <child link="art2"/>
+    <limit lower="-1.5707963267948966" upper="1.5707963267948966" effort="1" velocity="1.5707963267948966"/>
+  </joint>
+
+  <!-- Link 2 (joint 2 link) -->
+  <link name="art2">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://thor_description/meshes/art2_thor.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="art2_material">
+        <color rgba="0.0 1.0 0.0 1.0"/>
+      </material>   
+    </visual>
+  </link>
+
+  <!-- Joint 3 (frame 2, 3) -->
+  <joint name="art3_pitch" type="revolute">
+    <origin xyz="0.0 0 0.160" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <parent link="art2"/>
+    <child link="art3"/>
+    <limit lower="-1.5707963267948966" upper="1.5707963267948966" effort="1" velocity="1.5707963267948966"/>
+  </joint>
+
+  <!-- Link 3 (joint 3 link) -->
+  <link name="art3">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://thor_description/meshes/art3_thor.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="art3_material">
+        <color rgba="1.0 0.0 0.0 1.0"/>
+      </material>
+    </visual>
+  </link>
+  
+  <!-- Joint 4 -->
+  <joint name="art4_yaw" type="revolute">
+    <origin xyz="0 0 0.089" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="art3"/>
+    <child link="art4"/>
+    <limit lower="-3.14159265358979" upper="3.14159265358979" effort="1" velocity="1.5707963267948966"/>
+  </joint>
+
+  <!-- Link 4 (joint 4 link) -->
+  <link name="art4">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://thor_description/meshes/art4_thor.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="art4_material">
+        <color rgba="0.0 0.0 1.0 1.0"/>
+      </material>   
+    </visual>
+  </link>
+
+  <!-- Joint 5 (frames 4, 5) -->
+  <joint name="art5_pitch" type="revolute">
+    <origin xyz="0 0 0.105" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <parent link="art4"/>
+    <child link="art5"/>
+    <limit lower="-1.5707963267948966" upper="1.5707963267948966" effort="1" velocity="1.5707963267948966"/>
+  </joint>
+
+  <!-- Link 5 (joint 5 link) -->
+  <link name="art5">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://thor_description/meshes/art5_thor.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="art5_material">
+        <color rgba="1.0 1.0 0.0 1.0"/>
+      </material>
+    </visual>
+  </link>
+
+  <!-- Joint 6 (frame 6) -->
+  <joint name="art6_yaw" type="revolute">
+    <origin xyz="0 0 0.067" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="art5"/>
+    <child link="art6"/>
+    <limit lower="-3.14159265358979" upper="3.14159265358979" effort="1" velocity="1.5707963267948966"/>
+  </joint>
+
+  <!-- Link 6 (joint 6 link) -->
+  <link name="art6">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://thor_description/meshes/art6_thor.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="art6_material">
+        <color rgba="1.0 1.0 0.0 1.0"/>
+      </material>
+    </visual>
+  </link>
+
+  <!-- End-effector frame -->
+  <joint name="end_effector_joint" type="fixed">
+    <origin xyz="0 0 0.1" rpy="0 0 0"/>
+    <parent link="art6"/>
+    <child link="end_effector"/>
+  </joint>
+
+  <!-- Link 7 (end-effector link) -->
+  <link name="end_effector">
+    <visual>
+      <origin xyz="0 0 -0.1" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://thor_description/meshes/end_effector_thor.stl" scale="0.001 0.001 0.001"/>
+        <!-- <cylinder radius="0.01" length="0.1"/> -->
+      </geometry>
+      <material name="end_effector_material">
+        <color rgba="1.0 0.0 1.0 1.0"/>
+      </material>
+    </visual>
+  </link>
+
+</robot>
