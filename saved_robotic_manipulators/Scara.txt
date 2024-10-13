@@ -1,10 +1,10 @@
 Name: Scara
 Joints number: 4
-Base position wrt world: 0.100 0.100 0.000
+Base position wrt world: 0.100 0.200 0.000
 Base orientation wrt world: 0.000 0.000 0.000
 Frame "0" position wrt base: 0.000 0.000 0.400
 Frame "0" orientation wrt base: 0.000 0.000 0.000
-End-effector position wrt frame "n": 0.000 0.000 0.100
+End-effector position wrt frame "n": 0.000 0.000 0.050
 End-effector orientation wrt frame "n": 0.000 0.000 0.000
 Joint 1 type: revolute
 Joint 1 Denavit - Hartenberg parameters: 0.200 0.000 0.000 0.000
@@ -20,7 +20,7 @@ Joint 2 motors mult. factors: 1.0, 1.0
 Joint 2 z-axis position: 0.000
 Joint 3 type: prismatic
 Joint 3 Denavit - Hartenberg parameters: 0.000 0.000 0.050 0.000
-Joint 3 variable limits: 0.000 0.200
+Joint 3 variable limits: 0.000 0.300
 Joint 3 motors: D
 Joint 3 motors mult. factors: 1.0
 Joint 3 z-axis position: 0.000
@@ -54,7 +54,7 @@ Frame "3" origin color: #ff8040
 Frame "3" origin size: 7
 Frame "3" joint's link color: #ff8040
 Frame "3" joint's link size: 5
-Frame "3" initial joint's link length: 0.100
+Frame "3" initial joint's link length: 0.050
 Frame "4" origin color: black
 Frame "4" origin size: 7
 Frame "end-effector" origin color: #000000

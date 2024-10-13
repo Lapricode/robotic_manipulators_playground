@@ -1,6 +1,6 @@
 Name: Gantry
 Joints number: 3
-Base position wrt world: 0.100 0.300 0.000
+Base position wrt world: 0.100 0.500 0.000
 Base orientation wrt world: 0.000 0.000 0.000
 Frame "0" position wrt base: 0.000 0.000 0.100
 Frame "0" orientation wrt base: 0.000 0.000 0.000
@@ -8,18 +8,18 @@ End-effector position wrt frame "n": 0.000 0.000 0.000
 End-effector orientation wrt frame "n": 0.000 0.000 0.000
 Joint 1 type: prismatic
 Joint 1 Denavit - Hartenberg parameters: 0.000 90.000 0.200 0.000
-Joint 1 variable limits: 0.000 0.300
+Joint 1 variable limits: 0.000 0.400
 Joint 1 motors: A
 Joint 1 motors mult. factors: 1.0
 Joint 1 z-axis position: 0.000
 Joint 2 type: prismatic
 Joint 2 Denavit - Hartenberg parameters: 0.000 90.000 0.200 90.000
-Joint 2 variable limits: 0.000 0.300
+Joint 2 variable limits: 0.000 0.400
 Joint 2 motors: B
 Joint 2 motors mult. factors: 1.0
 Joint 2 z-axis position: 0.000
 Joint 3 type: prismatic
-Joint 3 Denavit - Hartenberg parameters: 0.000 0.000 0.200 0.000
+Joint 3 Denavit - Hartenberg parameters: 0.000 0.000 0.200 -90.000
 Joint 3 variable limits: 0.000 0.300
 Joint 3 motors: C
 Joint 3 motors mult. factors: 1.0
@@ -29,22 +29,22 @@ Frame "base" origin size: 7
 Frame "base" joint's link color: #8c0000
 Frame "base" joint's link size: 5
 Frame "base" initial joint's link length: 0.100
-Frame "0" origin color: black
+Frame "0" origin color: #1e23e1
 Frame "0" origin size: 7
 Frame "0" joint's link color: #1e23e1
 Frame "0" joint's link size: 5
 Frame "0" initial joint's link length: 0.200
-Frame "1" origin color: black
+Frame "1" origin color: #20c12c
 Frame "1" origin size: 7
 Frame "1" joint's link color: #20c12c
 Frame "1" joint's link size: 5
 Frame "1" initial joint's link length: 0.200
-Frame "2" origin color: black
+Frame "2" origin color: #ff0000
 Frame "2" origin size: 7
-Frame "2" joint's link color: red
+Frame "2" joint's link color: #ff0000
 Frame "2" joint's link size: 5
 Frame "2" initial joint's link length: 0.200
-Frame "3" origin color: black
+Frame "3" origin color: #000000
 Frame "3" origin size: 7
-Frame "end-effector" origin color: black
+Frame "end-effector" origin color: #000000
 Frame "end-effector" origin size: 7
