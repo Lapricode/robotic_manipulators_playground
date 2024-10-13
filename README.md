@@ -2,7 +2,7 @@
 
 ## Introduction - Running instructions
 
-    This is a python tkinter GUI for designing, simulating and controlling serial robotic manipulators (with open kinematic chains), that also gives a solution to the obstacles avoidance problem for static obstacles located in a planar workspace. It was developed for the needs of my diploma thesis during my electrical engineering studies.
+This is a python tkinter GUI for designing, simulating and controlling serial robotic manipulators (with open kinematic chains), that also gives a solution to the obstacles avoidance problem for static obstacles located in a planar workspace. It was developed for the needs of my diploma thesis during my electrical engineering studies.
 
 The program uses the classic Denavit - Hartenberg parameterization for the robots kinematics. The modified Denavit - Hartenberg parameterization and the (more modern) Product of Exponentials (POE) method are not addressed here.
 
