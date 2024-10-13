@@ -1,5 +1,4 @@
 import numpy as np
-from shapely.geometry import Polygon, Point
 import cv2, glob
 import general_functions as gf
 
@@ -186,18 +185,17 @@ def draw_shape_on_image_plane(image, shape_points, ArUco_wrt_camera_transformati
     return image_shape_points, image  # return the image points of the shape drawn on the image plane and the image with the drawn shape
 
 def detect_image_boundaries(grayscale_image, image_plane_points, removed_boundaries_indexes, boundaries_precision_parameter, boundaries_minimum_vertices):  # find the boundaries of the shapes in an image (in pixels)
-    # grayscale_image is the binary image needed (in the form of a numpy array) for the Suzuki - Abe algorithm to work
+    # grayscale_image is the binary black-white image needed (in the form of a numpy array) for the Suzuki - Abe algorithm to work
     grayscale_image = np.array(grayscale_image)  # make sure the grayscale image is a numpy array
     boundaries, hierarchy = cv2.findContours(grayscale_image, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)  # find the boundaries of the shapes in the image (other options: cv2.RETR_TREE, cv2.RETR_EXTERNAL, cv2.RETR_CCOMP and cv2.CHAIN_APPROX_NONE)
     # approximate the boundaries of the shapes in the image using closed polygonal curves
-    image_plane_points = np.array(image_plane_points)  # make sure the plane image points are a numpy array
-    image_plane_polygon = Polygon(image_plane_points)  # create a polygon object from the plane image points
+    image_plane_points = np.int32(image_plane_points).reshape(-1, 2)  # make sure the plane image points are a numpy array
     detected_image_boundaries_list = []  # initialize the list of the approximations of the boundaries
     for cntr in boundaries:  # loop through all the boundaries of the shapes in the image
         epsilon = boundaries_precision_parameter * cv2.arcLength(cntr, True)  # calculate the epsilon parameter for the approximation of the boundaries
         polygonal_approximation = np.int32(cv2.approxPolyDP(cntr, epsilon, True).reshape(-1, 2))  # approximate the boundaries of the shapes in the image using closed polygonal curves
         # exclude the polygonal approximations that are (partially or totally) outside the obstacles plane or/and have less than the minimum number of vertices allowed
-        polygonal_approximation = np.array([point for point in polygonal_approximation if image_plane_polygon.contains(Point(point))]).reshape(-1, 2)  # cut the polygonal approximation to the plane image polygon
+        polygonal_approximation = np.array([point for point in polygonal_approximation if cv2.pointPolygonTest(image_plane_points, point.tolist(), False) > 0]).reshape(-1, 2)  # cut the polygonal approximation to the plane image polygon
         if polygonal_approximation.shape[0] >= 0 and polygonal_approximation.shape[0] >= boundaries_minimum_vertices:  # if the number of vertices of the approximation is greater than or equal to the minimum number of vertices allowed
             # close the open boundaries
             if np.linalg.norm(polygonal_approximation[0] - polygonal_approximation[-1]) != 0:  # if the first and last points of the approximation are not the same
@@ -210,12 +208,12 @@ def detect_image_boundaries(grayscale_image, image_plane_points, removed_boundar
     outer_boundary_index = -1  # initialize the index of the outer boundary
     for i in range(len(detected_image_boundaries_list)):  # loop through all the currently stored boundaries
         if i not in removed_boundaries_indexes:  # if the i boundary is not removed
-            polygon_i = Polygon(np.int32(detected_image_boundaries_list[i]).reshape(-1, 2))  # create a polygon object from the i boundary
+            boundary_i = np.int32(detected_image_boundaries_list[i]).reshape(-1, 2)  # the i boundary
             inner_boundaries_counter = 0  # initialize the inner boundaries counter
             for j in range(len(detected_image_boundaries_list)):  # loop through all the currently stored boundaries
                 if i != j and j not in removed_boundaries_indexes:  # if the i boundary is not the same as the j boundary and the j boundary is not removed
-                    point_j_check = np.int32(detected_image_boundaries_list[j][0]).reshape(1, 2)  # get the first point of the j boundary
-                    if polygon_i.contains(Point(point_j_check)):  # if the first point of the j boundary is inside the i boundary
+                    point_j_check = np.int32(detected_image_boundaries_list[j][0])  # get the first point of the j boundary
+                    if cv2.pointPolygonTest(boundary_i, point_j_check.tolist(), False) > 0:  # if the first point of the j boundary is inside the i boundary
                         inner_boundaries_counter += 1  # increase the inner boundaries counter
             if inner_boundaries_counter == len(detected_image_boundaries_list) - len(removed_boundaries_indexes) - 1:  # if the number of the boundaries inside the i boundary is correct 
                 outer_boundary_index = i  # set the index of the outer boundary
@@ -231,7 +229,7 @@ def detect_image_boundaries(grayscale_image, image_plane_points, removed_boundar
                 (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)  # write the number of boundaries on the image
     return detected_image_boundaries_list, outer_boundary_index, boundaries_image  # return the boundaries of the shapes in the image (in pixels), the index of the outer boundary and the whole image with the detected boundaries drawn
 
-def convert_boundaries_image_points_to_world_points(detected_image_boundaries_list, plane_frame_wrt_world, plane_normal_vec_displacement, camera_frame_wrt_world, intrinsic_mat, dist_coeffs):  # convert the detected image boundaries to the xy plane world frame coordinates (in meters)
+def convert_boundaries_image_points_to_obstplane_points(detected_image_boundaries_list, plane_frame_wrt_world, plane_normal_vec_displacement, camera_frame_wrt_world, intrinsic_mat, dist_coeffs):  # convert the detected image boundaries to the xy plane world frame coordinates (in meters)
     # find the plane frame that is tangent to the top of the obstacles, based on the initial plane frame and the height of the obstacles
     top_plane_frame_wrt_world = plane_frame_wrt_world.copy()  # initialize the top plane frame matrix wrt the world frame
     normal_vec, _, translation_vec = gf.get_components_from_xy_plane_transformation(plane_frame_wrt_world)  # get the normal vector and translation vector of the plane frame with respect to the world frame
@@ -241,95 +239,15 @@ def convert_boundaries_image_points_to_world_points(detected_image_boundaries_li
     intrinsic_mat_inverse = np.linalg.inv(intrinsic_mat)  # find the inverse of the intrinsic matrix
     camera_wrt_obstacles_frame_mat = np.linalg.inv(top_plane_frame_wrt_world) @ camera_frame_wrt_world  # find the camera frame wrt the obstacles frame matrix
     detected_image_boundaries_list = [undistort_image_pixels(boundary, intrinsic_mat, dist_coeffs) for boundary in detected_image_boundaries_list]  # undistort the image pixels of the detected boundaries
-    boundaries_world_points_list = []  # initialize the list of the boundaries in the world frame
+    boundaries_obstplane_points_list = []  # initialize the list of the boundaries in the world frame
     for k in range(len(detected_image_boundaries_list)):  # loop through all the detected boundaries
-        boundaries_world_points_list.append([])  # add an empty list for the current boundary
+        boundaries_obstplane_points_list.append([])  # add an empty list for the current boundary
         boundary = detected_image_boundaries_list[k]  # get the current boundary
         for pixel_image_point in boundary:  # loop through all the points of the boundary
             pixel_image_point = np.vstack((np.array(pixel_image_point).reshape(-1, 1), np.ones((1, 1))))  # convert the pixel image point to homogeneous coordinates (in pixels)
             obst_point_normalized_wrt_camera = intrinsic_mat_inverse @ pixel_image_point  # find the pixel point normalized wrt the camera frame (in meters, in homogeneous coordinates)
             Z_obst_wrt_camera = float(-camera_wrt_obstacles_frame_mat[2, 3] / (camera_wrt_obstacles_frame_mat[2, :3] @ obst_point_normalized_wrt_camera[:3]))  # find the z coordinate of the obstacles wrt the camera frame
             obst_point_wrt_camera = np.array([[Z_obst_wrt_camera, 0, 0], [0, Z_obst_wrt_camera, 0], [0, 0, Z_obst_wrt_camera], [0, 0, 1]]) @ obst_point_normalized_wrt_camera  # find the pixel point wrt the camera frame (in meters, in homogeneous coordinates)
-            obstacle_xy_world_point = camera_wrt_obstacles_frame_mat @ obst_point_wrt_camera  # find the obstacle xy world point
-            boundaries_world_points_list[-1].append(np.array([obstacle_xy_world_point[0], obstacle_xy_world_point[1]]))  # add the obstacle xy world point to the current boundary
-    return boundaries_world_points_list  # return the boundaries of the shapes in the image converted to the xy plane world frame coordinates (in meters)
-
-
-# import os
-# from PIL import Image
-
-# intrinsic_mat, dist_coeffs, _ = load_intrinsic_parameters("camera_intrinsic_parameters.txt")
-# dist_coeffs[0] = 1
-# image = cv2.imread("distorted_image.jpg")
-# height, width = image.shape[:2]
-# undistorted_image1 = undistort_whole_image(image, intrinsic_mat, dist_coeffs)
-
-# h, w = image.shape[:2]
-# x, y = np.meshgrid(np.arange(w), np.arange(h))
-# grid_pixels = np.stack((x.ravel(), y.ravel()), axis = -1)
-# undistorted_pixels = undistort_image_pixels(grid_pixels, intrinsic_mat, dist_coeffs)
-# undistorted_image2 = np.zeros_like(image)
-# image = image.ravel()
-# for i, (x, y) in enumerate(undistorted_pixels):
-#     x, y = int(round(x)), int(round(y))
-#     if 0 <= x < w and 0 <= y < h:
-#         undistorted_image2[y, x] = image[i * 3:i * 3 + 3]  # Handle color images
-# # undistorted_image2 = undistort_image2(image, intrinsic_mat, dist_coeffs)
-# show_images_on_screen([undistorted_image1], ["Undistorted image 1"], 1, True, True, 0)
-# show_images_on_screen([undistorted_image2], ["Undistorted image 2"], 1, True, True, 0)
-
-# intrinsic_mat, dist_coeffs, _ = load_intrinsic_parameters("camera_intrinsic_parameters.txt")
-# camera_capture = cv2.VideoCapture(1, cv2.CAP_DSHOW)  # initialize the camera capture object, 0 for the default camera, 1 for the first external camera
-# camera_aspect_ratios_frames_heights = {16/9: 720, 4/3: 480}  # define the aspect ratios and their corresponding frame heights
-# aspect_ratio = 16/9  # define the desired aspect ratio of the captured frame
-# frame_height = camera_aspect_ratios_frames_heights[aspect_ratio]  # get the desired height of the captured frame
-# frame_width = int(aspect_ratio * frame_height)  # calculate the desired width of the captured frame
-# camera_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)  # set the height of the captured frame
-# camera_capture.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)  # set the width of the captured frame
-# luminance_threshold = 127  # define the luminance threshold for the black and white conversion of the captured frame
-
-# while True:  # infinite loop to continuously capture frames from the camera
-#     confirm_capture, frame = camera_capture.read()  # capture a frame using the camera capture object and store it in the variable frame
-#     if confirm_capture:  # if the frame was captured successfully
-#         # show camera's captured frame
-#         original_image_window_name = "Original frames"  # define the window name for the original frame
-#         # show_images_on_screen([frame], [original_image_window_name], size_factor, True, False, 0)  # show the camera's original image
-
-#         image = Image.fromarray(frame)  # convert the captured frame to an image
-        
-#         ArUco_wrt_camera_transformation_matrix, ArUco_marker_pose_image = estimate_ArUco_marker_pose(frame, "4X4_100/100mm", intrinsic_mat, dist_coeffs)  # estimate the pose of the ArUco markers in the image
-#         # show_images_on_screen([ArUco_marker_pose_image], ["ArUco markers poses"], 2/3, True, False, 0)  # show the image with the detected ArUco markers and their poses
-        
-#         # print(ArUco_wrt_camera_transformation_matrix.round(3))
-#         # Define rectangle corners in the world frame
-#         x_length = 0.21
-#         y_length = 0.15
-#         world_corners = np.array([
-#             [0, 0, 0],
-#             [x_length, 0, 0],
-#             [x_length, y_length, 0],
-#             [0, y_length, 0]
-#         ], dtype = np.float32)
-#         image_shape_points, drawn_shape_image = draw_shape_on_image_plane(frame, world_corners, ArUco_wrt_camera_transformation_matrix, intrinsic_mat, dist_coeffs)
-#         print(image_shape_points)
-#         show_images_on_screen([drawn_shape_image], ["Drawn shape"], 2/3, True, False, 0)  # show the image with the drawn shape on the image plane
-        
-#         grayscale_image = image.convert("L").point(lambda pixel: convert_image_pixel_to_grayscale(pixel, [luminance_threshold]))  # convert the captured frame to black and white
-#         show_images_on_screen([grayscale_image], ["Grayscale frames"], 2/3, True, False, 0)  # show the camera's original and grayscale images
-#         boundaries, _, boundaries_image = detect_image_boundaries(np.array(grayscale_image), image_shape_points, 10**(-4), 10)  # find the boundaries of the shapes in the image
-#         show_images_on_screen([boundaries_image], ["boundaries detected"], 1, True, False, 0)  # show the image with the detected shapes and boundaries
-        
-#         # undistorted_image = undistort_image(image, intrinsic_mat, dist_coeffs, 1)
-#         # show_images_on_screen([undistorted_image], ["Undistorted image"], 2/3, True, True, 60000)
-
-#     else:  # if the frame was not captured successfully
-#         print("Error: Couldn't capture frame.")  # print an error message
-#         break  # break the loop
-    
-#     pressed_key = cv2.waitKey(1)  # wait for 1 millisecond for a key to be pressed
-#     if pressed_key == ord("a"): luminance_threshold -= 1
-#     elif pressed_key == ord("w"): luminance_threshold += 1
-#     elif pressed_key == ord("q"): break
-
-# camera_capture.release()  # release/free the camera capture object
-# cv2.destroyAllWindows()  # close all OpenCV windows that were opened
+            obstacle_xy_obstplane_point = camera_wrt_obstacles_frame_mat @ obst_point_wrt_camera  # find the obstacle xy plane point
+            boundaries_obstplane_points_list[-1].append(np.array([obstacle_xy_obstplane_point[0], obstacle_xy_obstplane_point[1]]))  # add the obstacle xy plane point to the current boundary
+    return boundaries_obstplane_points_list  # return the boundaries of the shapes in the image converted to the xy obstacles plane coordinates (in meters)

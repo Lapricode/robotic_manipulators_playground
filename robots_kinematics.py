@@ -104,18 +104,20 @@ def check_joints_limits(robot, q_joints):  # check if the joints configuration i
     q_min_diff = q_joints - q_min  # calculate the difference between the joints configuration and the minimum joints values
     q_max_diff = q_max - q_joints  # calculate the difference between the joints configuration and the maximum joints values
     check_limits = np.all(q_min_diff >= 0) and np.all(q_max_diff >= 0)  # check if the joints configuration is within the joints limits
-    joints_limits_distance = (q_min_diff * q_max_diff) / ((q_range/2.0)**2.0 + 1e-7)  # compute a metric that indicates how far the joints configuration is from the joints limits
+    joints_limits_distance = np.prod((q_min_diff * q_max_diff) / ((q_range / 2.0)**2.0 + 1e-7))  # compute a metric that indicates how far the joints configuration is from the joints limits
     return check_limits, joints_limits_distance  # return the flag that indicates if the joints configuration is within the joints limits and the metric that indicates how far the joints configuration is from the joints limits
 
 def find_reachable_workspace(robot, divs = 5, show_plots = False):  # find the reachable workspace of the robotic arm, i.e. the positions that the end-effector can reach in the 3D space no matter the orientation of the end-effector frame
     joints_num = len(robot.q)  # get the number of joints of the robotic arm
     q_range = [(robot.qlim[1][k] - robot.qlim[0][k]) for k in range(joints_num)]  # calculate the range of the joints
     min_q = [robot.qlim[0][k] for k in range(joints_num)]  # calculate the minimum joints values
+    joints_config = []  # initialize the list to store the joints configurations
     reachable_pos = []  # initialize the list to store the reachable end-effector positions
     for indices in itertools.product(range(divs + 1), repeat = joints_num):  # iterate through the joints configurations
         q = np.array([min_q[k] + indices[k] * q_range[k] / divs for k in range(joints_num)])  # calculate the current joint configuration
         pos = np.array(robot.fkine(q), dtype = float)[:3, 3]  # calculate the current end-effector position
         if pos[2] >= -1e-3:  # if the end-effector position is above the xy-plane, meaning it is above the ground
+            joints_config.append(q)  # append the current joints configuration
             reachable_pos.append(pos)  # append the reachable end-effector position
     if show_plots:
         x_rp, y_rp, z_rp = [], [], []
@@ -131,14 +133,13 @@ def find_reachable_workspace(robot, divs = 5, show_plots = False):  # find the r
         plt.show()
     else:
         pass
-    return reachable_pos  # return the reachable end-effector positions
+    return joints_config, reachable_pos  # return the joints configurations and the corresponding reachable end-effector positions
 
 def find_kinematic_singularities_on_plane(robot, plane_x_range, plane_y_range, plane_T_rev, divs_x = 10, divs_y = 10, singul_bound = 1e-3, invkine_tol = 1e-3, show_plots = False):  # find the kinematic singularities of the robotic arm
     # plane_T_rev is the transformation matrix for the obstacles plane, but the normal vector is reversed (i.e. pointing away from the robot's end-effector)
     singular_q = []; non_singular_q = []  # initialize the lists to store the singular and non-singular joints configurations
     singular_pos = []; non_singular_pos = []  # initialize the lists to store the singular and non-singular end-effector positions
     reachable_pos = []; non_reachable_pos = []  # initialize the lists to store the reachable and non-reachable end-effector positions
-    initial_plane = [[[x, y, 0, 1] for y in np.linspace(-plane_y_range/2, plane_y_range/2, divs_y)] for x in np.linspace(-plane_x_range/2, plane_x_range/2, divs_x)]  # create the initial plane points
     # try to find a new plane rotation, in case the end-effector can not be rotated
     plane_T_rev_new = np.array(plane_T_rev, dtype = float)  # create a new transformation matrix for the plane
     R_rot = np.array([[np.cos(np.deg2rad(1)), -np.sin(np.deg2rad(1)), 0, 0], [np.sin(np.deg2rad(1)), np.cos(np.deg2rad(1)), 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]], dtype = float)  # create the rotation matrix for the plane
@@ -151,9 +152,12 @@ def find_kinematic_singularities_on_plane(robot, plane_x_range, plane_y_range, p
             plane_T_rev_new = plane_T_rev_new @ R_rot  # update the plane transformation matrix
         if invkine_success: break  # if the inverse kinematics solver converged to a solution, break the loop
     # find the kinematic singularities on the plane, when the end-effector z-axis is perpendicular to it and with the same orientation as the reversed plane plane_T_rev_new
+    initial_plane = [[[x, y, 0, 1] for y in np.linspace(-plane_y_range/2, plane_y_range/2, divs_y)] for x in np.linspace(-plane_x_range/2, plane_x_range/2, divs_x)]  # create the initial plane points
+    normal_vec_plane, oriendation_plane, translation_plane = gf.get_components_from_xy_plane_transformation(plane_T_rev)  # decompose the transformation matrix of the plane
+    plane_T = gf.xy_plane_transformation(-normal_vec_plane, oriendation_plane, translation_plane)  # calculate the transformation matrix of the original plane
     for i in range(divs_x):  # iterate through the x-axis of the plane
         for j in range(divs_y):  # iterate through the y-axis of the plane
-            pos_transformed = np.array(plane_T_rev @ np.array(initial_plane[i][j], dtype = float)).reshape(-1, 1)  # transform the plane points
+            pos_transformed = np.array(plane_T @ np.array(initial_plane[i][j], dtype = float)).reshape(-1, 1)  # transform the plane points
             end_effector_desired_pose = np.hstack((plane_T_rev_new[:, :-1], pos_transformed))  # create the desired end-effector pose with the plane_T_rev position and the plane_T_rev_new orientation
             q, invkine_success = compute_inverse_kinematics(robot, end_effector_desired_pose, invkine_tol)  # calculate the inverse kinematics of the robotic arm
             J = robot.jacob0(q)  # calculate the geometric Jacobian matrix of the robotic arm wrt the world frame
