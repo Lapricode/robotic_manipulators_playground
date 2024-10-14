@@ -8,7 +8,7 @@ The program uses the classic Denavit - Hartenberg parameterization for the robot
 
 ## Running instructions
 
-To start the program, run the python file "robotic_manipulators_playground_light.py". The GUI can be run in both Windows and Linux. The Python libraries needed are written below:
+To start the program, run the python file "robotic_manipulators_playground.py". The GUI can be run in both Windows and Linux. The Python libraries needed are written below:
 
 Python libraries needed:
 - To be installed (using pip for example):
