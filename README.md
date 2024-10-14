@@ -8,7 +8,7 @@ The program uses the classic Denavit - Hartenberg parameterization for the robot
 
 ## Running instructions
 
-The program can be run in both Windows and Linux.
+To start the program, run the python file "robotic_manipulators_playground_light.py". The GUI can be run in both Windows and Linux. The Python libraries needed are written below:
 
 Python libraries needed:
 - To be installed (using pip for example):
@@ -37,9 +37,7 @@ Python libraries needed:
     - time
     - threading
 
-Also, the library hntf2d is required.
-
-To start the program run the python file "robotic_manipulators_playground.py".
+Also, the library hntf2d is required. It can be found in the GitHub repository https://github.com/maxchaos/hntf2d, where the installation instructions are described. As it is referred there: "This software package provides an implementation of a harmonic transformation that maps any compact, multiply connected planar domain onto the unit disk; each of the holes that the original domain may have are collapsed onto distinct points inside its image.". It is a work related to the paper: ```P. Vlantis, C. Vrohidis, C. P. Bechlioulis and K. J. Kyriakopoulos, "Robot Navigation in Complex Workspaces Using Harmonic Maps," 2018 IEEE International Conference on Robotics and Automation (ICRA), 2018, pp. 1726-1731, doi: 10.1109/ICRA.2018.8460695```.
 
 There is a problem with the swift library that may have been solved by now, or not. The issue has been identified in the robotics-toolbox-python repository on GitHub: https://github.com/petercorke/robotics-toolbox-python/issues/383. The problem arises when running the swift library on Windows. Specifically, there is a discrepancy in how file paths are handled between Linux and Windows systems. The root of the issue lies in how the self.path variable is processed within the SwiftRoute.py file. The current implementation attempts to adjust the path by retaining the initial / character, which works fine on Linux but leads to incorrect path formatting on Windows. To address the problem on Windows, a simple adjustment can be made in the SwiftRoute.py file of the swift library. Specifically, update the block of code by modifying self.path[9:] to self.path[10:].
 
