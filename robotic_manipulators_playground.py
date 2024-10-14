@@ -24,8 +24,8 @@ import robots_kinematics as kin
 import camera_detection as cd
 import polygons_boundaries_operations as pbo
 import general_functions as gf
-import control_law_hntf2d as cl
-# import control_law_ssh_connection as cl
+import control_law_ssh_connection as cl
+# import control_law_hntf2d as cl
 
 
 # the class that creates the GUI window of the application
@@ -3002,13 +3002,13 @@ class robotic_manipulators_playground_window():
             self.chosen_invdiffkine_linear_vel[2] = end_effector_vel_z  # change the z linear velocity of the end-effector
         self.update_inverse_differential_kinematics_indicators()  # update the differential kinematics indicators
     def choose_end_effector_angular_velocity(self, event = None):  # choose the end-effector angular velocity for the differential kinematics analysis
-        end_effector_ang_vel_x = sd.askfloat("Choose the end-effector x angular velocity", "Enter the x angular velocity of the end-effector (in °/s):", initialvalue = self.chosen_invdiffkine_angular_vel[0], parent = self.menus_area)
+        end_effector_ang_vel_x = sd.askfloat("Choose the end-effector x angular velocity", "Enter the x angular velocity of the end-effector (in °/s):", initialvalue = np.rad2deg(self.chosen_invdiffkine_angular_vel[0]), parent = self.menus_area)
         if end_effector_ang_vel_x != None:  # if the user enters a number
             self.chosen_invdiffkine_angular_vel[0] = np.deg2rad(end_effector_ang_vel_x)  # change the x angular velocity of the end-effector
-        end_effector_ang_vel_y = sd.askfloat("Choose the end-effector y angular velocity", "Enter the y angular velocity of the end-effector (in °/s):", initialvalue = self.chosen_invdiffkine_angular_vel[1], parent = self.menus_area)
+        end_effector_ang_vel_y = sd.askfloat("Choose the end-effector y angular velocity", "Enter the y angular velocity of the end-effector (in °/s):", initialvalue = np.rad2deg(self.chosen_invdiffkine_angular_vel[1]), parent = self.menus_area)
         if end_effector_ang_vel_y != None:  # if the user enters a number
             self.chosen_invdiffkine_angular_vel[1] = np.deg2rad(end_effector_ang_vel_y)  # change the y angular velocity of the end-effector
-        end_effector_ang_vel_z = sd.askfloat("Choose the end-effector z angular velocity", "Enter the z angular velocity of the end-effector (in °/s):", initialvalue = self.chosen_invdiffkine_angular_vel[2], parent = self.menus_area)
+        end_effector_ang_vel_z = sd.askfloat("Choose the end-effector z angular velocity", "Enter the z angular velocity of the end-effector (in °/s):", initialvalue = np.rad2deg(self.chosen_invdiffkine_angular_vel[2]), parent = self.menus_area)
         if end_effector_ang_vel_z != None:  # if the user enters a number
             self.chosen_invdiffkine_angular_vel[2] = np.deg2rad(end_effector_ang_vel_z)  # change the z angular velocity of the end-effector
         self.update_inverse_differential_kinematics_indicators()  # update the differential kinematics indicators
