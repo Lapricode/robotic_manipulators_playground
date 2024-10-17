@@ -12,16 +12,17 @@
 • Unit Disk → R2 Plane: The second step where the unit disk is transformed back to the R2 plane. Options to build and interact with this transformation.
 - Apply the Control Law for the Movement of the Robotic Manipulator:
 • Control Law Parameters:
-k_d, K, k_i, w_phi: Fields to set various control law parameters, affecting the robot's movement dynamics.
-gamma (0.70): A parameter likely related to the control system's damping or gain.
-e_p (0.50), e_v (0.10): Parameters related to positional and velocity error thresholds.
+k_d, k_i, w_phi, vp_max, dp_min: Fields to set various control law parameters, affecting the robot's movement dynamics.
+• dt (sec): Specifies the simulation or control time step, set to 0.010 seconds.
+• Max iter.: Defines the maximum number of iterations allowed for the solver, set to 500.
+• Max Path Time (sec): It indicates the maximum possible travel time for the chosen path.
+• Max Path Length (cm): It indicates the maximum possible travel distance for the chosen path.
+• Error Tol. (cm): Sets the permissible error tolerance for the robot's movement, set to 1.0 cm.
+• Error Correction: Option to enable or disable error correction during the robot's operation.
 • Save Parameters / Load Parameters: Options to save the current set of parameters or load a predefined set of parameters.
 • Navigation Potential Field: Plot Function / Plot Gradients, Options to visualize the potential field functions or gradients that guide the robot's movement.
 • Apply Control Law: Button to apply the defined control law to the robot.
-• Compute Robot Velocities: Option to calculate the robot's velocities based on the control law and potential field.
+• Compute Robot Trajectory: Option to calculate the robot's trajectory based on the control law and the navigation potential field.
 • Points Divisions to Plot: Specifies the number of divisions or resolution for plotting points within the workspace, set to 200.
-• Move Simulated Robot / Move Real Robot: Buttons to initiate movement for either a simulated version of the robot or the real physical robot.
-• Time Step (s): Specifies the simulation or control time step, set to 0.001 seconds.
-• Maximum Iterations: Defines the maximum number of iterations allowed for the solver, set to 1000.
-• Error Tolerance (mm): Sets the permissible error tolerance for the robot's movement, set to 10.0 mm.
-• Error Correction: Option to enable or disable error correction during the robot's operation.
+• Move Simulated Robot: Button to initiate the movement of the simulated robot, in the canvas visualization area.
+• Move Real Robot: Button to initiate the movement for the real robot, sending the proper commands through the serial communication.
