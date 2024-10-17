@@ -15,13 +15,13 @@ Mouse Bindings for the Canvas Visualization Area:
 
 General Keyboard Shortcuts:
 (Applicable to both Light and Full GUI Editions)
-• Control-r or Control-R: Resize the GUI window.
-• Control-s or Control-S: Save the current built robotic manipulator model.
-• Control-b or Control-B: Build the current designed robotic manipulator model for use.
-• Control-v or Control-V: Switch between kinematic and control variables to configure the joints of the robotic manipulator.
-• Control-z or Control-Z: Show / Hide the robotic manipulator.
+• Control + r or Control + R: Resize the GUI window.
+• Control + s or Control + S: Save the current built robotic manipulator model.
+• Control + b or Control + B: Build the current designed robotic manipulator model for use.
+• Control + v or Control + V: Switch between kinematic and control variables to configure the joints of the robotic manipulator.
+• Control + z or Control + Z: Show / Hide the robotic manipulator.
 (Exclusive to the Full GUI Edition)
-• Control-a or Control-A: Change the drawing order between the robot and the obstacles.
-• Control-x or Control-X: Show / Hide the obstacles objects.
-• Control-c or Control-C: Show / Hide the camera object.
-• Control-m or Control-M: Move the simulated robotic manipulator based on the calculated trajectory.
+• Control + a or Control + A: Change the drawing order between the robot and the obstacles.
+• Control + x or Control + X: Show / Hide the obstacles objects.
+• Control + c or Control + C: Show / Hide the camera object.
+• Control + m or Control + M: Move the simulated robotic manipulator based on the calculated trajectory.
