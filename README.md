@@ -12,26 +12,25 @@ The program uses the classic Denavit - Hartenberg parameterization for the robot
 
 ## Running instructions
 
-To start the program, run the python file "robotic_manipulators_playground.py". The GUI can be run in both Windows and Linux. The Python libraries needed are written below:
+To launch the program, run the Python script "robotic_manipulators_playground.py." The graphical user interface (GUI) is compatible with both Windows and Linux systems. Below is a list of the required Python libraries, along with the versions that have been tested and confirmed to work on my setup (although other versions may also be fine):
 
 Python libraries needed:
 - To be installed (using pip for example):
-    - roboticstoolbox (1.1.0)
-    - swift (1.1.0)
-    - matplotlib (3.7.0)
-    - cv2 (4.6.0)
-    - pillow (Image, ImageColor)
-    - numpy
-    - scipy (scipy.ndimage)
-    - spatialmath
-    - spatialgeometry
-    - shapely (shapely.geometry)
-    - skimage
-    - trimesh
-    - pyserial
-    - requests
-- Native:
-  tkinter, itertools, string, copy, os, shutil, time, threading
+    - roboticstoolbox (roboticstoolbox-python), 1.1.0
+    - swift (swift-sim), 1.1.0
+    - matplotlib, 3.7.0
+    - cv2 (opencv-contrib-python), 4.6.0
+    - pillow, 10.3.0
+    - numpy, 1.26.4
+    - scipy, 1.11.3
+    - spatialmath (spatialmath-python), 1.1.9
+    - spatialgeometry, 1.1.0
+    - shapely, 2.0.4
+    - skimage (scikit-image), 0.24.0
+    - trimesh, 4.4.1
+    - pyserial, 3.5
+    - requests, 2.31.0
+- Native: tkinter, itertools, string, copy, os, shutil, time, threading
 
 Also, the library hntf2d is required. It can be found in the GitHub repository https://github.com/maxchaos/hntf2d, where the installation instructions are described. As it is referred there: "This software package provides an implementation of a harmonic transformation that maps any compact, multiply connected planar domain onto the unit disk; each of the holes that the original domain may have are collapsed onto distinct points inside its image.". It is a work related to the paper: ```P. Vlantis, C. Vrohidis, C. P. Bechlioulis and K. J. Kyriakopoulos, "Robot Navigation in Complex Workspaces Using Harmonic Maps," 2018 IEEE International Conference on Robotics and Automation (ICRA), 2018, pp. 1726-1731, doi: 10.1109/ICRA.2018.8460695```.
 
