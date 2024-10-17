@@ -12,7 +12,7 @@ The program uses the classic Denavit - Hartenberg parameterization for the robot
 
 ## Running instructions
 
-To launch the program, run the Python script "robotic_manipulators_playground.py." The graphical user interface (GUI) is compatible with both Windows and Linux systems. Below is a list of the required Python libraries, along with the versions that have been tested and confirmed to work on my setup (although other versions may also be fine):
+To launch the program, run the Python script "robotic_manipulators_playground.py." The graphical user interface (GUI) is compatible with both Windows and Linux systems. Below is a list of the required Python libraries, along with the versions that have been tested and confirmed to work on my setup (although other newer versions may also be fine):
 
 Python libraries needed:
 - To be installed (using pip for example):
