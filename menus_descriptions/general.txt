@@ -1,6 +1,27 @@
-When the program starts, the first things appearing on the screen are the canvas visualization area and the first menu.
+- For both the light and full GUI editions:
+When the program starts, the first elements displayed on the screen are the canvas visualization area and the main menu. From there, you can begin designing your own robotic manipulator model and view the results using the menu options dedicated to building the robot. It is essential to construct your model before proceeding to other menus, as this is a prerequisite for utilizing other features. You can also save your model for future projects.
+Once the model is built, you can analyze its kinematics, including forward, inverse, and differential kinematics, by navigating to the relevant menus. If you have implemented the robotic arm in a physical setup, you can control it through a serial connection between your PC and an Arduino microcontroller using the control menu. This menu allows you to select the appropriate serial port and baud rate and to send commands through an integrated serial monitor. You can also define the motors for each axis of movement and adjust their settings when controlling the robot's joints, using sliders, buttons for incremental changes, and other control options.
 
-Bindings for the canvas visualization area:
+- Only for the full GUI edition:
+In the full GUI edition, you can also address the obstacles avoidance problem for static prismatic 3D obstacles located on a planar workspace. Begin by using the camera control menu to manage your PC's camera or an external one, allowing it to recognize the position and orientation of the workspace via an ArUco marker placed on the plane. This step enables the capture of obstacles objects. Next, proceed to the menu where the digital representation of obstacles is generated. Here, you can accurately detect the borders of the obstacles and their coordinates on the plane, and create 3D meshes to represent them in the simulation. Finally, navigate to the obstacle avoidance menu, where you can implement a parametric navigation control law. This feature helps generate paths on the workspace, guiding the robot from an initial point to a target destination, and creating trajectories for the robot's end-effector to follow the designated path.
 
+Additionally, you may find more detailed information about the program's functionalities by reading the descriptions provided in each menu.
 
-Key bindings:
+Mouse Bindings for the Canvas Visualization Area:
+• Right click and drag: Rotate the scene (world frame) on the canvas.
+• Left click and drag: Transfer the scene (world frame) on the canvas.
+• Wheel rotate: Zoom in / Zoom out on the scene (world frame) on the canvas.
+• Double right click: Reset the world frame origin to the center of the canvas.
+
+General Keyboard Shortcuts:
+(Applicable to both Light and Full GUI Editions)
+• Control-r or Control-R: Resize the GUI window.
+• Control-s or Control-S: Save the current built robotic manipulator model.
+• Control-b or Control-B: Build the current designed robotic manipulator model for use.
+• Control-v or Control-V: Switch between kinematic and control variables to configure the joints of the robotic manipulator.
+• Control-z or Control-Z: Show / Hide the robotic manipulator.
+(Exclusive to the Full GUI Edition)
+• Control-a or Control-A: Change the drawing order between the robot and the obstacles.
+• Control-x or Control-X: Show / Hide the obstacles objects.
+• Control-c or Control-C: Show / Hide the camera object.
+• Control-m or Control-M: Move the simulated robotic manipulator based on the calculated trajectory.
