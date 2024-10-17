@@ -80,7 +80,7 @@ The second and third menus are used for the forward and inverse kinematics analy
 
 ### Controlling the robotic manipulators - 4th menu
 
-In the picture below, there is the original Asgard GUI from the "Thor" open source project (the right side, it can be found here: http://thor.angel-lm.com/documentation/control-software) and my suggestion (the left side). The menu is heavily inspired from the Asgard program structure.
+In the picture below, there is the original Asgard GUI from the "Thor" open source project (the right side, it can be found here: http://thor.angel-lm.com/documentation/control-software) and mine suggested GUI (the left side). It is the fourth menu of the program, with a structure heavily inspired from the Asgard software. It includes three submenus: the first sets up a serial communication with the Arduino, allowing users to choose available ports and transmission rates, and monitor connection status. The second is a serial monitor displaying commands sent to and from the Arduino, with options for automated messages, shortcuts, and clearing or expanding the monitor window. The third submenu controls the robot manipulator’s joints and end-effector, enabling flexible command inputs and adjustments, with the ability to send commands individually or in batches.
 
 ![image](https://github.com/user-attachments/assets/4da05154-e8e3-43e2-ae6d-dde2ab3aeadb)
 
