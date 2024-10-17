@@ -71,7 +71,9 @@ You may need to calibrate your own camera, if you want to use the related progra
 
 ### Visualizing the robotic manipulators and their environment - canvas area
 
-![image](https://github.com/user-attachments/assets/c0b0a2a0-c37f-4db5-876b-8c223946f196)
+When the program starts, the visualization canvas and the first basic menu appear on the main screen. The visualization canvas initially displays the world coordinate system, along with the floor. This is where the basic design of the skeletal model of each robotic arm is carried out. Simple geometric objects (dots, lines, and planes) are used for this representation, with the significant drawback that the depth of objects is not accurately depicted, as no z-buffer is considered, unlike typical graphics. For more realistic simulations, there is also the online Swift simulator. In the left side bar there are some controls for the world frame movement and the visualization of the scene objects.
+
+![image](https://github.com/user-attachments/assets/475bed1b-0724-4e3f-b4ca-e6ea769dd746)
 
 ### Designing and simulating the robotic manipulators - 1st menu
 
