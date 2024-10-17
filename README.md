@@ -2,7 +2,10 @@
 
 ## Introduction
 
-This is a python tkinter GUI for designing, simulating and controlling serial robotic manipulators (with open kinematic chains), that also gives a solution to the obstacles avoidance problem for static obstacles located in a planar workspace. It was developed for the needs of my diploma thesis during my electrical engineering studies.
+This is a python tkinter GUI for designing, simulating and controlling serial robotic manipulators (with open kinematic chains). It's a light edition of a bigger project located in the repository https://github.com/Lapricode/robotic_manipulators_playground. The inspiration for this work came from the open source project "Thor (3D Printable 6DOF Robotic Arm)", that you may explore going to the link http://thor.angel-lm.com. As such, the GUI was first built to support mainly the Thor robotic arm, but it evolved to a more generic program for the simulation of any serial robotic arm up to 12 DOFs. It is supported on both Windows and Linux systems.
+Thor robotic arm is an open-source project, with the entire construction process and control code freely available (http://thor.angel-lm.com). Its supporting structure (or body) consists of 3D-printable parts. It is a serial robotic manipulator with 6 degrees of freedom (6 DOF). All of its joints are rotational, arranged in a yaw-pitch-pitch-yaw-pitch-yaw configuration (or yaw-roll-roll-yaw-roll-yaw, depending on the perspective of the x and y axes), starting from the base and extending to the end-effector. In the picture below you can see the fully constructed Thor robotic arm, its joints frames used for the kinematics analysis and the corresponding classic DH parameters.
+
+![image](https://github.com/user-attachments/assets/f9536b42-0e1a-4463-8bb5-6335701df5cf)
 
 The program uses the classic Denavit - Hartenberg parameterization for the robots kinematics. The modified Denavit - Hartenberg parameterization and the (more modern) Product of Exponentials (POE) method are not addressed here.
 
@@ -44,7 +47,6 @@ There is a problem with the swift library that may have been solved by now, or n
 So, for linux it must be like this:
 ```python
 elif self.path.startswith("/retrieve/"):
-    # print(f"Retrieving file: {self.path[10:]}")
     self.path = urllib.parse.unquote(self.path[9:])
     self.send_file_via_real_path()
     return
@@ -53,17 +55,10 @@ elif self.path.startswith("/retrieve/"):
 And for windows it must be like this:
 ```python
 elif self.path.startswith("/retrieve/"):
-    # print(f"Retrieving file: {self.path[10:]}")
     self.path = urllib.parse.unquote(self.path[10:])
     self.send_file_via_real_path()
     return
 ```
-
-## Thor robotic arm
-
-The Thor robotic arm is an open-source project, with the entire construction process and control code freely available (http://thor.angel-lm.com/). It was fully designed by Spanish robotics engineer Ángel Larrañaga Muro (https://www.linkedin.com/in/angellarranagamuro/) and has been continuously developed since 2016, both by the creator himself and through contributions from the global community. Its supporting structure (or body) consists of 3D-printable parts. Thor is an open kinematic chain (serial robotic manipulator) with 6 degrees of freedom (6 DOF). All of its joints are rotational, arranged in a yaw-pitch-pitch-yaw-pitch-yaw configuration (or yaw-roll-roll-yaw-roll-yaw, depending on the perspective of the x and y axes), starting from the base and extending to the end-effector.
-
-![image](https://github.com/user-attachments/assets/f9536b42-0e1a-4463-8bb5-6335701df5cf)
 
 ## Camera calibration
 
@@ -82,6 +77,8 @@ You may need to calibrate your own camera, if you want to use the related progra
 ![image](https://github.com/user-attachments/assets/9b0d6aa5-9686-4df7-af13-19c497f77515)
 
 ### Analysing the kinematics of the robotic manipulators - 2nd and 3rd menus
+
+The program uses the classic Denavit - Hartenberg parameterization
 
 ![image](https://github.com/user-attachments/assets/f87f2005-1aa6-4041-8070-1a22ca7fc524)
 
