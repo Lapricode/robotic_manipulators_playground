@@ -25,4 +25,4 @@ k_d, k_i, w_phi, vp_max, dp_min: Fields to set various control law parameters, a
 • Compute Robot Trajectory: Option to calculate the robot's trajectory based on the control law and the navigation potential field.
 • Points Divisions to Plot: Specifies the number of divisions or resolution for plotting points within the workspace, set to 200.
 • Move Simulated Robot: Button to initiate the movement of the simulated robot, in the canvas visualization area.
-• Move Real Robot: Button to initiate the movement for the real robot, sending the proper commands through the serial communication.
+• Move Real Robot: Button to initiate the movement of the real robot, sending the proper commands through the serial connection.
