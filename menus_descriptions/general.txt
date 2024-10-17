@@ -1,0 +1,6 @@
+When the program starts, the first things appearing on the screen are the canvas visualization area and the first menu.
+
+Bindings for the canvas visualization area:
+
+
+Key bindings:
