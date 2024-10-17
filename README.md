@@ -16,11 +16,10 @@ To start the program, run the python file "robotic_manipulators_playground.py". 
 
 Python libraries needed:
 - To be installed (using pip for example):
-    - roboticstoolbox
-    - swift
-    - matplotlib (matplotlib.pyplot, matplotlib.colors)
-    - mpl_toolkits (mpl_toolkits.mplot3d)
-    - cv2
+    - roboticstoolbox (1.1.0)
+    - swift (1.1.0)
+    - matplotlib (3.7.0)
+    - cv2 (4.6.0)
     - pillow (Image, ImageColor)
     - numpy
     - scipy (scipy.ndimage)
@@ -32,14 +31,7 @@ Python libraries needed:
     - pyserial
     - requests
 - Native:
-    - tkinter (tkinter.ttk, tkinter.simpledialog, tkinter.messagebox, tkinter.colorchooser)
-    - itertools
-    - string
-    - copy
-    - os
-    - shutil
-    - time
-    - threading
+  tkinter, itertools, string, copy, os, shutil, time, threading
 
 Also, the library hntf2d is required. It can be found in the GitHub repository https://github.com/maxchaos/hntf2d, where the installation instructions are described. As it is referred there: "This software package provides an implementation of a harmonic transformation that maps any compact, multiply connected planar domain onto the unit disk; each of the holes that the original domain may have are collapsed onto distinct points inside its image.". It is a work related to the paper: ```P. Vlantis, C. Vrohidis, C. P. Bechlioulis and K. J. Kyriakopoulos, "Robot Navigation in Complex Workspaces Using Harmonic Maps," 2018 IEEE International Conference on Robotics and Automation (ICRA), 2018, pp. 1726-1731, doi: 10.1109/ICRA.2018.8460695```.
 
