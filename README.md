@@ -68,17 +68,19 @@ When the program starts, the visualization canvas and the first basic menu appea
 
 ### Designing and simulating the robotic manipulators - 1st menu
 
+In the first menu, all the basic tools for designing and modeling a serial robotic manipulator with an open kinematic chain (first submenu) are available, as well as for visualizing the robot and its environment (second submenu) on the canvas or in the online Swift simulator. Users have flexibility in defining the joints (number, type, range of motion), the structure of the robotic manipulator (DH parameters), and in determining the configuration of the base and the end-effector. There is also an important feature that allows for saving and loading robotic models, enabling them to be reused at any time.
+
 ![image](https://github.com/user-attachments/assets/9b0d6aa5-9686-4df7-af13-19c497f77515)
 
 ### Analysing the kinematics of the robotic manipulators - 2nd and 3rd menus
 
-The program uses the classic Denavit - Hartenberg parameterization
+The second and third menus are used for the forward and inverse kinematics analysis, as well as for the differential and inverse differential kinematics analysis, respectively, of the manipulator. The program uses the classic Denavit - Hartenberg parameterization. In forward kinematics, users can control the variables of all the joints, and then the configurations (position and orientation) of all the frames of the robot are calculated. Also, the accessible workspace can be visualized. In inverse kinematics, the user specifies the configuration of the end-effector, and then the variables of all the joints are calculated. In differential kinematics, the velocities of all the joints are controlled, and then the corresponding velocity (linear and angular) of the end-effector is determined, either in its own frame or in the world frame. In inverse differential kinematics, the user provides the velocity of the end-effector (again in one of the two mentioned frames), and then the joints velocities are returned.
 
 ![image](https://github.com/user-attachments/assets/f87f2005-1aa6-4041-8070-1a22ca7fc524)
 
 ### Controlling the robotic manipulators - 4th menu
 
-In the picture below, there is the original Asgard GUI from the "Thor" open source project (the left side, it can be found here: http://thor.angel-lm.com/documentation/control-software) and my suggestion (the right side). The menu is heavily inspired from the Asgard structure.
+In the picture below, there is the original Asgard GUI from the "Thor" open source project (the right side, it can be found here: http://thor.angel-lm.com/documentation/control-software) and my suggestion (the left side). The menu is heavily inspired from the Asgard program structure.
 
 ![image](https://github.com/user-attachments/assets/4da05154-e8e3-43e2-ae6d-dde2ab3aeadb)
 
