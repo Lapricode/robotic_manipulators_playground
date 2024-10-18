@@ -1,8 +1,8 @@
-# A playground for serial robotic manipulators
+# A Playground for Serial Robotic Manipulators with Obstacle Avoidance in a Planar Workspace
 
 ## Introduction
 
-This is a python tkinter GUI for designing, simulating and controlling serial robotic manipulators (with open kinematic chains). It was created as part of my university diploma thesis, that you can read (it is written in greek) going to this link: . If you want, you can also explore some of the experimental results in the end of the README and see some videos using the link provided in the file "experiments_simulations_videos_link" of the project.
+This Python Tkinter GUI is designed for the modelling, simulation, and control of serial robotic manipulators (with open kinematic chains), and also deals with the obstacles avoidance problem in a planar workspace. It was developed as part of my university diploma thesis, which you can read (in Greek) by following this link: https://hdl.handle.net/10889/28291. Additionally, you can explore some experimental results at the end of the README and watch related videos using the link provided in the "experiments_simulations_videos_link" file included in the project.
 
 The inspiration for this work came from the open source project "Thor (3D Printable 6DOF Robotic Arm)", that you may explore going to the link http://thor.angel-lm.com. As such, the GUI was first built to support mainly the Thor robotic arm, but it evolved to a more generic program for the simulation of any serial robotic arm up to 12 DOFs. It is supported on both Windows and Linux systems.
 
