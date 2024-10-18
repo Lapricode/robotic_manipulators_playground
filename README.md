@@ -102,6 +102,8 @@ The seventh menu is essentially the final step in solving the obstacles avoidanc
 
 Once these steps are completed correctly, transformations of the actual workspace are implemented, which will be useful in designing the control law for the robotic manipulator. At the end of the menu, users will find options for generating the control law, including adjustable control parameters, variable time steps, and a maximum number of iterations. There is also an option to convert the results of the control process into a time sequence of joint variables for both the simulated and real robotic manipulators.
 
+
+
 ### How to get started
 
 _**1. Launch the Program**_
