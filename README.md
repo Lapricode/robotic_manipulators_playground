@@ -102,7 +102,7 @@ The seventh menu is essentially the final step in solving the obstacles avoidanc
 
 Once these steps are completed correctly, transformations of the actual workspace are implemented, which will be useful in designing the control law for the robotic manipulator. At the end of the menu, users will find options for generating the control law, including adjustable control parameters, variable time steps, and a maximum number of iterations. There is also an option to convert the results of the control process into a time sequence of joint variables for both the simulated and real robotic manipulators.
 
-
+![image](https://github.com/user-attachments/assets/c1a0c15e-27c8-47bb-97e4-af45d4e6d9fa)
 
 ### How to get started
 
@@ -127,4 +127,8 @@ _**5. Connect and Control**_
 Connect your physical robotic arm (e.g., Thor robotic arm) through a serial link to an Arduino microcontroller. Use the control menu to set the serial port and the baud rate, adjust the motor settings, and send commands, with the serial communication visible in the integrated serial monitor. Fine-tune the movements of the real robotic manipulator with sliders, buttons, and other controls.
 
 ## Diploma thesis and experimental results
+
+![image](https://github.com/user-attachments/assets/7bfc6bec-b384-4ff7-a779-2f65247de5ed)
+
+![image](https://github.com/user-attachments/assets/42bb3162-b8a6-42ed-ab2c-d8a20582c4f0)
 
