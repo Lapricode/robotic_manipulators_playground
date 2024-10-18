@@ -78,8 +78,9 @@ In the picture below, there is the original Asgard GUI from the "Thor" open sour
 
 ![image](https://github.com/user-attachments/assets/4da05154-e8e3-43e2-ae6d-dde2ab3aeadb)
 
-### Capturing frames using the camera - 5th menu
+### Capturing the planar workspace using the camera - 5th menu
 
+The fifth menu includes the essential functions for controlling the camera that captures the obstacles. First, the main characteristics of the camera are defined, such as its resolution, frame pixel ratio, and field of view. Then, there is an option to display the camera frames in black-and-white format with an adjustable brightness threshold, which will be useful for detecting the boundaries of the obstacles. Next, the arrangement of the camera in space is determined, either by manually entering its position and orientation or through an automatic process with the help of a selected ArUco marker. Finally, options for calibrating the camera, as well as recording and saving the current workspace with the obstacles, are provided.
 
 You may need to calibrate your own camera, if you want to use the related program features. In order to do so, you need to capture new images with your camera and put (only) them inside the "camera_calibration_images" folder. The images should contain a 10x7 chessboard pattern of arbitary dimensions, like the one shown below. You have to take multiple images of the chessboard (around 20 is probably fine), in different positions and orientations. After that, you can press the proper button in the GUI, in order to compute the new camera's intrinsic matrix and distortion coefficients.
 
@@ -114,3 +115,6 @@ Once the robotic model is built, explore kinematics options, including forward, 
 _**5. Connect and Control**_
 
 Connect your physical robotic arm (e.g., Thor robotic arm) through a serial link to an Arduino microcontroller. Use the control menu to set the serial port and the baud rate, adjust the motor settings, and send commands, with the serial communication visible in the integrated serial monitor. Fine-tune the movements of the real robotic manipulator with sliders, buttons, and other controls.
+
+## Diploma thesis and experimental results
+
