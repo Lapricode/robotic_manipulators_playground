@@ -54,7 +54,7 @@ elif self.path.startswith("/retrieve/"):
     return
 ```
 
-## GUI features
+## GUI Description
 
 ### Visualizing the robotic manipulators and their environment - canvas area
 
@@ -96,7 +96,7 @@ You may need to calibrate your own camera, if you want to use the related progra
 
 
 
-## How to get started
+### How to get started
 
 _**1. Launch the Program**_
 
