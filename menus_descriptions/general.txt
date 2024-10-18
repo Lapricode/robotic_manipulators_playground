@@ -20,6 +20,9 @@ General Keyboard Shortcuts:
 • Control + b or Control + B: Build the current designed robotic manipulator model for use.
 • Control + v or Control + V: Switch between kinematic and control variables to configure the joints of the robotic manipulator.
 • Control + z or Control + Z: Show / Hide the robotic manipulator.
+• Control + e or Control + E: Decrease the canvas area and increase the menus area.
+• Control + d or Control + D: Decrease the menus area and increase the canvas area.
+• Control + [Number]: Go to the menu specified by the number.
 (Exclusive to the Full GUI Edition)
 • Control + a or Control + A: Change the drawing order between the robot and the obstacles.
 • Control + x or Control + X: Show / Hide the obstacles objects.
