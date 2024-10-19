@@ -98,9 +98,9 @@ Next, one of the saved images of potential workspaces is selected, and an attemp
 
 The seventh menu (left side of the picture below) is essentially the final step in solving the obstacles avoidance problem for the Thor robotic arm (or any other selected robotic manipulator). In this menu, the user first needs to load an image of the desired workspace with the already detected obstacles and set their final positions and orientations in the 3D space. Next, the start and target positions of the end effector on the obstacles plane must be specified.
 
-Once these steps are completed correctly, transformations of the actual workspace are implemented, which will be useful in designing the control law for the robotic manipulator. At the end of the menu, users will find options for generating the control law, including adjustable control parameters, variable time steps, and a maximum number of iterations. There is also the important option to convert the results of the control process into a time sequence of joints variables for both the simulated and real robotic manipulators.
+Once these steps are completed correctly, transformations of the actual workspace are implemented, which will be useful in designing the control law for the robotic manipulator. At the end of the menu, users will find options for generating the control law for the path planning (right side of the picture below), including adjustable control parameters, variable time steps, and a maximum number of iterations. There is also the important option to convert the results of the control process into a time sequence of joints variables for both the simulated and real robotic manipulators.
 
-![image](https://github.com/user-attachments/assets/c1a0c15e-27c8-47bb-97e4-af45d4e6d9fa)
+![image](https://github.com/user-attachments/assets/640e2afd-68c7-47ce-b359-bd75c9d3c219)
 
 ### How to get started
 
