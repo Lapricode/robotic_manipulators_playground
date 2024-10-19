@@ -128,7 +128,7 @@ Connect your physical robotic arm (e.g., Thor robotic arm) through a serial link
 
 ## Diploma thesis and experimental results
 
-You can read my university diploma thesis (in Greek) by following this link: https://hdl.handle.net/10889/28291. Additionally, you can watch videos from some simulations and real experiments going to the link provided in the "experiments_simulations_videos_link" file included in the project. In the picture below I present the experimental setup that was used (in real life and in simulation) and later are mentioned the steps required to obtain feasible trajectories for the robotic manipulator.
+You can access my university diploma thesis (in Greek) by following this link: https://hdl.handle.net/10889/28291. Additionally, videos of various simulations and real-world experiments are available via the link provided in the "experiments_simulations_videos_link" file included in the project. The image below illustrates the experimental setup used for both real-world and simulated experiments. Following this, I describe the steps necessary to obtain feasible trajectories for the robotic manipulator, enabling it to follow the path determined by the navigation control law on the planar workspace, while avoiding the existing obstacles.
 
 ![image](https://github.com/user-attachments/assets/7bfc6bec-b384-4ff7-a779-2f65247de5ed)
 
