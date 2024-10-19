@@ -128,15 +128,22 @@ Connect your physical robotic arm (e.g., Thor robotic arm) through a serial link
 
 ## Diploma thesis and experimental results
 
-1) Obstacles boundaries detection with camera and ArUco:
-
-2) Other
-
-3) Other
-
-4) Other
+You can read my university diploma thesis (in Greek) by following this link: https://hdl.handle.net/10889/28291. Additionally, you can watch videos from some simulations and real experiments going to the link provided in the "experiments_simulations_videos_link" file included in the project. In the picture below I present the experimental setup that was used (in real life and in simulation) and later are mentioned the steps required to obtain feasible trajectories for the robotic manipulator.
 
 ![image](https://github.com/user-attachments/assets/7bfc6bec-b384-4ff7-a779-2f65247de5ed)
 
+1) Detecting the obstacles boundaries with RGB camera and ArUco:
+
 ![image](https://github.com/user-attachments/assets/42bb3162-b8a6-42ed-ab2c-d8a20582c4f0)
 
+2) Calculating the real planar workspace transformations:
+
+![image](https://github.com/user-attachments/assets/6125c6a4-c9b1-4c23-98d1-4d1a9b109c70)
+
+3) Applying the parametric navigation control law to find paths on the real workspace:
+
+
+
+4) Finding feasible trajectories for the robotic manipulator:
+
+![image](https://github.com/user-attachments/assets/1b470db4-e879-4994-ac7c-159233b3663e)
