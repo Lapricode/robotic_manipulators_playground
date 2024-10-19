@@ -98,9 +98,9 @@ Next, one of the saved images of potential workspaces is selected, and an attemp
 
 ### Solving the obstacles avoidance problem - 7th menu
 
-The seventh menu is essentially the final step in solving the obstacles avoidance problem for the Thor robotic arm (or any other selected robotic manipulator). In this menu, the user first needs to load an image of the desired workspace with the already detected obstacles and set their final positions in the 3D space. Next, the initial and final positions of the end effector on the obstacles plane must be specified.
+The seventh menu (left side of the picture below) is essentially the final step in solving the obstacles avoidance problem for the Thor robotic arm (or any other selected robotic manipulator). In this menu, the user first needs to load an image of the desired workspace with the already detected obstacles and set their final positions and orientations in the 3D space. Next, the start and target positions of the end effector on the obstacles plane must be specified.
 
-Once these steps are completed correctly, transformations of the actual workspace are implemented, which will be useful in designing the control law for the robotic manipulator. At the end of the menu, users will find options for generating the control law, including adjustable control parameters, variable time steps, and a maximum number of iterations. There is also an option to convert the results of the control process into a time sequence of joint variables for both the simulated and real robotic manipulators.
+Once these steps are completed correctly, transformations of the actual workspace are implemented, which will be useful in designing the control law for the robotic manipulator. At the end of the menu, users will find options for generating the control law, including adjustable control parameters, variable time steps, and a maximum number of iterations. There is also the important option to convert the results of the control process into a time sequence of joints variables for both the simulated and real robotic manipulators.
 
 ![image](https://github.com/user-attachments/assets/c1a0c15e-27c8-47bb-97e4-af45d4e6d9fa)
 
@@ -127,6 +127,14 @@ _**5. Connect and Control**_
 Connect your physical robotic arm (e.g., Thor robotic arm) through a serial link to an Arduino microcontroller. Use the control menu to set the serial port and the baud rate, adjust the motor settings, and send commands, with the serial communication visible in the integrated serial monitor. Fine-tune the movements of the real robotic manipulator with sliders, buttons, and other controls.
 
 ## Diploma thesis and experimental results
+
+1) Obstacles boundaries detection with camera and ArUco:
+
+2) Other
+
+3) Other
+
+4) Other
 
 ![image](https://github.com/user-attachments/assets/7bfc6bec-b384-4ff7-a779-2f65247de5ed)
 
