@@ -10,8 +10,6 @@ Thor is an open-source project, with the entire construction process and control
 
 ![image](https://github.com/user-attachments/assets/f9536b42-0e1a-4463-8bb5-6335701df5cf)
 
-The program uses the classic Denavit - Hartenberg parameterization for the robots kinematics. The modified Denavit - Hartenberg parameterization and the (more modern) Product of Exponentials (POE) method are not addressed here.
-
 ## Running instructions
 
 To launch the program, run the Python script "robotic_manipulators_playground.py." The graphical user interface (GUI) is compatible with both Windows and Linux systems. Below is a list of the required Python libraries, along with the versions that have been tested and confirmed to work on my setup (although other newer versions may also be fine):
