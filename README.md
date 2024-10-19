@@ -132,18 +132,19 @@ You can access my university diploma thesis (in Greek) by following this link: h
 
 ![image](https://github.com/user-attachments/assets/7bfc6bec-b384-4ff7-a779-2f65247de5ed)
 
-1) Detecting the obstacles boundaries with RGB camera and ArUco:
+**1) Detecting the obstacles boundaries with RGB camera and ArUco:**
 
 ![image](https://github.com/user-attachments/assets/42bb3162-b8a6-42ed-ab2c-d8a20582c4f0)
 
-2) Calculating the real planar workspace transformations:
+**2) Calculating the real planar workspace transformations:**
 
 ![image](https://github.com/user-attachments/assets/6125c6a4-c9b1-4c23-98d1-4d1a9b109c70)
 
-3) Applying the parametric navigation control law to find paths on the real workspace:
+**3) Applying the parametric navigation control law to find paths:**
 
+![image](https://github.com/user-attachments/assets/b7b149e6-5be2-40ad-a880-99ee7aceb74a)
 
+**4) Finding feasible trajectories for the robotic manipulator:**
 
-4) Finding feasible trajectories for the robotic manipulator:
-
-![image](https://github.com/user-attachments/assets/1b470db4-e879-4994-ac7c-159233b3663e)
+![image](https://github.com/user-attachments/assets/75ddad45-dcd5-4813-8139-528a5bf7dcad)
+![image](https://github.com/user-attachments/assets/391d49ba-acde-4592-813d-89949929d907)
