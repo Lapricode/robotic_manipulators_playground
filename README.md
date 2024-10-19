@@ -1,4 +1,4 @@
-# A Playground for Serial Robotic Manipulators with Obstacles Avoidance in a Planar Workspace
+# A Playground for Serial Robotic Manipulators, with Obstacles Avoidance in a Planar Workspace
 
 ## Introduction
 
