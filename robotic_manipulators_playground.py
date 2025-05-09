@@ -8,7 +8,7 @@ import matplotlib.colors as mcolors
 from mpl_toolkits.mplot3d import Axes3D
 from PIL import Image, ImageColor
 import string, copy
-import os, shutil
+import os, shutil, sys
 import serial, time
 import roboticstoolbox as rtb
 import numpy as np
@@ -612,7 +612,11 @@ class robotic_manipulators_playground_window():
         self.workspace_canvas.bind("<Double-Button-3>", lambda event: self.reset_workspace_canvas_2(event))
         self.workspace_canvas.bind("<Button-1>", lambda event: self.rotate_workspace_start(event))
         self.workspace_canvas.bind("<B1-Motion>", lambda event: self.rotate_workspace(event))
-        self.workspace_canvas.bind("<MouseWheel>", lambda event: self.scale_workspace(event))
+        if sys.platform.startswith('win'):
+            self.workspace_canvas.bind("<MouseWheel>", lambda event: self.scale_workspace(event))
+        elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+            self.workspace_canvas.bind("<Button-4>", lambda event: self.scale_workspace(event, direction = "up"))
+            self.workspace_canvas.bind("<Button-5>", lambda event: self.scale_workspace(event, direction = "down"))
 
     # functions for the workspace options located at the borders of the workspace area
     def change_workspace_width_ratio(self, change_type = +1, event = None):  # change the width ratio of the workspace area to the root window
@@ -803,11 +807,17 @@ class robotic_manipulators_playground_window():
         self.z_cor_workspace_origin = self.z_cor_workspace_origin - 2 * self.workspace_control_sensitivity * (event.y - self.last_transfer_z)
         self.last_transfer_y = event.x
         self.last_transfer_z = event.y
-    def scale_workspace(self, event):  # scale the workspace according to the mouse wheel movement
-        if event.delta == -120 and self.scale_parameter >= 0.2:
-            self.scale_parameter -= self.workspace_control_sensitivity / 5
-        elif event.delta == 120 and self.scale_parameter <= 15:
-            self.scale_parameter += self.workspace_control_sensitivity / 5
+    def scale_workspace(self, event, direction = None):  # scale the workspace according to the mouse wheel movement
+        if direction:  # Linux system
+            if direction == "down" and self.scale_parameter >= 0.2:
+                self.scale_parameter -= self.workspace_control_sensitivity / 5.0
+            elif direction == "up" and self.scale_parameter <= 15.0:
+                self.scale_parameter += self.workspace_control_sensitivity / 5.0
+        else:  # Windows system
+            if event.delta < 0.0 and self.scale_parameter >= 0.2:
+                self.scale_parameter -= self.workspace_control_sensitivity / 5.0
+            elif event.delta > 0.0 and self.scale_parameter <= 15.0:
+                self.scale_parameter += self.workspace_control_sensitivity / 5.0
     def rotate_workspace_start(self, event):  # initialize the coordinates of the last mouse position when the user starts to rotate the workspace
         self.last_rotation_y = event.y
         self.last_rotation_z = event.x
