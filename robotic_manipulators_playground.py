@@ -251,7 +251,8 @@ class robotic_manipulators_playground_window():
         self.invkine_tolerance = 1e-10  # the tolerance for the inverse kinematics
         self.chosen_joint_number_diffkine = 1  # the number of the chosen joint of the robotic manipulator for the differential kinematics
         self.differential_kinematics_velocities = [0.0 for _ in range(self.joints_number)]  # the velocities of the joints for the differential kinematics
-        self.diffkine_velocities_limits = [[[-360, 360], [-1, 1]] for _ in range(self.joints_number)]  # the limits of the velocities of the joints for the differential kinematics
+        self.diffkine_velocities_extreme_limits = [[-360, 360], [-1, 1]]  # the extreme limits of the velocities of the joints for the differential kinematics
+        self.diffkine_velocities_limits = [copy.deepcopy(self.diffkine_velocities_extreme_limits) for _ in range(self.joints_number)]  # the limits of the velocities of the joints for the differential kinematics
         self.diffkine_linear_vel = np.array([0.0, 0.0, 0.0])  # the velocity of the end-effector in the workspace for the differential kinematics in meters/sec
         self.diffkine_angular_vel = np.array([0.0, 0.0, 0.0])  # the angular velocity of the end-effector for the differential kinematics in radians/sec
         self.diffkine_wrt_frame_list = ["world", "end-effector"]  # the possible values of the differential kinematics wrt frame
@@ -2535,6 +2536,7 @@ class robotic_manipulators_playground_window():
                 self.joints_motors_list = []  # the motors of the joints of the robotic manipulator model
                 self.joints_motors_mult_factors = []  # the multiplication factors of the motors of the joints of the robotic manipulator model
                 self.control_joints_variables_limits = [copy.deepcopy(self.control_joints_variables_extreme_limits) for _ in range(self.joints_number)]  # the limits of the control joints variables in degrees or meters, depending on the joint's type
+                self.diffkine_velocities_limits = [copy.deepcopy(self.diffkine_velocities_extreme_limits) for _ in range(self.joints_number)]  # the limits of the velocities of the joints for the differential kinematics
                 joints_first_line_index = 8  # the index of the first line of the joints in the file
                 lines_number_for_each_joint = 6  # the number of lines for each joint separately in the file
                 for k in range(self.joints_number):  # iterate through all joints of the robotic manipulator model
@@ -5058,4 +5060,5 @@ if __name__ == "__main__":
         roots_list.append(tk.Tk())
         guis_list.append(robotic_manipulators_playground_window(roots_list[window], window))
     for window in range(windows_number):
+
         roots_list[window].mainloop()
