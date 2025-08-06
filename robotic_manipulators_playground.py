@@ -5060,5 +5060,4 @@ if __name__ == "__main__":
         roots_list.append(tk.Tk())
         guis_list.append(robotic_manipulators_playground_window(roots_list[window], window))
     for window in range(windows_number):
-
         roots_list[window].mainloop()
